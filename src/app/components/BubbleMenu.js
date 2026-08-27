@@ -293,7 +293,14 @@ export default function BubbleMenu({
               >
                 <a
                   role="menuitem"
-                  href={item.href}
+                  href={item.href || '#'}
+                  onClick={(e) => {
+                    if (item.onClick) {
+                      e.preventDefault()
+                      item.onClick()
+                      handleToggle()
+                    }
+                  }}
                   aria-label={item.ariaLabel || item.label}
                   className="pill-link w-full rounded-[999px] no-underline bg-white text-inherit shadow-[0_4px_14px_rgba(0,0,0,0.10)] flex items-center justify-center relative transition-[background,color] duration-300 ease-in-out box-border whitespace-nowrap overflow-hidden"
                   style={{
