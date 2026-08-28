@@ -1,26 +1,28 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bungee, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const bungee = Bungee({
+  weight: "400",
+  variable: "--font-bungee",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const pressStart = Press_Start_2P({
+  weight: "400",
+  variable: "--font-press-start",
   subsets: ["latin"],
 });
 
 export const metadata = {
   title: "POKERHUB",
-  description: "Poker hub experience",
+  description: "Y2K Retro Poker Experience",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${bungee.variable} ${pressStart.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col m-0 p-0 overflow-hidden">
         {children}

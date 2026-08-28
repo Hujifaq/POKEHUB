@@ -5,65 +5,113 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { SoundEngine } from './SoundEngine'
 
-// Generate casino chip face texture
-function createChipTexture(value = '$1,000', color = '#d4af37', textColor = '#14161c') {
+// Generate casino chip face texture (aesthetic pixel art, highly detailed)
+function createChipTexture(value = '$1K', color = '#e74c3c', textColor = '#000000') {
   if (typeof document === 'undefined') return null
   const canvas = document.createElement('canvas')
-  canvas.width = 512
-  canvas.height = 512
+  // Double resolution (64x64) for intricate pixel details
+  canvas.width = 64
+  canvas.height = 64
   const ctx = canvas.getContext('2d')
+  ctx.imageSmoothingEnabled = false
 
-  // Outer base circle
-  ctx.fillStyle = color
-  ctx.beginPath()
-  ctx.arc(256, 256, 250, 0, Math.PI * 2)
-  ctx.fill()
+  // Clear background
+  ctx.clearRect(0, 0, 64, 64)
 
-  // Edge stripe notches
-  ctx.fillStyle = '#ffffff'
-  for (let i = 0; i < 8; i++) {
-    ctx.save()
-    ctx.translate(256, 256)
-    ctx.rotate((i * Math.PI) / 4)
-    ctx.fillRect(-20, -250, 40, 45)
-    ctx.restore()
+  const CREAM = '#fcf4e8'
+  const BLACK = '#181920'
+  const GOLD = '#f1c40f'
+
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      let dx = Math.abs(x - 31.5)
+      let dy = Math.abs(y - 31.5)
+      let dist = Math.sqrt(dx * dx + dy * dy)
+      
+      // Black border
+      if (dist <= 31.5) {
+        ctx.fillStyle = BLACK
+        ctx.fillRect(x, y, 1, 1)
+      }
+      
+      // Main color
+      if (dist <= 29.5) {
+        ctx.fillStyle = color
+        ctx.fillRect(x, y, 1, 1)
+      }
+      
+      // 8 Notches (Top, Bottom, Left, Right + Diagonals)
+      if (dist > 21.5 && dist <= 29.5) {
+        // Orthogonal notches
+        if (dx <= 4 || dy <= 4) { 
+          ctx.fillStyle = CREAM
+          ctx.fillRect(x, y, 1, 1)
+        }
+        // Diagonal notches
+        if (Math.abs(dx - dy) <= 3 && dist > 23.5) {
+          ctx.fillStyle = CREAM
+          ctx.fillRect(x, y, 1, 1)
+        }
+      }
+      
+      // Inner black ring
+      if (dist <= 21.5 && dist > 19.5) {
+        ctx.fillStyle = BLACK
+        ctx.fillRect(x, y, 1, 1)
+      }
+      
+      // Inner cream ring
+      if (dist <= 19.5 && dist > 17.5) {
+        ctx.fillStyle = CREAM
+        ctx.fillRect(x, y, 1, 1)
+      }
+
+      // Decorative gold dotted ring
+      if (dist <= 17.5 && dist > 15.5) {
+        let angle = Math.atan2(y - 31.5, x - 31.5)
+        let slice = Math.floor(angle * 12)
+        if (slice % 2 === 0) {
+          ctx.fillStyle = GOLD
+          ctx.fillRect(x, y, 1, 1)
+        } else {
+          ctx.fillStyle = BLACK
+          ctx.fillRect(x, y, 1, 1)
+        }
+      }
+      
+      // Inner color center
+      if (dist <= 15.5) {
+        ctx.fillStyle = color
+        ctx.fillRect(x, y, 1, 1)
+      }
+    }
   }
 
-  // Inner ring
-  ctx.fillStyle = '#181920'
-  ctx.beginPath()
-  ctx.arc(256, 256, 175, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Gold accent border
-  ctx.strokeStyle = '#d4af37'
-  ctx.lineWidth = 8
-  ctx.beginPath()
-  ctx.arc(256, 256, 175, 0, Math.PI * 2)
-  ctx.stroke()
-
-  ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)'
-  ctx.lineWidth = 4
-  ctx.beginPath()
-  ctx.arc(256, 256, 150, 0, Math.PI * 2)
-  ctx.stroke()
-
-  // Text
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 30px "Geist", Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('POKEHUB', 256, 170)
-
-  ctx.fillStyle = '#f5d77f'
-  ctx.font = '900 68px "Geist", Arial'
-  ctx.fillText(value, 256, 275)
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-  ctx.font = 'bold 22px "Geist", Arial'
-  ctx.fillText('HIGH ROLLER', 256, 335)
+  // Draw Scaled Heart in Center (Cream color)
+  const HEART = [
+    [0,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0]
+  ]
+  
+  ctx.fillStyle = CREAM
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 7; c++) {
+      if (HEART[r][c]) {
+        // scale 2x
+        ctx.fillRect(25 + c * 2, 26 + r * 2, 2, 2)
+      }
+    }
+  }
 
   const texture = new THREE.CanvasTexture(canvas)
-  texture.anisotropy = 4
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  texture.anisotropy = 1
   return texture
 }
 
@@ -119,17 +167,20 @@ function FlyingChip({ id, startPos, velocity, rotationSpeed, color, value, onFin
     }
   })
 
-  const cylinderGeo = useMemo(() => new THREE.CylinderGeometry(0.55, 0.55, 0.08, 32), [])
+  // Circular geometry for pixel look but smooth shape
+  const cylinderGeo = useMemo(() => new THREE.CylinderGeometry(0.55, 0.55, 0.1, 32), [])
   const materials = useMemo(() => {
     const edgeMat = new THREE.MeshStandardMaterial({
       color: color,
-      metalness: 0.4,
-      roughness: 0.3
+      metalness: 0.1,
+      roughness: 0.8,
+      flatShading: true
     })
     const capMat = new THREE.MeshStandardMaterial({
       map: texture,
-      metalness: 0.3,
-      roughness: 0.25
+      metalness: 0.1,
+      roughness: 0.8,
+      flatShading: true
     })
     return [edgeMat, capMat, capMat]
   }, [color, texture])
@@ -147,19 +198,21 @@ function FlyingChip({ id, startPos, velocity, rotationSpeed, color, value, onFin
 
 export default function Chips3D({ tossSignal = 0, isReady = true }) {
   const [flyingChips, setFlyingChips] = useState([])
+  
+  // Aesthetic pixel colors based on reference
   const chipTypes = useMemo(() => [
-    { value: '$100', color: '#1a1c23' },
-    { value: '$500', color: '#8e44ad' },
-    { value: '$1,000', color: '#d4af37' },
-    { value: '$5,000', color: '#27ae60' },
-    { value: '$25,000', color: '#c0392b' }
+    { value: '$100', color: '#000000ff' }, // Purple
+    { value: '$500', color: '#3498db' }, // Blue
+    { value: '$1K', color: '#cc2e63ff' },  // Green
+    { value: '$5K', color: '#f1c40f' },  // Yellow
+    { value: '$25K', color: '#e74c3c' }  // Red
   ], [])
 
   // Static stack chips
-  const goldTexture = useMemo(() => createChipTexture('$1,000', '#d4af37'), [])
-  const purpleTexture = useMemo(() => createChipTexture('$500', '#8e44ad'), [])
-  const redTexture = useMemo(() => createChipTexture('$25k', '#c0392b'), [])
-  const dealerTexture = useMemo(() => createChipTexture('DEALER', '#f39c12'), [])
+  const greenTexture = useMemo(() => createChipTexture('$1K', '#cc2e63ff'), [])
+  const purpleTexture = useMemo(() => createChipTexture('$100', '#9b59b6'), [])
+  const redTexture = useMemo(() => createChipTexture('$25K', '#e74c3c'), [])
+  const dealerTexture = useMemo(() => createChipTexture('DLR', '#ffffff', '#000000'), [])
 
   // Toss chip when signal changes
   useEffect(() => {
@@ -187,7 +240,8 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
     setFlyingChips(prev => prev.filter(c => c.id !== id))
   }
 
-  const stackCylinderGeo = useMemo(() => new THREE.CylinderGeometry(0.55, 0.55, 0.08, 32), [])
+  // Circular stack geometry (matching pixel aesthetic)
+  const stackCylinderGeo = useMemo(() => new THREE.CylinderGeometry(0.55, 0.55, 0.1, 32), [])
 
   return (
     <group position={[0, 0, 0]}>
@@ -195,17 +249,18 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       <group position={[4.2, -2.8, -0.5]} rotation={[0.1, -0.4, 0]}>
         {[0, 1, 2, 3, 4, 5, 6].map((i) => {
           const mat = new THREE.MeshStandardMaterial({
-            color: i % 2 === 0 ? '#d4af37' : '#1a1c23',
-            map: i === 6 ? goldTexture : null,
-            metalness: 0.5,
-            roughness: 0.3
+            color: i % 2 === 0 ? '#cc2e63ff' : '#181920',
+            map: i === 6 ? greenTexture : null,
+            metalness: 0.1,
+            roughness: 0.8,
+            flatShading: true
           })
           return (
             <mesh
               key={i}
               geometry={stackCylinderGeo}
               material={mat}
-              position={[0, i * 0.09, 0]}
+              position={[0, i * 0.11, 0]}
               rotation={[0, i * 0.35, 0]}
               castShadow
               receiveShadow
@@ -218,17 +273,18 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       <group position={[-4.2, -2.8, -0.5]} rotation={[0.1, 0.4, 0]}>
         {[0, 1, 2, 3, 4].map((i) => {
           const mat = new THREE.MeshStandardMaterial({
-            color: i % 2 === 0 ? '#8e44ad' : '#c0392b',
+            color: i % 2 === 0 ? '#9b59b6' : '#e74c3c',
             map: i === 4 ? purpleTexture : null,
-            metalness: 0.45,
-            roughness: 0.3
+            metalness: 0.1,
+            roughness: 0.8,
+            flatShading: true
           })
           return (
             <mesh
               key={i}
               geometry={stackCylinderGeo}
               material={mat}
-              position={[0, i * 0.09, 0]}
+              position={[0, i * 0.11, 0]}
               rotation={[0, i * 0.4, 0]}
               castShadow
               receiveShadow
@@ -242,10 +298,11 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
         <mesh
           geometry={new THREE.CylinderGeometry(0.7, 0.7, 0.12, 32)}
           material={new THREE.MeshStandardMaterial({
-            color: '#f5f5f5',
+            color: '#ffffff',
             map: dealerTexture,
-            metalness: 0.6,
-            roughness: 0.2
+            metalness: 0.1,
+            roughness: 0.8,
+            flatShading: true
           })}
           castShadow
           receiveShadow

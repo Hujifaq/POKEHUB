@@ -99,10 +99,10 @@ export default function PokerScene({
       gl={{ antialias: true, alpha: true }}
     >
       {/* Lighting */}
-      <ambientLight intensity={themeConfig.ambientIntensity} />
-      <directionalLight position={[10, 12, 6]} intensity={1.8} color="#ffffff" castShadow />
-      <directionalLight position={[-10, -5, -4]} intensity={0.8} color={themeConfig.rimLight} />
-      <MouseSpotlight color={themeConfig.spotlight} intensity={2.8} />
+      <ambientLight intensity={1.8} />
+      <directionalLight position={[10, 12, 6]} intensity={3.0} color="#ffffff" castShadow />
+      <directionalLight position={[-10, -5, -4]} intensity={2.0} color={themeConfig.rimLight} />
+      <MouseSpotlight color={themeConfig.spotlight} intensity={4.5} />
 
       {/* Floating Golden Particles */}
       <GoldenParticles count={140} color={themeConfig.particleColor} />

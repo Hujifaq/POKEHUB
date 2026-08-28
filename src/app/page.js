@@ -8,7 +8,6 @@ import Preloader from './components/Preloader'
 import ControlDock from './components/ControlDock'
 import CardInspectorHUD from './components/CardInspectorHUD'
 import PokerDuelGame from './components/PokerDuelGame'
-import ThemeSelector from './components/ThemeSelector'
 import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
 import { SoundEngine } from './components/SoundEngine'
@@ -37,7 +36,6 @@ export default function Home() {
   const [isFanMode, setIsFanMode] = useState(false)
   const [deckSkin, setDeckSkin] = useState('classic')
   const [activeSuit, setActiveSuit] = useState('hearts')
-  const [theme, setTheme] = useState('macau')
   const [tossSignal, setTossSignal] = useState(0)
   const [telemetry, setTelemetry] = useState({ pitch: 0, yaw: 0, roll: 0, velX: 0, velY: 0, speed: 0 })
 
@@ -47,7 +45,6 @@ export default function Home() {
 
   // Modal Dialogs
   const [isDuelOpen, setIsDuelOpen] = useState(false)
-  const [isThemeOpen, setIsThemeOpen] = useState(false)
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
 
@@ -125,13 +122,7 @@ export default function Home() {
     })
   }, [])
 
-  // Theme visual backgrounds
-  const themeBackgroundStyles = {
-    macau: 'bg-gradient-to-b from-[#e8e2d6] via-[#ded6c5] to-[#c7bca5] text-[#14161c]',
-    vegas: 'bg-gradient-to-b from-[#1a080b] via-[#100406] to-[#050102] text-[#ededed]',
-    cyber: 'bg-gradient-to-b from-[#090b17] via-[#05060e] to-[#020307] text-[#00f0ff]',
-    emerald: 'bg-gradient-to-b from-[#072415] via-[#04170d] to-[#020d07] text-[#f1c40f]'
-  }[theme] || 'bg-[#e8e2d6] text-[#14161c]'
+  // Y2K background is handled in globals.css
 
   // Custom Bubble menu items wired to active features
   const bubbleMenuItems = [
@@ -142,7 +133,6 @@ export default function Home() {
       hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' },
       onClick: () => {
         setIsDuelOpen(false)
-        setIsThemeOpen(false)
         setIsRankingsOpen(false)
         setIsVIPOpen(false)
       }
@@ -158,11 +148,11 @@ export default function Home() {
       }
     },
     {
-      label: 'tables',
-      ariaLabel: 'Casino Felt & Ambiance Themes',
+      label: 'tournaments',
+      ariaLabel: 'Tournaments',
       rotation: -6,
-      hoverStyles: { bgColor: '#27ae60', textColor: '#ffffff' },
-      onClick: () => setIsThemeOpen(true)
+      hoverStyles: { bgColor: '#ffa6c9', textColor: '#050505' },
+      onClick: () => {}
     },
     {
       label: 'rankings',
@@ -181,7 +171,7 @@ export default function Home() {
   ]
 
   return (
-    <main className={`w-full h-screen relative overflow-hidden flex items-center justify-center transition-colors duration-700 ${themeBackgroundStyles}`}>
+    <main className="w-full h-screen relative overflow-hidden flex items-center justify-center transition-colors duration-700 text-true-black">
 
       {/* Intro Preloader */}
       {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
@@ -197,8 +187,8 @@ export default function Home() {
           </div>
         }
         useFixedPosition={true}
-        menuBg={theme === 'macau' ? '#e8e2d6' : '#141622'}
-        menuContentColor={theme === 'macau' ? '#14161c' : '#f5f5f5'}
+        menuBg="#ffffff"
+        menuContentColor="#050505"
         menuAriaLabel="Toggle navigation"
         animationEase="back.out(1.5)"
         animationDuration={0.5}
@@ -207,61 +197,52 @@ export default function Home() {
         onMenuClick={handleNavToggle}
       />
 
-      {/* Top Floating Luxury HUD Header */}
+      {/* Top Floating Luxury HUD Header -> Y2K Faux OS Taskbar */}
       <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto hidden md:flex items-center gap-3">
-        {/* Bankroll Chip Pill */}
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#10121a]/85 backdrop-blur-xl border border-[#d4af37]/40 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-          <span className="text-sm">🪙</span>
-          <span className="text-xs font-bold text-gray-300 uppercase tracking-wider">BANKROLL:</span>
-          <span className="text-sm font-black text-[#f1c40f] tracking-tight font-mono">${bankroll.toLocaleString()}</span>
+        {/* Bankroll Faux Window */}
+        <div className="brutal-window flex items-center gap-2.5 px-4 py-2">
+          <span className="text-sm">💰</span>
+          <span className="text-xs font-black uppercase tracking-wider font-pixel text-true-black">BANKROLL:</span>
+          <span className="text-sm font-black text-ui-pink tracking-tight drop-shadow-[2px_2px_0px_#050505] font-display">${bankroll.toLocaleString()}</span>
           <button
             onClick={handleRefillBankroll}
-            className="text-[10px] font-black bg-[#d4af37]/20 hover:bg-[#d4af37] text-[#d4af37] hover:text-black px-2 py-0.5 rounded-full border border-[#d4af37]/50 transition-all cursor-pointer"
+            className="brutal-btn bg-accent-yellow text-true-black text-[10px] font-black px-2 py-0.5"
             title="Add +$5,000 High Roller Chips"
           >
-            +$5K
+            + $5K
           </button>
         </div>
 
-        {/* Atmosphere Theme Selector Button */}
-        <button
-          onClick={() => setIsThemeOpen(true)}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#10121a]/85 backdrop-blur-xl border border-white/15 hover:border-[#d4af37]/60 text-xs font-bold text-gray-200 transition-all cursor-pointer shadow-md hover:scale-105"
-        >
-          <span>🏛️</span>
-          <span className="capitalize">{theme} Felt</span>
-        </button>
-
-        {/* Audio / Ambient Music Toggle Button with Equalizer bars */}
+        {/* Audio / Ambient Music Toggle Button */}
         <button
           onClick={handleToggleAudio}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-full backdrop-blur-xl border transition-all cursor-pointer shadow-md hover:scale-105 ${
+          className={`brutal-btn flex items-center gap-2 px-3.5 py-2 font-pixel text-[10px] uppercase font-bold ${
             isAudioActive
-              ? 'bg-[#10121a]/85 border-[#2ecc71]/60 text-emerald-400'
-              : 'bg-[#10121a]/85 border-white/15 text-gray-400'
+              ? 'bg-accent-cyan text-true-black'
+              : 'bg-white text-gray-500'
           }`}
           title="Toggle Audio & Ambient Casino Lounge"
         >
           {isAudioActive ? (
             <div className="flex items-end gap-0.5 h-3.5 w-4">
-              <span className="w-0.5 bg-emerald-400 rounded-full equalizer-bar" />
-              <span className="w-0.5 bg-emerald-400 rounded-full equalizer-bar" />
-              <span className="w-0.5 bg-emerald-400 rounded-full equalizer-bar" />
-              <span className="w-0.5 bg-emerald-400 rounded-full equalizer-bar" />
+              <span className="w-0.5 bg-true-black equalizer-bar" />
+              <span className="w-0.5 bg-true-black equalizer-bar" />
+              <span className="w-0.5 bg-true-black equalizer-bar" />
+              <span className="w-0.5 bg-true-black equalizer-bar" />
             </div>
           ) : (
-            <span className="text-xs">🔇</span>
+            <span>🔇</span>
           )}
-          <span className="text-xs font-bold">{isAudioActive ? 'Sound ON' : 'Muted'}</span>
+          <span>{isAudioActive ? 'ON' : 'MUTE'}</span>
         </button>
 
         {/* Fullscreen Button */}
         <button
           onClick={handleToggleFullscreen}
-          className="w-9 h-9 rounded-full bg-[#10121a]/85 backdrop-blur-xl border border-white/15 hover:border-white/40 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+          className="brutal-btn w-9 h-9 bg-ui-pink text-true-black flex items-center justify-center font-bold font-pixel"
           title="Toggle Fullscreen"
         >
-          <span className="text-xs">⛶</span>
+          <span className="text-[10px]">🗖</span>
         </button>
       </header>
 
@@ -271,16 +252,11 @@ export default function Home() {
         {/* Bottom Text Layer — behind 3D cards */}
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none">
           <h1
-            className={`text-[15vw] font-black tracking-tighter leading-none scale-y-[1.8] opacity-90 transition-colors duration-700 ${
-              theme === 'macau'
-                ? 'text-[#14161c]'
-                : theme === 'vegas'
-                ? 'text-[#2a0b10]'
-                : theme === 'cyber'
-                ? 'text-[#0d1633]'
-                : 'text-[#062413]'
-            }`}
-            style={{ whiteSpace: 'nowrap' }}
+            className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700"
+            style={{ 
+              whiteSpace: 'nowrap',
+              WebkitTextStroke: '4px #050505'
+            }}
           >
             {text}
           </h1>
@@ -296,7 +272,7 @@ export default function Home() {
               isFanMode={isFanMode}
               deckSkin={deckSkin}
               activeSuit={activeSuit}
-              theme={theme}
+              theme="macau" // Fallback since scene might still expect it
               tossSignal={tossSignal}
               onTelemetry={setTelemetry}
             />
@@ -306,16 +282,11 @@ export default function Home() {
         {/* Top Text Layer — in front of cards (P K H B letters only) */}
         <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none select-none">
           <h1
-            className={`text-[15vw] font-black tracking-tighter leading-none flex scale-y-[1.8] opacity-90 transition-colors duration-700 ${
-              theme === 'macau'
-                ? 'text-[#14161c]'
-                : theme === 'vegas'
-                ? 'text-[#2a0b10]'
-                : theme === 'cyber'
-                ? 'text-[#0d1633]'
-                : 'text-[#062413]'
-            }`}
-            style={{ whiteSpace: 'nowrap' }}
+            className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700"
+            style={{ 
+              whiteSpace: 'nowrap',
+              WebkitTextStroke: '4px #050505'
+            }}
           >
             {text.split('').map((char, i) => (
               <span
@@ -364,13 +335,7 @@ export default function Home() {
         setBankroll={setBankroll}
       />
 
-      {/* Atmosphere Theme Selector Modal */}
-      <ThemeSelector
-        isOpen={isThemeOpen}
-        onClose={() => setIsThemeOpen(false)}
-        activeTheme={theme}
-        onThemeChange={setTheme}
-      />
+      {/* Atmosphere Theme Selector Modal - REMOVED */}
 
       {/* Poker Hand Rankings Official Guide */}
       <HandRankingsModal

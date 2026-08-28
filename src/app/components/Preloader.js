@@ -27,79 +27,25 @@ export default function Preloader({ onComplete }) {
       const chars = charRefs.current.filter(Boolean)
       const counter = counterRef.current
 
-      gsap.set(cardRefs.current, {
-        xPercent: -50,
-        yPercent: -50,
-        scale: 0,
-        rotate: (i) => CARD_ROTATIONS[i],
-        clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-      })
-
-      gsap.set(chars, {
-        yPercent: 100,
-        rotation: 10,
-        transformOrigin: '0% 100%',
-      })
-
-      gsap.set(counter, { yPercent: 100 })
-      gsap.set(brandRef.current, { visibility: 'hidden' })
-
       const tl = gsap.timeline({ delay: 0.1, onComplete })
-
-      tl.to(cardRefs.current, {
-        scale: 1,
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-        duration: 0.8,
-        ease: 'power3.inOut',
-        stagger: 0.12,
-      })
-
-      tl.set(brandRef.current, { visibility: 'visible' }, 0.25)
-
-      tl.to(chars, {
-        yPercent: 0,
-        rotation: 0,
-        duration: 0.8,
-        ease: 'power3.out',
-        stagger: 0.03,
-      }, 0.25)
-
-      tl.to(counter, { yPercent: 0, duration: 0.7, ease: 'power3.out' }, '<')
+      const progressBar = document.getElementById('progress-bar')
 
       tl.to({ value: 0 }, {
         value: 100,
-        duration: 1.5,
-        ease: 'power2.inOut',
+        duration: 2.5,
+        ease: 'power1.inOut',
         onUpdate() {
-          if (counter) {
-            counter.textContent = String(Math.round(this.targets()[0].value)).padStart(3, '0')
-          }
+          const val = Math.round(this.targets()[0].value)
+          if (counter) counter.textContent = `${val}%`
+          if (progressBar) gsap.set(progressBar, { width: `${val}%` })
         },
-      }, '<0.2')
-
-      tl.to(chars, {
-        yPercent: -100,
-        rotation: -10,
-        duration: 0.55,
-        ease: 'power3.in',
-        stagger: 0.02,
-      }, 2.2)
-
-      tl.to(counter, { yPercent: -100, duration: 0.55, ease: 'power3.in' }, 2.2)
-
-      tl.to(cardRefs.current, {
-        scale: 0,
-        clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-        duration: 0.65,
-        ease: 'power3.inOut',
-        stagger: -0.05,
-      }, 2.4)
+      })
 
       tl.to(loaderRef.current, {
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
-        duration: 0.7,
-        ease: 'power3.inOut',
-      }, 2.9)
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.inOut',
+      }, '+=0.2')
     })
 
     return () => ctx.revert()
@@ -108,93 +54,54 @@ export default function Preloader({ onComplete }) {
   return (
     <div
       ref={loaderRef}
-      className="fixed inset-0 z-[2000] overflow-hidden select-none cursor-pointer"
+      className="fixed inset-0 z-[2000] overflow-hidden select-none cursor-pointer flex items-center justify-center bg-true-black"
       onClick={onComplete}
       style={{
-        background: '#14161c',
-        color: '#e8e2d6',
         clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
       }}
     >
-      {/* Poker card images */}
-      {CARD_IMAGES.map((src, i) => (
-        <div
-          key={i}
-          ref={el => cardRefs.current[i] = el}
-          className="absolute top-1/2 left-1/2 overflow-hidden rounded-lg shadow-2xl"
-          style={{
-            width: '220px',
-            height: '300px',
-            transform: 'translate(-50%, -50%)',
-            clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            className="w-full h-full object-cover"
-            crossOrigin="anonymous"
-          />
+      {/* Retro OS Loading Dialog */}
+      <div className="brutal-window w-[400px] max-w-[90vw] flex flex-col pointer-events-auto shadow-[12px_12px_0px_#ffa6c9]">
+        {/* Title Bar */}
+        <div className="bg-ui-blue border-b-[4px] border-true-black p-2 flex items-center justify-between">
+          <span className="font-pixel text-true-black font-bold text-xs uppercase">POKERHUB_BOOT.EXE</span>
+          <div className="flex gap-1">
+            <div className="w-4 h-4 border-[2px] border-true-black bg-white"></div>
+            <div className="w-4 h-4 border-[2px] border-true-black bg-white"></div>
+            <div className="w-4 h-4 border-[2px] border-true-black bg-white flex items-center justify-center font-pixel text-[8px]">X</div>
+          </div>
         </div>
-      ))}
+        
+        {/* Dialog Content */}
+        <div className="p-6 bg-primary-base flex flex-col gap-6">
+          <div className="flex items-start gap-4">
+            <span className="text-4xl">⚠️</span>
+            <div className="font-pixel text-true-black text-[10px] uppercase leading-relaxed flex flex-col gap-2">
+              <p>INITIALIZING Y2K CASINO ENGINE...</p>
+              <p>LOADING TEXTURES................OK</p>
+              <p>CONNECTING TO MAINFRAME.........OK</p>
+            </div>
+          </div>
 
-      {/* Brand: POKERHUB + counter */}
-      <div
-        ref={brandRef}
-        className="absolute top-1/2 left-1/2"
-        style={{ transform: 'translate(-50%, -50%)', visibility: 'hidden', textAlign: 'center' }}
-      >
-        <h1
-          style={{
-            fontFamily: 'var(--font-geist-sans), sans-serif',
-            fontSize: 'clamp(3rem, 10vw, 12rem)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            lineHeight: 0.85,
-            letterSpacing: '-0.04em',
-            color: '#e8e2d6',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            overflow: 'hidden'
-          }}
-        >
-          {BRAND_LETTERS.map((letter, i) => (
-            <span
-              key={i}
-              ref={el => charRefs.current[i] = el}
-              style={{ display: 'inline-block' }}
+          {/* Progress Bar Container */}
+          <div className="w-full h-8 border-[4px] border-true-black bg-white relative overflow-hidden p-1 flex">
+            {/* The progress bar will be updated via GSAP */}
+            <div className="h-full bg-accent-cyan border-[2px] border-true-black w-0" id="progress-bar"></div>
+          </div>
+
+          <div className="flex justify-between items-center mt-2">
+            <span className="font-pixel text-true-black text-[10px] uppercase" ref={counterRef}>0%</span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                onComplete()
+              }}
+              className="brutal-btn bg-ui-pink text-true-black font-pixel text-[10px] px-4 py-2 uppercase font-bold"
             >
-              {letter}
-            </span>
-          ))}
-        </h1>
-
-        <div
-          className="overflow-hidden"
-          style={{
-            position: 'absolute',
-            top: '-1.5rem',
-            left: 'calc(100% + 1rem)',
-            fontSize: 'clamp(0.9rem, 1.5vw, 1.5rem)',
-            fontWeight: 700,
-          }}
-        >
-          <p ref={counterRef} style={{ color: '#e8e2d6' }}>000</p>
+              SKIP
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Skip Button */}
-      <div className="absolute bottom-8 right-8 z-10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onComplete()
-          }}
-          className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-gray-300 border border-white/20 transition-all cursor-pointer"
-        >
-          SKIP INTRO ➔
-        </button>
       </div>
     </div>
   )
