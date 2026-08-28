@@ -1,106 +1,189 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import gsap from 'gsap'
+import { SoundEngine } from './SoundEngine'
 
-const CARD_IMAGES = [
-  'https://images.unsplash.com/photo-1541278107931-e006523892df?w=400&q=80',
-  'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?w=400&q=80',
-  'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&q=80',
-  'https://images.unsplash.com/photo-1522054963843-05a7af7e8c53?w=400&q=80',
-  'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400&q=80',
-  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80',
-]
+const anim = {
+  initial: {
+    opacity: 1
+  },
+  open: (i) => ({
+    opacity: 1,
+    transition: { duration: 0, delay: 0.05 * i }
+  }),
+  closed: (i) => ({
+    opacity: 0,
+    transition: { duration: 0, delay: 0.05 * i }
+  })
+}
 
-const CARD_ROTATIONS = [8, -3, -10, 10, -7, 5]
 const BRAND_LETTERS = "POKERHUB".split('')
 
 export default function Preloader({ onComplete }) {
-  const loaderRef = useRef(null)
-  const brandRef = useRef(null)
+  const [isActive, setIsActive] = useState(true)
+  const [columnsData, setColumnsData] = useState([])
+  const [mounted, setMounted] = useState(false)
+
   const counterRef = useRef(null)
-  const cardRefs = useRef([])
-  const charRefs = useRef([])
+  const containerRef = useRef(null)
+  const isFinishedRef = useRef(false)
 
+  /**
+   * Shuffles array in place (Fisher–Yates shuffle).
+   */
+  const shuffle = useCallback((a) => {
+    const arr = [...a]
+    let j, x, i
+    for (i = arr.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1))
+      x = arr[i]
+      arr[i] = arr[j]
+      arr[j] = x
+    }
+    return arr
+  }, [])
+
+  // Calculate blocks per column based on screen dimensions
   useEffect(() => {
+    const calculateBlocks = () => {
+      const { innerWidth, innerHeight } = window
+      const blockSize = innerWidth * 0.05
+      const nbOfBlocks = Math.ceil(innerHeight / blockSize)
+
+      const cols = Array.from({ length: 20 }).map(() =>
+        shuffle(Array.from({ length: nbOfBlocks }).map((_, i) => i))
+      )
+
+      setColumnsData(cols)
+      setMounted(true)
+    }
+
+    calculateBlocks()
+    window.addEventListener('resize', calculateBlocks)
+    return () => window.removeEventListener('resize', calculateBlocks)
+  }, [shuffle])
+
+  // GSAP: Reveal POKERHUB letter by letter, 0-100 counting, and exit trigger
+  useEffect(() => {
+    if (!mounted || columnsData.length === 0) return
+
     const ctx = gsap.context(() => {
-      const chars = charRefs.current.filter(Boolean)
-      const counter = counterRef.current
+      const tl = gsap.timeline()
 
-      const tl = gsap.timeline({ delay: 0.1, onComplete })
-      const progressBar = document.getElementById('progress-bar')
+      // 1. Letters of POKERHUB slide up letter by letter
+      tl.fromTo(
+        '.brand-letter',
+        { yPercent: 120, opacity: 0 },
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.6,
+          ease: 'power3.out',
+          stagger: 0.05
+        }
+      )
 
-      tl.to({ value: 0 }, {
-        value: 100,
-        duration: 2.5,
-        ease: 'power1.inOut',
-        onUpdate() {
-          const val = Math.round(this.targets()[0].value)
-          if (counter) counter.textContent = `${val}%`
-          if (progressBar) gsap.set(progressBar, { width: `${val}%` })
+      // 2. 0-100 count up in pixel font
+      const progressObj = { value: 0 }
+      let lastTick = 0
+
+      tl.to(
+        progressObj,
+        {
+          value: 100,
+          duration: 1.8,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            const val = Math.round(progressObj.value)
+            if (counterRef.current) {
+              counterRef.current.textContent = `${val}%`
+            }
+            if (val - lastTick >= 25) {
+              lastTick = val
+              SoundEngine.playClick()
+            }
+          }
         },
-      })
+        '-=0.1'
+      )
 
-      tl.to(loaderRef.current, {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.inOut',
-      }, '+=0.2')
-    })
+      // 3. Slide letters and counter up and out
+      tl.to(
+        ['.brand-letter', counterRef.current],
+        {
+          yPercent: -120,
+          opacity: 0,
+          duration: 0.3,
+          ease: 'power3.in',
+          onComplete: () => {
+            if (isFinishedRef.current) return
+            isFinishedRef.current = true
+
+            SoundEngine.playCardSwoosh()
+            setIsActive(false)
+
+            // Wait for all pixel blocks to complete their randomized transition
+            const maxBlocks = columnsData[0]?.length || 15
+            const totalDelay = maxBlocks * 0.08 + 0.3
+            setTimeout(() => {
+              if (onComplete) onComplete()
+            }, totalDelay * 1000)
+          }
+        },
+        '+=0.15'
+      )
+    }, containerRef)
 
     return () => ctx.revert()
-  }, [onComplete])
+  }, [mounted, columnsData, onComplete])
 
   return (
     <div
-      ref={loaderRef}
-      className="fixed inset-0 z-[2000] overflow-hidden select-none cursor-pointer flex items-center justify-center bg-true-black"
-      onClick={onComplete}
-      style={{
-        clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-      }}
+      ref={containerRef}
+      className="fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-none"
     >
-      {/* Retro OS Loading Dialog */}
-      <div className="brutal-window w-[400px] max-w-[90vw] flex flex-col pointer-events-auto shadow-[12px_12px_0px_#ffa6c9]">
-        {/* Title Bar */}
-        <div className="bg-ui-blue border-b-[4px] border-true-black p-2 flex items-center justify-between">
-          <span className="font-pixel text-true-black font-bold text-xs uppercase">POKERHUB_BOOT.EXE</span>
-          <div className="flex gap-1">
-            <div className="w-4 h-4 border-[2px] border-true-black bg-white"></div>
-            <div className="w-4 h-4 border-[2px] border-true-black bg-white"></div>
-            <div className="w-4 h-4 border-[2px] border-true-black bg-white flex items-center justify-center font-pixel text-[8px]">X</div>
-          </div>
-        </div>
-        
-        {/* Dialog Content */}
-        <div className="p-6 bg-primary-base flex flex-col gap-6">
-          <div className="flex items-start gap-4">
-            <span className="text-4xl">⚠️</span>
-            <div className="font-pixel text-true-black text-[10px] uppercase leading-relaxed flex flex-col gap-2">
-              <p>INITIALIZING Y2K CASINO ENGINE...</p>
-              <p>LOADING TEXTURES................OK</p>
-              <p>CONNECTING TO MAINFRAME.........OK</p>
+      {/* 20 Columns of Orange Pixel Blocks (Olivier Larose Architecture) */}
+      <div className="fixed inset-0 h-screen w-screen flex overflow-hidden z-10">
+        {mounted &&
+          columnsData.map((shuffledIndexes, colIndex) => (
+            <div key={colIndex} className="w-[5vw] h-full flex flex-col">
+              {shuffledIndexes.map((randomIndex, blockIndex) => (
+                <motion.div
+                  key={blockIndex}
+                  className="w-full bg-[#ff6b00]"
+                  style={{ height: '5vw' }}
+                  variants={anim}
+                  initial="initial"
+                  animate={isActive ? 'open' : 'closed'}
+                  custom={randomIndex}
+                />
+              ))}
             </div>
-          </div>
+          ))}
+      </div>
 
-          {/* Progress Bar Container */}
-          <div className="w-full h-8 border-[4px] border-true-black bg-white relative overflow-hidden p-1 flex">
-            {/* The progress bar will be updated via GSAP */}
-            <div className="h-full bg-accent-cyan border-[2px] border-true-black w-0" id="progress-bar"></div>
-          </div>
-
-          <div className="flex justify-between items-center mt-2">
-            <span className="font-pixel text-true-black text-[10px] uppercase" ref={counterRef}>0%</span>
-            <button 
-              onClick={(e) => {
-                e.stopPropagation()
-                onComplete()
-              }}
-              className="brutal-btn bg-ui-pink text-true-black font-pixel text-[10px] px-4 py-2 uppercase font-bold"
+      {/* Minimalist Centered POKERHUB Title & 0-100 Pixel Counter */}
+      <div className="fixed inset-0 z-20 flex flex-col items-center justify-center">
+        {/* POKERHUB letter-by-letter reveal container */}
+        <div className="flex overflow-hidden">
+          {BRAND_LETTERS.map((char, index) => (
+            <span
+              key={index}
+              className="brand-letter inline-block font-pixel text-4xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight"
             >
-              SKIP
-            </button>
-          </div>
+              {char}
+            </span>
+          ))}
+        </div>
+
+        {/* 0-100% Download / Progress Counter */}
+        <div
+          ref={counterRef}
+          className="mt-6 font-pixel text-sm sm:text-base text-true-black font-bold tracking-widest"
+        >
+          0%
         </div>
       </div>
     </div>

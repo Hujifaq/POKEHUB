@@ -201,15 +201,15 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
   
   // Aesthetic pixel colors based on reference
   const chipTypes = useMemo(() => [
-    { value: '$100', color: '#000000ff' }, // Purple
+    { value: '$100', color: '#9b59b6' }, // Purple
     { value: '$500', color: '#3498db' }, // Blue
-    { value: '$1K', color: '#cc2e63ff' },  // Green
+    { value: '$1K', color: '#cc2e63' },  // Magenta/Red
     { value: '$5K', color: '#f1c40f' },  // Yellow
     { value: '$25K', color: '#e74c3c' }  // Red
   ], [])
 
   // Static stack chips
-  const greenTexture = useMemo(() => createChipTexture('$1K', '#cc2e63ff'), [])
+  const greenTexture = useMemo(() => createChipTexture('$1K', '#cc2e63'), [])
   const purpleTexture = useMemo(() => createChipTexture('$100', '#9b59b6'), [])
   const redTexture = useMemo(() => createChipTexture('$25K', '#e74c3c'), [])
   const dealerTexture = useMemo(() => createChipTexture('DLR', '#ffffff', '#000000'), [])
@@ -249,7 +249,7 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       <group position={[4.2, -2.8, -0.5]} rotation={[0.1, -0.4, 0]}>
         {[0, 1, 2, 3, 4, 5, 6].map((i) => {
           const mat = new THREE.MeshStandardMaterial({
-            color: i % 2 === 0 ? '#cc2e63ff' : '#181920',
+            color: i % 2 === 0 ? '#cc2e63' : '#181920',
             map: i === 6 ? greenTexture : null,
             metalness: 0.1,
             roughness: 0.8,

@@ -93,7 +93,7 @@ export default function PokerScene({
 
   return (
     <Canvas
-      shadows
+      shadows="percentage"
       dpr={[1, 2]}
       camera={{ position: [0, 0, 7.8], fov: 46 }}
       gl={{ antialias: true, alpha: true }}
