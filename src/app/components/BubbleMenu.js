@@ -9,35 +9,35 @@ const DEFAULT_ITEMS = [
     href: '#',
     ariaLabel: 'Home',
     rotation: -8,
-    hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' }
+    hoverStyles: { bgColor: 'var(--ui-pink)', textColor: 'var(--true-black)' }
   },
   {
     label: 'games',
     href: '#',
     ariaLabel: 'Games',
     rotation: 8,
-    hoverStyles: { bgColor: '#c0392b', textColor: '#ffffff' }
+    hoverStyles: { bgColor: 'var(--accent-yellow)', textColor: 'var(--true-black)' }
   },
   {
     label: 'tables',
     href: '#',
     ariaLabel: 'Tables',
     rotation: -6,
-    hoverStyles: { bgColor: '#27ae60', textColor: '#ffffff' }
+    hoverStyles: { bgColor: 'var(--ui-blue)', textColor: 'var(--true-black)' }
   },
   {
     label: 'tournaments',
     href: '#',
     ariaLabel: 'Tournaments',
     rotation: 6,
-    hoverStyles: { bgColor: '#d4a017', textColor: '#14161c' }
+    hoverStyles: { bgColor: 'var(--accent-cyan)', textColor: 'var(--true-black)' }
   },
   {
     label: 'contact',
     href: '#',
     ariaLabel: 'Contact',
     rotation: -8,
-    hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' }
+    hoverStyles: { bgColor: 'var(--ui-pink)', textColor: 'var(--true-black)' }
   }
 ]
 
@@ -213,11 +213,11 @@ export default function BubbleMenu({
       <nav className={containerClassName} style={style} aria-label="Main navigation">
         {/* Logo bubble */}
         <div
-          className="bubble logo-bubble inline-flex items-center justify-center rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] pointer-events-auto h-12 md:h-14 px-4 md:px-8 gap-2 will-change-transform"
+          className="bubble logo-bubble inline-flex items-center justify-center brutal-window pointer-events-auto h-12 md:h-14 px-4 md:px-8 gap-2 will-change-transform bg-white"
           aria-label="Logo"
-          style={{ background: menuBg, minHeight: '48px', borderRadius: '9999px' }}
+          style={{ minHeight: '48px' }}
         >
-          <span className="logo-content inline-flex items-center justify-center">
+          <span className="logo-content inline-flex items-center justify-center font-display font-black text-true-black">
             {typeof logo === 'string' ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo} alt="Logo" className="max-h-[60%] max-w-full object-contain block" />
@@ -231,37 +231,34 @@ export default function BubbleMenu({
         <button
           type="button"
           className={[
-            'bubble toggle-bubble menu-btn',
+            'bubble toggle-bubble menu-btn brutal-btn',
             'inline-flex flex-col items-center justify-center',
-            'rounded-full',
-            'shadow-[0_4px_16px_rgba(0,0,0,0.12)]',
-            'pointer-events-auto',
+            'pointer-events-auto bg-ui-pink',
             'w-12 h-12 md:w-14 md:h-14',
-            'border-0 cursor-pointer p-0',
+            'border-[4px] border-true-black cursor-pointer p-0',
             'will-change-transform'
           ].join(' ')}
           onClick={handleToggle}
           aria-label={menuAriaLabel}
           aria-pressed={isMenuOpen}
-          style={{ background: menuBg }}
         >
           <span
-            className="menu-line block mx-auto rounded-[2px]"
+            className="menu-line block mx-auto rounded-none"
             style={{
               width: 26,
-              height: 2,
-              background: menuContentColor,
-              transform: isMenuOpen ? 'translateY(4px) rotate(45deg)' : 'none'
+              height: 4,
+              background: 'var(--true-black)',
+              transform: isMenuOpen ? 'translateY(5px) rotate(45deg)' : 'none'
             }}
           />
           <span
-            className="menu-line short block mx-auto rounded-[2px]"
+            className="menu-line short block mx-auto rounded-none"
             style={{
               marginTop: '6px',
               width: 26,
-              height: 2,
-              background: menuContentColor,
-              transform: isMenuOpen ? 'translateY(-4px) rotate(-45deg)' : 'none'
+              height: 4,
+              background: 'var(--true-black)',
+              transform: isMenuOpen ? 'translateY(-5px) rotate(-45deg)' : 'none'
             }}
           />
         </button>
@@ -302,19 +299,19 @@ export default function BubbleMenu({
                     }
                   }}
                   aria-label={item.ariaLabel || item.label}
-                  className="pill-link w-full rounded-[999px] no-underline bg-white text-inherit shadow-[0_4px_14px_rgba(0,0,0,0.10)] flex items-center justify-center relative transition-[background,color] duration-300 ease-in-out box-border whitespace-nowrap overflow-hidden"
+                  className="pill-link brutal-btn w-full no-underline bg-white text-inherit flex items-center justify-center relative box-border whitespace-nowrap overflow-hidden font-display uppercase tracking-tighter"
                   style={{
                     '--item-rot': `${item.rotation ?? 0}deg`,
-                    '--pill-bg': menuBg,
-                    '--pill-color': menuContentColor,
-                    '--hover-bg': item.hoverStyles?.bgColor || '#f3f4f6',
-                    '--hover-color': item.hoverStyles?.textColor || menuContentColor,
+                    '--pill-bg': '#ffffff',
+                    '--pill-color': 'var(--true-black)',
+                    '--hover-bg': item.hoverStyles?.bgColor || 'var(--accent-yellow)',
+                    '--hover-color': item.hoverStyles?.textColor || 'var(--true-black)',
                     background: 'var(--pill-bg)',
                     color: 'var(--pill-color)',
                     minHeight: 'var(--pill-min-h, 160px)',
                     padding: 'clamp(1.5rem, 3vw, 8rem) 0',
                     fontSize: 'clamp(1.5rem, 4vw, 4rem)',
-                    fontWeight: 400,
+                    fontWeight: 900,
                     lineHeight: 0,
                     willChange: 'transform',
                     height: 10

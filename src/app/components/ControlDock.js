@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { SoundEngine } from './SoundEngine'
 
 export default function ControlDock({
@@ -18,6 +18,8 @@ export default function ControlDock({
   onOpenDuel,
   onOpenRankings
 }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
   const suits = [
     { key: 'hearts', symbol: '♥', color: '#e74c3c' },
     { key: 'spades', symbol: '♠', color: '#ffffff' },
@@ -31,6 +33,11 @@ export default function ControlDock({
     { key: 'cyber', label: 'Cyberpunk' },
     { key: 'emerald', label: 'Emerald' }
   ]
+
+  const toggleExpand = () => {
+    SoundEngine.playClick()
+    setIsExpanded(prev => !prev)
+  }
 
   const handleFlip = () => {
     SoundEngine.playCardFlip()
@@ -61,103 +68,130 @@ export default function ControlDock({
 
   return (
     <aside aria-label="Poker Controls" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[900] pointer-events-auto max-w-[95vw]">
-      <div className="flex items-center gap-1.5 md:gap-3 px-3 md:px-5 py-2.5 rounded-full bg-[#12141c]/80 backdrop-blur-2xl border border-[#d4af37]/30 shadow-[0_12px_40px_rgba(0,0,0,0.6)]">
-        
-        {/* Fan-Out Royal Flush Button */}
-        <button
-          onClick={handleFanToggle}
-          className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 cursor-pointer ${
-            isFanMode
-              ? 'bg-gradient-to-r from-[#d4af37] to-[#f39c12] text-black shadow-[0_0_15px_rgba(212,175,55,0.6)] scale-105'
-              : 'bg-white/5 hover:bg-white/15 text-gray-200'
+      <div className="brutal-window flex flex-col w-max transition-all duration-200">
+        {/* Title Bar / Expand-Collapse Tab */}
+        <div
+          onClick={toggleExpand}
+          className={`bg-ui-blue px-3 py-1.5 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-[#8ec7ff] transition-colors ${
+            isExpanded ? 'border-b-[4px] border-true-black' : ''
           }`}
-          title="Toggle 5-Card Royal Flush Fan"
+          title={isExpanded ? "Collapse Controls (Click)" : "Expand Controls (Click)"}
         >
-          <span className="text-base">🎴</span>
-          <span className="hidden sm:inline">{isFanMode ? '1-Card View' : 'Fan Out Deck'}</span>
-        </button>
-
-        {/* Flip Card Button */}
-        <button
-          onClick={handleFlip}
-          className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 cursor-pointer ${
-            isFlipped
-              ? 'bg-[#c0392b] text-white shadow-[0_0_15px_rgba(192,57,43,0.5)]'
-              : 'bg-white/5 hover:bg-white/15 text-gray-200'
-          }`}
-          title="Flip Card (Spacebar)"
-        >
-          <span className="text-base">🔄</span>
-          <span className="hidden sm:inline">Flip</span>
-        </button>
-
-        {/* Toss 3D Chip Button */}
-        <button
-          onClick={onTossChip}
-          className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-white/5 hover:bg-amber-500/20 hover:border-amber-400 text-amber-300 border border-amber-500/20 transition-all duration-300 active:scale-95 cursor-pointer shadow-sm"
-          title="Toss 3D Casino Chip (C)"
-        >
-          <span className="text-base">🪙</span>
-          <span className="hidden sm:inline">Toss Chip</span>
-        </button>
-
-        {/* Holographic Shimmer Toggle */}
-        <button
-          onClick={handleHoloToggle}
-          className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 cursor-pointer ${
-            isHolo
-              ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-400/50 text-cyan-200 shadow-[0_0_12px_rgba(0,240,255,0.4)]'
-              : 'bg-white/5 hover:bg-white/15 text-gray-400'
-          }`}
-          title="Toggle Holographic Foil (H)"
-        >
-          <span className="text-base">✨</span>
-          <span className="hidden sm:inline">Holo Foil</span>
-        </button>
-
-        {/* Deck Skin Switcher */}
-        <button
-          onClick={handleSkinChange}
-          className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-bold bg-white/5 hover:bg-white/15 text-gray-200 transition-all duration-300 cursor-pointer"
-          title="Cycle Deck Skin"
-        >
-          <span className="text-base">🎨</span>
-          <span className="capitalize hidden sm:inline">{deckSkin}</span>
-        </button>
-
-        {/* Suit Selector Mini-Pills */}
-        <div className="hidden lg:flex items-center gap-1 bg-black/40 p-1 rounded-full border border-white/10">
-          {suits.map(s => (
-            <button
-              key={s.key}
-              onClick={() => handleSuitChange(s.key)}
-              className={`w-7 h-7 rounded-full text-xs flex items-center justify-center font-bold transition-all cursor-pointer ${
-                activeSuit === s.key ? 'bg-white/20 scale-110 ring-1 ring-[#d4af37]' : 'opacity-60 hover:opacity-100'
-              }`}
-              style={{ color: s.color }}
-              title={s.key}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-true-black animate-pulse" />
+            <span className="font-pixel text-true-black font-bold text-[10px] uppercase tracking-wider">
+              Controls.exe
+            </span>
+            <span className="font-pixel text-[8px] bg-white border-[2px] border-true-black px-1 py-0.2 font-bold text-true-black">
+              {isExpanded ? 'OPEN' : 'MIN'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div
+              className="w-4 h-4 border-[2px] border-true-black bg-white flex items-center justify-center font-pixel text-[8px] font-bold shadow-[1px_1px_0px_#050505]"
+              aria-label={isExpanded ? "Collapse" : "Expand"}
             >
-              {s.symbol}
-            </button>
-          ))}
+              {isExpanded ? '▼' : '▲'}
+            </div>
+          </div>
         </div>
 
-        <div className="h-5 w-[1px] bg-white/15 mx-1 hidden sm:block" />
+        {/* Content */}
+        {isExpanded && (
+          <div className="flex flex-wrap items-center gap-1.5 md:gap-3 px-3 md:px-5 py-2.5 bg-primary-base animate-fadeIn">
+            
+            {/* Fan-Out Button */}
+            <button
+              onClick={handleFanToggle}
+              className={`brutal-btn flex items-center gap-1.5 px-3 md:px-4 py-2 font-display text-xs md:text-sm uppercase font-bold cursor-pointer ${
+                isFanMode ? 'bg-accent-yellow text-true-black active-press' : 'bg-white text-true-black'
+              }`}
+              title="Toggle 5-Card Royal Flush Fan"
+            >
+              <span className="text-base">🎴</span>
+              <span className="hidden sm:inline">{isFanMode ? '1-Card' : 'Fan Out'}</span>
+            </button>
 
-        {/* Texas Hold'em 3D Duel Modal Button */}
-        <button
-          onClick={() => {
-            SoundEngine.playCardSwoosh()
-            onOpenDuel()
-          }}
-          className="flex items-center gap-2 px-3.5 md:px-5 py-2 rounded-full text-xs md:text-sm font-black bg-gradient-to-r from-[#e74c3c] to-[#c0392b] hover:from-[#ff5252] hover:to-[#d63031] text-white shadow-[0_0_20px_rgba(231,76,60,0.5)] transform hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
-          title="Play 3D Poker Duel"
-        >
-          <span className="text-base">⚔️</span>
-          <span>POKER DUEL</span>
-        </button>
+            {/* Flip Card Button */}
+            <button
+              onClick={handleFlip}
+              className={`brutal-btn flex items-center gap-1.5 px-3 md:px-4 py-2 font-display text-xs md:text-sm uppercase font-bold cursor-pointer ${
+                isFlipped ? 'bg-ui-pink text-true-black active-press' : 'bg-white text-true-black'
+              }`}
+              title="Flip Card (Spacebar)"
+            >
+              <span className="text-base">🔄</span>
+              <span className="hidden sm:inline">Flip</span>
+            </button>
 
+            {/* Toss 3D Chip Button */}
+            <button
+              onClick={onTossChip}
+              className="brutal-btn flex items-center gap-1.5 px-3 md:px-4 py-2 bg-accent-yellow text-true-black font-display text-xs md:text-sm uppercase font-bold cursor-pointer"
+              title="Toss 3D Casino Chip (C)"
+            >
+              <span className="text-base">🪙</span>
+              <span className="hidden sm:inline">Toss</span>
+            </button>
+
+            {/* Holographic Shimmer Toggle */}
+            <button
+              onClick={handleHoloToggle}
+              className={`brutal-btn flex items-center gap-1.5 px-3 md:px-4 py-2 font-display text-xs md:text-sm uppercase font-bold cursor-pointer ${
+                isHolo ? 'bg-accent-cyan text-true-black active-press' : 'bg-white text-true-black'
+              }`}
+              title="Toggle Holographic Foil (H)"
+            >
+              <span className="text-base">✨</span>
+              <span className="hidden sm:inline">Holo</span>
+            </button>
+
+            {/* Deck Skin Switcher */}
+            <button
+              onClick={handleSkinChange}
+              className="brutal-btn flex items-center gap-1.5 px-3 md:px-4 py-2 bg-white text-true-black font-display text-xs md:text-sm uppercase font-bold cursor-pointer"
+              title="Cycle Deck Skin"
+            >
+              <span className="text-base">🎨</span>
+              <span className="hidden sm:inline">{deckSkin}</span>
+            </button>
+
+            {/* Suit Selector Mini-Pills */}
+            <div className="hidden lg:flex items-center gap-1 bg-white border-[4px] border-true-black p-1 brutal-shadow-sm">
+              {suits.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => handleSuitChange(s.key)}
+                  className={`w-7 h-7 text-xs flex items-center justify-center font-bold border-[2px] border-true-black cursor-pointer ${
+                    activeSuit === s.key ? 'bg-accent-yellow' : 'bg-white'
+                  }`}
+                  style={{ color: activeSuit === s.key ? 'var(--true-black)' : s.color }}
+                  title={s.key}
+                >
+                  {s.symbol}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-6 w-[4px] bg-true-black mx-1 hidden sm:block" />
+
+            {/* Texas Hold'em 3D Duel Modal Button */}
+            <button
+              onClick={() => {
+                SoundEngine.playCardSwoosh()
+                onOpenDuel()
+              }}
+              className="brutal-btn flex items-center gap-2 px-3.5 md:px-5 py-2 bg-ui-pink text-true-black font-display text-xs md:text-sm uppercase font-black cursor-pointer"
+              title="Play 3D Poker Duel"
+            >
+              <span className="text-base">⚔️</span>
+              <span>DUEL</span>
+            </button>
+
+          </div>
+        )}
       </div>
     </aside>
   )
 }
+

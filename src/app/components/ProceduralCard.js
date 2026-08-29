@@ -4,173 +4,138 @@ import React, { useRef, useMemo, useState, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-// Suit symbols & colors
-const SUIT_DATA = {
-  hearts: { symbol: '♥', color: '#d91b2b', name: 'Hearts' },
-  diamonds: { symbol: '♦', color: '#c0392b', name: 'Diamonds' },
-  spades: { symbol: '♠', color: '#1a1c23', name: 'Spades' },
-  clubs: { symbol: '♣', color: '#1a1c23', name: 'Clubs' }
+const PIXEL_SUITS = {
+  hearts: [
+    [0,1,1,0,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0]
+  ],
+  spades: [
+    [0,0,0,1,0,0,0],
+    [0,0,1,1,1,0,0],
+    [0,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,0,0,1,0,0,0],
+    [0,0,1,1,1,0,0]
+  ],
+  diamonds: [
+    [0,0,1,0,0],
+    [0,1,1,1,0],
+    [1,1,1,1,1],
+    [0,1,1,1,0],
+    [0,0,1,0,0]
+  ],
+  clubs: [
+    [0,0,1,1,1,0,0],
+    [0,0,1,1,1,0,0],
+    [0,0,0,1,0,0,0],
+    [1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1],
+    [0,1,1,0,1,1,0],
+    [0,0,0,1,0,0,0],
+    [0,0,1,1,1,0,0]
+  ]
+}
+
+const PIXEL_LETTERS = {
+  A: [
+    [0,1,1,0],
+    [1,0,0,1],
+    [1,1,1,1],
+    [1,0,0,1],
+    [1,0,0,1]
+  ],
+  K: [
+    [1,0,0,1],
+    [1,0,1,0],
+    [1,1,0,0],
+    [1,0,1,0],
+    [1,0,0,1]
+  ],
+  Q: [
+    [0,1,1,0],
+    [1,0,0,1],
+    [1,0,0,1],
+    [1,0,1,0],
+    [0,1,1,1]
+  ],
+  J: [
+    [0,0,0,1],
+    [0,0,0,1],
+    [0,0,0,1],
+    [1,0,0,1],
+    [0,1,1,0]
+  ],
+  10: [
+    [1,0,1,1,1],
+    [1,0,1,0,1],
+    [1,0,1,0,1],
+    [1,0,1,0,1],
+    [1,0,1,1,1]
+  ]
+}
+
+function drawPixelMatrix(ctx, x, y, size, matrix, color) {
+  ctx.fillStyle = color
+  for (let r = 0; r < matrix.length; r++) {
+    for (let c = 0; c < matrix[r].length; c++) {
+      if (matrix[r][c] === 1) {
+        ctx.fillRect(x + c * size, y + r * size, size, size)
+      }
+    }
+  }
 }
 
 // Generate luxury high-res front texture
 function createCardFrontTexture(rank = 'A', suit = 'hearts', skin = 'classic') {
   if (typeof document === 'undefined') return null
   const canvas = document.createElement('canvas')
-  canvas.width = 1024
-  canvas.height = 1440
+  // We'll use 64 x 96 base resolution for true chunky pixels
+  canvas.width = 64
+  canvas.height = 96
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
+  ctx.imageSmoothingEnabled = false
 
-  const suitInfo = SUIT_DATA[suit] || SUIT_DATA.hearts
   const isRed = suit === 'hearts' || suit === 'diamonds'
+  const color = isRed ? '#ef4444' : '#333333' // flat colors for true pixel art
 
-  // Card background based on skin
-  if (skin === 'obsidian') {
-    const bgGrad = ctx.createLinearGradient(0, 0, 1024, 1440)
-    bgGrad.addColorStop(0, '#15161a')
-    bgGrad.addColorStop(0.5, '#1e2029')
-    bgGrad.addColorStop(1, '#0e0f12')
-    ctx.fillStyle = bgGrad
-    ctx.fillRect(0, 0, 1024, 1440)
+  // Background
+  ctx.fillStyle = '#f8f8f8'
+  ctx.fillRect(0, 0, 64, 96)
 
-    // Gold foil border
-    ctx.strokeStyle = '#d4af37'
-    ctx.lineWidth = 16
-    ctx.strokeRect(36, 36, 1024 - 72, 1440 - 72)
+  // 1px Border
+  ctx.strokeStyle = '#555555'
+  ctx.lineWidth = 2 // 2px drawn on the edge means 1px inside
+  ctx.strokeRect(1, 1, 62, 94)
 
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.4)'
-    ctx.lineWidth = 4
-    ctx.strokeRect(56, 56, 1024 - 112, 1440 - 112)
-  } else if (skin === 'cyber') {
-    const bgGrad = ctx.createLinearGradient(0, 0, 1024, 1440)
-    bgGrad.addColorStop(0, '#090a10')
-    bgGrad.addColorStop(1, '#131524')
-    ctx.fillStyle = bgGrad
-    ctx.fillRect(0, 0, 1024, 1440)
+  const suitMatrix = PIXEL_SUITS[suit] || PIXEL_SUITS.hearts
+  const rankMatrix = PIXEL_LETTERS[rank] || PIXEL_LETTERS['A']
 
-    ctx.strokeStyle = isRed ? '#ff007f' : '#00f0ff'
-    ctx.lineWidth = 14
-    ctx.strokeRect(36, 36, 1024 - 72, 1440 - 72)
+  // Draw Top Left (rank + suit)
+  drawPixelMatrix(ctx, 4, 4, 1, rankMatrix, color)
+  drawPixelMatrix(ctx, 3, 11, 1, suitMatrix, color)
 
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.3)'
-    ctx.lineWidth = 2
-    ctx.strokeRect(54, 54, 1024 - 108, 1440 - 108)
-  } else if (skin === 'emerald') {
-    const bgGrad = ctx.createLinearGradient(0, 0, 1024, 1440)
-    bgGrad.addColorStop(0, '#f9f6ed')
-    bgGrad.addColorStop(1, '#ebe4d3')
-    ctx.fillStyle = bgGrad
-    ctx.fillRect(0, 0, 1024, 1440)
-
-    ctx.strokeStyle = '#1b4d3e'
-    ctx.lineWidth = 18
-    ctx.strokeRect(36, 36, 1024 - 72, 1440 - 72)
-
-    ctx.strokeStyle = '#d4af37'
-    ctx.lineWidth = 6
-    ctx.strokeRect(58, 58, 1024 - 116, 1440 - 116)
-  } else {
-    // Classic Luxury Cream Ivory
-    const bgGrad = ctx.createLinearGradient(0, 0, 1024, 1440)
-    bgGrad.addColorStop(0, '#fffef8')
-    bgGrad.addColorStop(0.5, '#fcf7ec')
-    bgGrad.addColorStop(1, '#f5ecd6')
-    ctx.fillStyle = bgGrad
-    ctx.fillRect(0, 0, 1024, 1440)
-
-    // Subtle luxury linen pattern
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)'
-    ctx.lineWidth = 1
-    for (let x = 0; x < 1024; x += 14) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, 1440)
-      ctx.stroke()
-    }
-
-    // Gold foil border
-    ctx.strokeStyle = '#c5a059'
-    ctx.lineWidth = 16
-    ctx.strokeRect(36, 36, 1024 - 72, 1440 - 72)
-
-    ctx.strokeStyle = '#e6c875'
-    ctx.lineWidth = 4
-    ctx.strokeRect(56, 56, 1024 - 112, 1440 - 112)
-  }
-
-  // Corner indices
-  const drawCorner = (x, y, isFlipped = false) => {
-    ctx.save()
-    ctx.translate(x, y)
-    if (isFlipped) {
-      ctx.rotate(Math.PI)
-    }
-
-    let textColor = suitInfo.color
-    if (skin === 'obsidian') {
-      textColor = isRed ? '#ff4d6d' : '#d4af37'
-    } else if (skin === 'cyber') {
-      textColor = isRed ? '#ff007f' : '#00f0ff'
-    }
-
-    ctx.fillStyle = textColor
-    ctx.font = 'bold 110px "Geist", "Segoe UI", Arial, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(rank, 0, 0)
-
-    ctx.font = '90px "Segoe UI Symbol", Arial'
-    ctx.fillText(suitInfo.symbol, 0, 100)
-    ctx.restore()
-  }
-
-  drawCorner(130, 140, false)
-  drawCorner(1024 - 130, 1440 - 140, true)
-
-  // Center Art
+  // Draw Bottom Right (inverted)
   ctx.save()
-  ctx.translate(512, 720)
-
-  let mainColor = suitInfo.color
-  if (skin === 'obsidian') {
-    mainColor = isRed ? '#ff3366' : '#e6c875'
-  } else if (skin === 'cyber') {
-    mainColor = isRed ? '#ff007f' : '#00f0ff'
-  }
-
-  if (rank === 'A') {
-    const aura = ctx.createRadialGradient(0, 0, 50, 0, 0, 360)
-    aura.addColorStop(0, skin === 'obsidian' ? 'rgba(212, 175, 55, 0.25)' : 'rgba(217, 27, 43, 0.15)')
-    aura.addColorStop(1, 'rgba(0, 0, 0, 0)')
-    ctx.fillStyle = aura
-    ctx.beginPath()
-    ctx.arc(0, 0, 360, 0, Math.PI * 2)
-    ctx.fill()
-
-    ctx.fillStyle = mainColor
-    ctx.font = '480px "Segoe UI Symbol", Arial, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(suitInfo.symbol, 0, 15)
-
-    ctx.font = 'bold 36px "Geist", sans-serif'
-    ctx.fillStyle = skin === 'obsidian' ? '#ffffff' : '#14161c'
-    ctx.fillText('POKEHUB ROYALTY', 0, 320)
-  } else {
-    ctx.fillStyle = mainColor
-    ctx.font = '320px "Segoe UI Symbol", Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(suitInfo.symbol, 0, -30)
-
-    ctx.font = 'bold 160px "Geist", sans-serif'
-    ctx.fillText(rank, 0, 240)
-  }
-
+  ctx.translate(64, 96)
+  ctx.rotate(Math.PI)
+  drawPixelMatrix(ctx, 4, 4, 1, rankMatrix, color)
+  drawPixelMatrix(ctx, 3, 11, 1, suitMatrix, color)
   ctx.restore()
 
+  // Draw Big Center Suit
+  drawPixelMatrix(ctx, 32 - (suitMatrix[0].length * 4) / 2, 48 - (suitMatrix.length * 4) / 2, 4, suitMatrix, color)
+
   const texture = new THREE.CanvasTexture(canvas)
-  texture.anisotropy = 8
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  texture.anisotropy = 1
   texture.needsUpdate = true
   return texture
 }
@@ -179,76 +144,62 @@ function createCardFrontTexture(rank = 'A', suit = 'hearts', skin = 'classic') {
 function createCardBackTexture(skin = 'classic') {
   if (typeof document === 'undefined') return null
   const canvas = document.createElement('canvas')
-  canvas.width = 1024
-  canvas.height = 1440
+  canvas.width = 64
+  canvas.height = 96
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
+  ctx.imageSmoothingEnabled = false
 
-  let primary = '#a61c24'
-  let secondary = '#730d14'
-  let gold = '#d4af37'
-
-  if (skin === 'obsidian') {
-    primary = '#121318'
-    secondary = '#08080a'
-    gold = '#c5a059'
-  } else if (skin === 'cyber') {
-    primary = '#0a0d1a'
-    secondary = '#04050a'
-    gold = '#00f0ff'
-  } else if (skin === 'emerald') {
-    primary = '#0f382c'
-    secondary = '#071f18'
-    gold = '#e6c875'
-  }
-
-  const bgGrad = ctx.createRadialGradient(512, 720, 100, 512, 720, 800)
-  bgGrad.addColorStop(0, primary)
-  bgGrad.addColorStop(1, secondary)
-  ctx.fillStyle = bgGrad
-  ctx.fillRect(0, 0, 1024, 1440)
-
-  ctx.strokeStyle = gold
-  ctx.lineWidth = 20
-  ctx.strokeRect(40, 40, 1024 - 80, 1440 - 80)
-
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
-  ctx.lineWidth = 4
-  ctx.strokeRect(65, 65, 1024 - 130, 1440 - 130)
-
-  ctx.save()
-  ctx.translate(512, 720)
-  ctx.strokeStyle = 'rgba(212, 175, 55, 0.3)'
+  // Background
+  ctx.fillStyle = '#f8f8f8'
+  ctx.fillRect(0, 0, 64, 96)
+  
+  ctx.strokeStyle = '#555555'
   ctx.lineWidth = 2
+  ctx.strokeRect(1, 1, 62, 94)
 
-  for (let i = 0; i < 36; i++) {
-    ctx.rotate((Math.PI * 2) / 36)
-    ctx.beginPath()
-    ctx.ellipse(0, 0, 180, 420, Math.PI / 4, 0, Math.PI * 2)
-    ctx.stroke()
+  // Inner border
+  ctx.strokeStyle = '#ef4444' // Red pixel back
+  ctx.strokeRect(4, 4, 56, 88)
+
+  // Checkerboard pixel pattern
+  ctx.fillStyle = '#ef4444'
+  for (let y = 6; y < 90; y += 4) {
+    for (let x = 6; x < 58; x += 4) {
+      if ((x / 4 + y / 4) % 2 === 0) {
+        ctx.fillRect(x, y, 4, 4)
+      }
+    }
   }
 
-  ctx.fillStyle = secondary
-  ctx.beginPath()
-  ctx.arc(0, 0, 170, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.strokeStyle = gold
-  ctx.lineWidth = 10
-  ctx.stroke()
+  // White box in middle
+  ctx.fillStyle = '#f8f8f8'
+  ctx.fillRect(16, 36, 32, 24)
+  ctx.strokeStyle = '#555555'
+  ctx.strokeRect(16, 36, 32, 24)
 
-  ctx.fillStyle = gold
-  ctx.font = 'bold 90px "Geist", sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('PH', 0, -10)
+  // Letter P
+  drawPixelMatrix(ctx, 22, 42, 2, [
+    [1,1,1],
+    [1,0,1],
+    [1,1,1],
+    [1,0,0],
+    [1,0,0]
+  ], '#333333')
 
-  ctx.font = 'bold 22px "Geist", sans-serif'
-  ctx.fillText('EST. 2026', 0, 60)
-
-  ctx.restore()
+  // Letter H
+  drawPixelMatrix(ctx, 32, 42, 2, [
+    [1,0,1],
+    [1,0,1],
+    [1,1,1],
+    [1,0,1],
+    [1,0,1]
+  ], '#333333')
 
   const texture = new THREE.CanvasTexture(canvas)
-  texture.anisotropy = 8
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  texture.anisotropy = 1
   texture.needsUpdate = true
   return texture
 }

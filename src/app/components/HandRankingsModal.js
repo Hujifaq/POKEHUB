@@ -99,84 +99,89 @@ export default function HandRankingsModal({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-2xl animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[85vh] bg-gradient-to-b from-[#181a24] via-[#10121a] to-[#0a0b10] border border-[#d4af37]/40 rounded-3xl shadow-[0_0_60px_rgba(212,175,55,0.25)] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-true-black/60">
+      <div className="relative w-full max-w-4xl max-h-[85vh] brutal-window flex flex-col overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#d4af37]/20 bg-black/40">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📖</span>
-            <div>
-              <h2 className="text-xl md:text-2xl font-black text-white tracking-wide flex items-center gap-2">
-                OFFICIAL POKER HAND RANKINGS
-              </h2>
-              <p className="text-xs text-[#d4af37]">Hierarchy, Probabilities & High Roller Payouts</p>
-            </div>
+        {/* Title Bar */}
+        <div className="bg-ui-blue border-b-[4px] border-true-black p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-pixel text-true-black font-bold text-xs uppercase">HAND_RANKINGS.EXE</span>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer font-bold"
+            className="w-6 h-6 brutal-btn bg-ui-pink text-true-black flex items-center justify-center font-pixel text-[10px] font-bold"
           >
-            ✕
+            X
           </button>
         </div>
 
         {/* Scrollable list of hands */}
-        <div className="p-6 overflow-y-auto space-y-3 custom-scrollbar">
-          {HAND_RANKINGS.map(item => (
-            <div
-              key={item.rank}
-              className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-[#d4af37]/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
-            >
-              {/* Info */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#f1c40f] font-black text-sm flex items-center justify-center shrink-0">
-                  {item.rank}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-white">{item.name}</h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#d4af37]/15 text-[#f1c40f] border border-[#d4af37]/30">
-                      {item.badge}
-                    </span>
+        <div className="p-4 overflow-y-auto space-y-4 bg-primary-base custom-scrollbar">
+          <div className="bg-white border-[4px] border-true-black p-4 brutal-shadow-sm mb-4">
+            <h2 className="font-display text-xl uppercase text-true-black mb-1">Official Poker Hand Rankings</h2>
+            <p className="font-pixel text-[10px] text-gray-600 uppercase">Hierarchy, Probabilities & High Roller Payouts</p>
+          </div>
+
+          {HAND_RANKINGS.map((item, index) => {
+            // Alternate colors for a sticker-book feel
+            const bgColors = ['bg-ui-pink', 'bg-accent-yellow', 'bg-ui-blue', 'bg-accent-cyan', 'bg-white'];
+            const cardBg = bgColors[index % bgColors.length];
+
+            return (
+              <div
+                key={item.rank}
+                className={`p-4 border-[4px] border-true-black brutal-shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-transform hover:-translate-y-1 ${cardBg}`}
+              >
+                {/* Info */}
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 border-[4px] border-true-black bg-white text-true-black font-display text-lg flex items-center justify-center shrink-0 brutal-shadow-sm">
+                    {item.rank}
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{item.subtitle}</p>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-display uppercase text-true-black">{item.name}</h3>
+                      <span className="text-[8px] font-pixel px-2 py-1 bg-true-black text-white uppercase border-[2px] border-white">
+                        {item.badge}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-pixel text-true-black uppercase">{item.subtitle}</p>
+                  </div>
+                </div>
+
+                {/* Sample Cards */}
+                <div className="flex items-center gap-2 self-center md:self-auto">
+                  {item.cards.map((c, i) => {
+                    const isRed = c.includes('♥') || c.includes('♦')
+                    return (
+                      <div
+                        key={i}
+                        className="w-10 h-14 bg-white border-[4px] border-true-black flex items-center justify-center font-display text-sm brutal-shadow-sm"
+                        style={{ color: isRed ? '#ff0000' : 'var(--true-black)' }}
+                      >
+                        {c}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Odds & Payout */}
+                <div className="text-right shrink-0 bg-white border-[4px] border-true-black p-2 brutal-shadow-sm">
+                  <div className="text-[10px] font-pixel font-bold text-true-black uppercase">Payout {item.payout}</div>
+                  <div className="text-[8px] text-gray-700 mt-1 font-pixel uppercase">{item.odds}</div>
                 </div>
               </div>
-
-              {/* Sample Cards */}
-              <div className="flex items-center gap-1.5 self-center md:self-auto">
-                {item.cards.map((c, i) => {
-                  const isRed = c.includes('♥') || c.includes('♦')
-                  return (
-                    <div
-                      key={i}
-                      className="w-9 h-12 rounded-md bg-white border border-gray-300 shadow-sm flex items-center justify-center font-bold text-xs"
-                      style={{ color: isRed ? '#e74c3c' : '#14161c' }}
-                    >
-                      {c}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Odds & Payout */}
-              <div className="text-right shrink-0">
-                <div className="text-xs font-mono font-bold text-emerald-400">Payout {item.payout}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5 font-mono">{item.odds}</div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/10 bg-black/40 flex justify-between items-center text-xs text-gray-400">
-          <span>Texas Hold'em Standard 52-Card Rules</span>
+        <div className="px-6 py-4 border-t-[4px] border-true-black bg-white flex justify-between items-center">
+          <span className="font-pixel text-[10px] text-true-black uppercase">Texas Hold'em Standard 52-Card Rules</span>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-[#d4af37] text-black font-black hover:bg-[#f1c40f] transition-all cursor-pointer"
+            className="brutal-btn px-6 py-2 bg-accent-yellow text-true-black font-pixel text-[10px] uppercase font-bold"
           >
-            Close Guide
+            Close
           </button>
         </div>
 

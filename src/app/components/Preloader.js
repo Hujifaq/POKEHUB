@@ -1,200 +1,190 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import gsap from 'gsap'
+import { SoundEngine } from './SoundEngine'
 
-const CARD_IMAGES = [
-  'https://images.unsplash.com/photo-1541278107931-e006523892df?w=400&q=80',
-  'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?w=400&q=80',
-  'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&q=80',
-  'https://images.unsplash.com/photo-1522054963843-05a7af7e8c53?w=400&q=80',
-  'https://images.unsplash.com/photo-1511193311914-0346f16efe90?w=400&q=80',
-  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&q=80',
-]
+const anim = {
+  initial: {
+    opacity: 1
+  },
+  open: (i) => ({
+    opacity: 1,
+    transition: { duration: 0, delay: 0.05 * i }
+  }),
+  closed: (i) => ({
+    opacity: 0,
+    transition: { duration: 0, delay: 0.05 * i }
+  })
+}
 
-const CARD_ROTATIONS = [8, -3, -10, 10, -7, 5]
 const BRAND_LETTERS = "POKERHUB".split('')
 
 export default function Preloader({ onComplete }) {
-  const loaderRef = useRef(null)
-  const brandRef = useRef(null)
+  const [isActive, setIsActive] = useState(true)
+  const [columnsData, setColumnsData] = useState([])
+  const [mounted, setMounted] = useState(false)
+
   const counterRef = useRef(null)
-  const cardRefs = useRef([])
-  const charRefs = useRef([])
+  const containerRef = useRef(null)
+  const isFinishedRef = useRef(false)
 
+  /**
+   * Shuffles array in place (Fisher–Yates shuffle).
+   */
+  const shuffle = useCallback((a) => {
+    const arr = [...a]
+    let j, x, i
+    for (i = arr.length - 1; i > 0; i--) {
+      j = Math.floor(Math.random() * (i + 1))
+      x = arr[i]
+      arr[i] = arr[j]
+      arr[j] = x
+    }
+    return arr
+  }, [])
+
+  // Calculate blocks per column based on screen dimensions
   useEffect(() => {
+    const calculateBlocks = () => {
+      const { innerWidth, innerHeight } = window
+      const blockSize = innerWidth * 0.05
+      const nbOfBlocks = Math.ceil(innerHeight / blockSize)
+
+      const cols = Array.from({ length: 20 }).map(() =>
+        shuffle(Array.from({ length: nbOfBlocks }).map((_, i) => i))
+      )
+
+      setColumnsData(cols)
+      setMounted(true)
+    }
+
+    calculateBlocks()
+    window.addEventListener('resize', calculateBlocks)
+    return () => window.removeEventListener('resize', calculateBlocks)
+  }, [shuffle])
+
+  // GSAP: Reveal POKERHUB letter by letter, 0-100 counting, and exit trigger
+  useEffect(() => {
+    if (!mounted || columnsData.length === 0) return
+
     const ctx = gsap.context(() => {
-      const chars = charRefs.current.filter(Boolean)
-      const counter = counterRef.current
+      const tl = gsap.timeline()
 
-      gsap.set(cardRefs.current, {
-        xPercent: -50,
-        yPercent: -50,
-        scale: 0,
-        rotate: (i) => CARD_ROTATIONS[i],
-        clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-      })
+      // 1. Letters of POKERHUB slide up letter by letter
+      tl.fromTo(
+        '.brand-letter',
+        { yPercent: 120, opacity: 0 },
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.6,
+          ease: 'power3.out',
+          stagger: 0.05
+        }
+      )
 
-      gsap.set(chars, {
-        yPercent: 100,
-        rotation: 10,
-        transformOrigin: '0% 100%',
-      })
+      // 2. 0-100 count up in pixel font
+      const progressObj = { value: 0 }
+      let lastTick = 0
 
-      gsap.set(counter, { yPercent: 100 })
-      gsap.set(brandRef.current, { visibility: 'hidden' })
-
-      const tl = gsap.timeline({ delay: 0.1, onComplete })
-
-      tl.to(cardRefs.current, {
-        scale: 1,
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
-        duration: 0.8,
-        ease: 'power3.inOut',
-        stagger: 0.12,
-      })
-
-      tl.set(brandRef.current, { visibility: 'visible' }, 0.25)
-
-      tl.to(chars, {
-        yPercent: 0,
-        rotation: 0,
-        duration: 0.8,
-        ease: 'power3.out',
-        stagger: 0.03,
-      }, 0.25)
-
-      tl.to(counter, { yPercent: 0, duration: 0.7, ease: 'power3.out' }, '<')
-
-      tl.to({ value: 0 }, {
-        value: 100,
-        duration: 1.5,
-        ease: 'power2.inOut',
-        onUpdate() {
-          if (counter) {
-            counter.textContent = String(Math.round(this.targets()[0].value)).padStart(3, '0')
+      tl.to(
+        progressObj,
+        {
+          value: 100,
+          duration: 1.8,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            const val = Math.round(progressObj.value)
+            if (counterRef.current) {
+              counterRef.current.textContent = `${val}%`
+            }
+            if (val - lastTick >= 25) {
+              lastTick = val
+              SoundEngine.playClick()
+            }
           }
         },
-      }, '<0.2')
+        '-=0.1'
+      )
 
-      tl.to(chars, {
-        yPercent: -100,
-        rotation: -10,
-        duration: 0.55,
-        ease: 'power3.in',
-        stagger: 0.02,
-      }, 2.2)
+      // 3. Slide letters and counter up and out
+      tl.to(
+        ['.brand-letter', counterRef.current],
+        {
+          yPercent: -120,
+          opacity: 0,
+          duration: 0.3,
+          ease: 'power3.in',
+          onComplete: () => {
+            if (isFinishedRef.current) return
+            isFinishedRef.current = true
 
-      tl.to(counter, { yPercent: -100, duration: 0.55, ease: 'power3.in' }, 2.2)
+            SoundEngine.playCardSwoosh()
+            setIsActive(false)
 
-      tl.to(cardRefs.current, {
-        scale: 0,
-        clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-        duration: 0.65,
-        ease: 'power3.inOut',
-        stagger: -0.05,
-      }, 2.4)
-
-      tl.to(loaderRef.current, {
-        clipPath: 'polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%)',
-        duration: 0.7,
-        ease: 'power3.inOut',
-      }, 2.9)
-    })
+            // Wait for all pixel blocks to complete their randomized transition
+            const maxBlocks = columnsData[0]?.length || 15
+            const totalDelay = maxBlocks * 0.08 + 0.3
+            setTimeout(() => {
+              if (onComplete) onComplete()
+            }, totalDelay * 1000)
+          }
+        },
+        '+=0.15'
+      )
+    }, containerRef)
 
     return () => ctx.revert()
-  }, [onComplete])
+  }, [mounted, columnsData, onComplete])
 
   return (
     <div
-      ref={loaderRef}
-      className="fixed inset-0 z-[2000] overflow-hidden select-none cursor-pointer"
-      onClick={onComplete}
-      style={{
-        background: '#14161c',
-        color: '#e8e2d6',
-        clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-      }}
+      ref={containerRef}
+      className="fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-none"
     >
-      {/* Poker card images */}
-      {CARD_IMAGES.map((src, i) => (
-        <div
-          key={i}
-          ref={el => cardRefs.current[i] = el}
-          className="absolute top-1/2 left-1/2 overflow-hidden rounded-lg shadow-2xl"
-          style={{
-            width: '220px',
-            height: '300px',
-            transform: 'translate(-50%, -50%)',
-            clipPath: 'polygon(20% 20%, 80% 20%, 80% 80%, 20% 80%)',
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt=""
-            className="w-full h-full object-cover"
-            crossOrigin="anonymous"
-          />
-        </div>
-      ))}
-
-      {/* Brand: POKERHUB + counter */}
-      <div
-        ref={brandRef}
-        className="absolute top-1/2 left-1/2"
-        style={{ transform: 'translate(-50%, -50%)', visibility: 'hidden', textAlign: 'center' }}
-      >
-        <h1
-          style={{
-            fontFamily: 'var(--font-geist-sans), sans-serif',
-            fontSize: 'clamp(3rem, 10vw, 12rem)',
-            fontWeight: 900,
-            textTransform: 'uppercase',
-            lineHeight: 0.85,
-            letterSpacing: '-0.04em',
-            color: '#e8e2d6',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            overflow: 'hidden'
-          }}
-        >
-          {BRAND_LETTERS.map((letter, i) => (
-            <span
-              key={i}
-              ref={el => charRefs.current[i] = el}
-              style={{ display: 'inline-block' }}
-            >
-              {letter}
-            </span>
+      {/* 20 Columns of Orange Pixel Blocks (Olivier Larose Architecture) */}
+      <div className="fixed inset-0 h-screen w-screen flex overflow-hidden z-10">
+        {mounted &&
+          columnsData.map((shuffledIndexes, colIndex) => (
+            <div key={colIndex} className="w-[5vw] h-full flex flex-col">
+              {shuffledIndexes.map((randomIndex, blockIndex) => (
+                <motion.div
+                  key={blockIndex}
+                  className="w-full bg-[#ff6b00]"
+                  style={{ height: '5vw' }}
+                  variants={anim}
+                  initial="initial"
+                  animate={isActive ? 'open' : 'closed'}
+                  custom={randomIndex}
+                />
+              ))}
+            </div>
           ))}
-        </h1>
-
-        <div
-          className="overflow-hidden"
-          style={{
-            position: 'absolute',
-            top: '-1.5rem',
-            left: 'calc(100% + 1rem)',
-            fontSize: 'clamp(0.9rem, 1.5vw, 1.5rem)',
-            fontWeight: 700,
-          }}
-        >
-          <p ref={counterRef} style={{ color: '#e8e2d6' }}>000</p>
-        </div>
       </div>
 
-      {/* Skip Button */}
-      <div className="absolute bottom-8 right-8 z-10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onComplete()
-          }}
-          className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-gray-300 border border-white/20 transition-all cursor-pointer"
+      {/* Minimalist Centered POKERHUB Title & 0-100 Pixel Counter */}
+      <div className="fixed inset-0 z-20 flex flex-col items-center justify-center">
+        {/* POKERHUB letter-by-letter reveal container */}
+        <div className="flex overflow-hidden">
+          {BRAND_LETTERS.map((char, index) => (
+            <span
+              key={index}
+              className="brand-letter inline-block font-pixel text-4xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight"
+            >
+              {char}
+            </span>
+          ))}
+        </div>
+
+        {/* 0-100% Download / Progress Counter */}
+        <div
+          ref={counterRef}
+          className="mt-6 font-pixel text-sm sm:text-base text-true-black font-bold tracking-widest"
         >
-          SKIP INTRO ➔
-        </button>
+          0%
+        </div>
       </div>
     </div>
   )
