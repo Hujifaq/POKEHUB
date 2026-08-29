@@ -19,6 +19,7 @@
   --font-pixel: var(--font-press-start), monospace;
   --font-archivo: var(--font-archivo-black), var(--font-bungee), sans-serif;
   --font-mono-nb: var(--font-space-mono), var(--font-press-start), monospace;
+  --font-serif: var(--font-instrument), "Instrument Serif", "Playfair Display", serif;
 }
 
 @theme inline {
@@ -28,6 +29,7 @@
   --font-pixel: var(--font-pixel);
   --font-archivo: var(--font-archivo);
   --font-mono-nb: var(--font-mono-nb);
+  --font-serif: var(--font-serif);
   --color-ui-pink: var(--ui-pink);
   --color-ui-blue: var(--ui-blue);
   --color-accent-yellow: var(--accent-yellow);

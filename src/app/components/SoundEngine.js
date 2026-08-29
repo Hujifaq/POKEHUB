@@ -1,13 +1,11 @@
 "use client"
 
-// Web Audio API Procedural Sound Synthesizer for PokerHub
+// Web Audio API Procedural Sound Synthesizer for PokerHub SFX
 class SoundEngineClass {
   constructor() {
     this.ctx = null
     this.isMuted = false
-    this.ambientGain = null
-    this.isAmbientPlaying = false
-    this.ambientOscillators = []
+    this.noiseBuffer = null
   }
 
   init() {
@@ -15,7 +13,11 @@ class SoundEngineClass {
       const AudioContext = window.AudioContext || window.webkitAudioContext
       if (AudioContext) {
         this.ctx = new AudioContext()
+        this._initNoiseBuffer()
       }
+    }
+    if (this.ctx && !this.noiseBuffer) {
+      this._initNoiseBuffer()
     }
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume()
@@ -23,10 +25,20 @@ class SoundEngineClass {
   }
 
   setMuted(muted) {
-    this.isMuted = muted
-    if (this.ambientGain && this.ctx) {
-      this.ambientGain.gain.setTargetAtTime(muted ? 0 : 0.08, this.ctx.currentTime, 0.2)
-    }
+    this.isMuted = !!muted
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted
+    return this.isMuted
+  }
+
+  setSfxMuted(muted) {
+    this.setMuted(muted)
+  }
+
+  toggleAmbient() {
+    return false
   }
 
   // Card swoosh / glide sound (filtered noise + pitch bend)
@@ -93,41 +105,232 @@ class SoundEngineClass {
     this.playCardSwoosh()
   }
 
-  // Realistic ceramic casino chip clink
-  playChipClink() {
+  _initNoiseBuffer() {
+    if (!this.ctx || this.noiseBuffer) return
+    try {
+      const length = Math.floor(this.ctx.sampleRate * 0.1) // 100ms noise buffer
+      this.noiseBuffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate)
+      const data = this.noiseBuffer.getChannelData(0)
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1
+      }
+    } catch (e) {
+      this.noiseBuffer = null
+    }
+  }
+
+  // Internal high-end ceramic casino chip sound generator
+  _synthesizeChipSound({
+    pitch = 1.0,
+    volume = 0.35,
+    decay = 0.05,
+    brightness = 1.0,
+    isFelt = false,
+    clickAmount = 1.0
+  } = {}) {
     if (this.isMuted) return
     this.init()
     if (!this.ctx) return
 
     const now = this.ctx.currentTime
-    const frequencies = [2200 + Math.random() * 400, 3400 + Math.random() * 300, 4800 + Math.random() * 500]
 
-    frequencies.forEach((freq, i) => {
-      const osc = this.ctx.createOscillator()
-      const gain = this.ctx.createGain()
+    const masterGain = this.ctx.createGain()
+    masterGain.gain.setValueAtTime(Math.max(0.01, Math.min(1.0, volume)), now)
+    masterGain.connect(this.ctx.destination)
 
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, now)
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.08)
+    // 1. High-frequency click transient (noise burst with steep bandpass/highpass filter)
+    if (this.noiseBuffer && clickAmount > 0.1) {
+      try {
+        const noiseSource = this.ctx.createBufferSource()
+        noiseSource.buffer = this.noiseBuffer
 
-      const initialGain = 0.15 / (i + 1)
-      gain.gain.setValueAtTime(initialGain, now)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08 + i * 0.02)
+        const noiseFilter = this.ctx.createBiquadFilter()
+        noiseFilter.type = isFelt ? 'bandpass' : 'highpass'
+        noiseFilter.frequency.setValueAtTime(Math.min(16000, (isFelt ? 2600 : 4200) * brightness), now)
+        noiseFilter.Q.setValueAtTime(isFelt ? 3.0 : 5.5, now)
 
-      osc.connect(gain)
-      gain.connect(this.ctx.destination)
+        const noiseGain = this.ctx.createGain()
+        const clickVol = 0.45 * clickAmount
+        noiseGain.gain.setValueAtTime(clickVol, now)
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.007)
 
-      osc.start(now)
-      osc.stop(now + 0.12)
+        noiseSource.connect(noiseFilter)
+        noiseFilter.connect(noiseGain)
+        noiseGain.connect(masterGain)
+
+        noiseSource.start(now)
+        noiseSource.stop(now + 0.01)
+      } catch (e) {}
+    }
+
+    // 1b. Fast pitch-drop snap chirp (Ultra-fast tactile snap 7200Hz -> 1600Hz in 4ms)
+    if (clickAmount > 0.25) {
+      try {
+        const snapOsc = this.ctx.createOscillator()
+        const snapGain = this.ctx.createGain()
+
+        snapOsc.type = 'triangle'
+        snapOsc.frequency.setValueAtTime(Math.min(18000, 7200 * pitch * brightness), now)
+        snapOsc.frequency.exponentialRampToValueAtTime(Math.max(200, 1600 * pitch), now + 0.004)
+
+        snapGain.gain.setValueAtTime(0.3 * clickAmount, now)
+        snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.005)
+
+        snapOsc.connect(snapGain)
+        snapGain.connect(masterGain)
+
+        snapOsc.start(now)
+        snapOsc.stop(now + 0.006)
+      } catch (e) {}
+    }
+
+    // 2. Inharmonic Ceramic / Clay Modal Resonators
+    // Circular ceramic plate modes: 1.0 (fundamental), ~1.73 (mode 1), ~2.58 (mode 2), ~3.82 (mode 3)
+    const baseFreq = (2200 + (Math.random() - 0.5) * 160) * pitch
+    const modes = [
+      { f: baseFreq * 1.0, gain: 0.26, d: decay * 1.0, type: 'sine' },
+      { f: baseFreq * 1.73 * (1 + (Math.random() - 0.5) * 0.03), gain: 0.20, d: decay * 0.8, type: 'triangle' },
+      { f: baseFreq * 2.58 * (1 + (Math.random() - 0.5) * 0.04), gain: 0.14, d: decay * 0.6, type: 'sine' },
+      { f: baseFreq * 3.82 * (1 + (Math.random() - 0.5) * 0.04), gain: 0.09, d: decay * 0.4, type: 'sine' }
+    ]
+
+    modes.forEach(mode => {
+      try {
+        const osc = this.ctx.createOscillator()
+        const gain = this.ctx.createGain()
+
+        osc.type = mode.type
+        const startF = Math.min(18000, mode.f * brightness)
+        osc.frequency.setValueAtTime(startF, now)
+        osc.frequency.exponentialRampToValueAtTime(Math.max(100, startF * 0.98), now + mode.d)
+
+        gain.gain.setValueAtTime(mode.gain, now)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.008, mode.d))
+
+        osc.connect(gain)
+        gain.connect(masterGain)
+
+        osc.start(now)
+        osc.stop(now + mode.d + 0.01)
+      } catch (e) {}
+    })
+
+    // 3. Low-Mid Weight Body Thud (Simulates heavy 14-gram composite clay core)
+    try {
+      const bodyOsc = this.ctx.createOscillator()
+      const bodyGain = this.ctx.createGain()
+
+      bodyOsc.type = 'sine'
+      const bodyFreq = (460 + (Math.random() - 0.5) * 40) * pitch
+      bodyOsc.frequency.setValueAtTime(bodyFreq, now)
+      bodyOsc.frequency.exponentialRampToValueAtTime(180, now + 0.016)
+
+      bodyGain.gain.setValueAtTime(isFelt ? 0.32 : 0.20, now)
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFelt ? 0.03 : 0.02))
+
+      bodyOsc.connect(bodyGain)
+      bodyGain.connect(masterGain)
+
+      bodyOsc.start(now)
+      bodyOsc.stop(now + 0.035)
+    } catch (e) {}
+  }
+
+  // Premium, ultra-clicky casino chip toss sound (fingertip snap + ceramic clash + micro rattle)
+  playChipToss() {
+    if (this.isMuted) return
+    this.init()
+    if (!this.ctx) return
+
+    const now = this.ctx.currentTime
+
+    // 1. Subtle tactile air flick / swoosh
+    if (this.noiseBuffer) {
+      try {
+        const swooshSource = this.ctx.createBufferSource()
+        swooshSource.buffer = this.noiseBuffer
+
+        const swooshFilter = this.ctx.createBiquadFilter()
+        swooshFilter.type = 'bandpass'
+        swooshFilter.frequency.setValueAtTime(2000, now)
+        swooshFilter.frequency.exponentialRampToValueAtTime(4600, now + 0.035)
+        swooshFilter.Q.setValueAtTime(2.5, now)
+
+        const swooshGain = this.ctx.createGain()
+        swooshGain.gain.setValueAtTime(0.16, now)
+        swooshGain.exponentialRampToValueAtTime(0.0001, now + 0.04)
+
+        swooshSource.connect(swooshFilter)
+        swooshFilter.connect(swooshGain)
+        swooshGain.connect(this.ctx.destination)
+
+        swooshSource.start(now)
+        swooshSource.stop(now + 0.045)
+      } catch (e) {}
+    }
+
+    // 2. Primary crisp, heavyweight clicky chip strike
+    const tossPitch = 0.96 + Math.random() * 0.08
+    this._synthesizeChipSound({
+      pitch: tossPitch,
+      volume: 0.45,
+      decay: 0.055,
+      brightness: 1.15,
+      clickAmount: 1.1
+    })
+
+    // 3. Subtle micro-clatter / secondary click (chip spinning or tapping in fingers)
+    setTimeout(() => {
+      if (this.isMuted || !this.ctx) return
+      this._synthesizeChipSound({
+        pitch: tossPitch * (1.1 + Math.random() * 0.08),
+        volume: 0.24,
+        decay: 0.035,
+        brightness: 1.25,
+        clickAmount: 0.85
+      })
+    }, 18)
+  }
+
+  // Realistic ceramic casino chip clink
+  playChipClink(intensity = 1.0) {
+    const pitch = 0.95 + Math.random() * 0.1
+    this._synthesizeChipSound({
+      pitch,
+      volume: Math.min(0.5, 0.38 * intensity),
+      decay: 0.05,
+      brightness: 1.05,
+      clickAmount: 1.0
+    })
+  }
+
+  // Felt table bounce clink
+  playChipBounce(velocity = 1.0) {
+    const normVel = Math.min(1.5, Math.max(0.2, velocity))
+    const pitch = 0.92 + Math.random() * 0.16
+    this._synthesizeChipSound({
+      pitch,
+      volume: Math.min(0.42, 0.26 * normVel),
+      decay: 0.038 * (1 + normVel * 0.15),
+      brightness: 0.95 + normVel * 0.2,
+      isFelt: true,
+      clickAmount: 0.75 * normVel
     })
   }
 
   // Multiple chips cascade sound
-  playChipsStack() {
-    for (let i = 0; i < 4; i++) {
+  playChipsStack(count = 4) {
+    for (let i = 0; i < count; i++) {
       setTimeout(() => {
-        this.playChipClink()
-      }, i * 45 + Math.random() * 20)
+        const pitch = 0.92 + (i * 0.04) + (Math.random() - 0.5) * 0.06
+        this._synthesizeChipSound({
+          pitch,
+          volume: 0.34 - i * 0.03,
+          decay: 0.045,
+          brightness: 1.1,
+          clickAmount: 0.95
+        })
+      }, i * 32 + Math.random() * 10)
     }
   }
 
@@ -181,51 +384,6 @@ class SoundEngineClass {
       osc.start(startTime)
       osc.stop(startTime + 0.65)
     })
-  }
-
-  // Subtle ambient casino lofi chords synthesizer
-  toggleAmbient(forceState) {
-    this.init()
-    if (!this.ctx) return
-
-    const target = forceState !== undefined ? forceState : !this.isAmbientPlaying
-
-    if (!target) {
-      if (this.ambientGain) {
-        this.ambientGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5)
-      }
-      this.isAmbientPlaying = false
-      return false
-    }
-
-    if (this.isAmbientPlaying) return true
-
-    const now = this.ctx.currentTime
-    this.ambientGain = this.ctx.createGain()
-    this.ambientGain.gain.setValueAtTime(this.isMuted ? 0 : 0.05, now)
-    this.ambientGain.connect(this.ctx.destination)
-
-    // Warm lush minor 9th / jazz chords frequencies
-    const chordFrequencies = [130.81, 196.00, 246.94, 293.66, 392.00] // C3, G3, B3, D4, G4
-
-    this.ambientOscillators = chordFrequencies.map((freq, i) => {
-      const osc = this.ctx.createOscillator()
-      const filter = this.ctx.createBiquadFilter()
-
-      osc.type = i % 2 === 0 ? 'sine' : 'triangle'
-      osc.frequency.setValueAtTime(freq, now)
-
-      filter.type = 'lowpass'
-      filter.frequency.setValueAtTime(450 + i * 50, now)
-
-      osc.connect(filter)
-      filter.connect(this.ambientGain)
-      osc.start(now)
-      return osc
-    })
-
-    this.isAmbientPlaying = true
-    return true
   }
 }
 
