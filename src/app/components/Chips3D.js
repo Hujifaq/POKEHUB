@@ -144,12 +144,13 @@ function FlyingChip({ id, startPos, velocity, rotationSpeed, color, value, onFin
     // Bounce on table felt floor (y = -3.2)
     if (pos.current.y < -3.1) {
       pos.current.y = -3.1
+      const bounceVelocity = Math.abs(vel.current.y)
       vel.current.y = -vel.current.y * 0.55 // Restitution bounce
       vel.current.x *= 0.7
       vel.current.z *= 0.7
 
-      if (Math.abs(vel.current.y) > 0.8) {
-        SoundEngine.playChipClink()
+      if (bounceVelocity > 0.6) {
+        SoundEngine.playChipBounce(bounceVelocity)
       }
     }
 
@@ -232,7 +233,7 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       }
 
       setFlyingChips(prev => [...prev.slice(-12), newChip]) // keep maximum 12 concurrent flying chips
-      SoundEngine.playChipClink()
+      SoundEngine.playChipToss()
     }
   }, [tossSignal, chipTypes])
 
@@ -246,7 +247,14 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
   return (
     <group position={[0, 0, 0]}>
       {/* Decorative Stack on Bottom Right */}
-      <group position={[4.2, -2.8, -0.5]} rotation={[0.1, -0.4, 0]}>
+      <group
+        position={[4.2, -2.8, -0.5]}
+        rotation={[0.1, -0.4, 0]}
+        onClick={(e) => {
+          e.stopPropagation()
+          SoundEngine.playChipsStack(5)
+        }}
+      >
         {[0, 1, 2, 3, 4, 5, 6].map((i) => {
           const mat = new THREE.MeshStandardMaterial({
             color: i % 2 === 0 ? '#cc2e63' : '#181920',
@@ -270,7 +278,14 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       </group>
 
       {/* Decorative Stack on Bottom Left */}
-      <group position={[-4.2, -2.8, -0.5]} rotation={[0.1, 0.4, 0]}>
+      <group
+        position={[-4.2, -2.8, -0.5]}
+        rotation={[0.1, 0.4, 0]}
+        onClick={(e) => {
+          e.stopPropagation()
+          SoundEngine.playChipsStack(4)
+        }}
+      >
         {[0, 1, 2, 3, 4].map((i) => {
           const mat = new THREE.MeshStandardMaterial({
             color: i % 2 === 0 ? '#9b59b6' : '#e74c3c',
@@ -294,7 +309,14 @@ export default function Chips3D({ tossSignal = 0, isReady = true }) {
       </group>
 
       {/* Dealer Button */}
-      <group position={[-3.0, -3.0, 1.2]} rotation={[0.05, 0.2, 0]}>
+      <group
+        position={[-3.0, -3.0, 1.2]}
+        rotation={[0.05, 0.2, 0]}
+        onClick={(e) => {
+          e.stopPropagation()
+          SoundEngine.playChipClink(1.2)
+        }}
+      >
         <mesh
           geometry={new THREE.CylinderGeometry(0.7, 0.7, 0.12, 32)}
           material={new THREE.MeshStandardMaterial({

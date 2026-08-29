@@ -42,7 +42,6 @@ export default function Home() {
   const gallerySectionRef = useRef(null)
   const heroTitleBottomRef = useRef(null)
   const heroTitleTopRef = useRef(null)
-  const scrollCueRef = useRef(null)
   const hudContainerRef = useRef(null)
 
   // 3D Scene states
@@ -56,7 +55,7 @@ export default function Home() {
 
   // Financial & Audio states
   const [bankroll, setBankroll] = useState(10000)
-  const [isAudioActive, setIsAudioActive] = useState(false)
+  const [isMuted, setIsMuted] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
 
   // Modal Dialogs
@@ -122,15 +121,6 @@ export default function Home() {
           }, 0)
         }
 
-        // 3. Scroll cue fades out quickly
-        if (scrollCueRef.current) {
-          heroTl.to(scrollCueRef.current, {
-            opacity: 0,
-            y: 20,
-            ease: 'power1.out'
-          }, 0)
-        }
-
         // 4. Floating HUD & ControlDock fade away cleanly
         if (hudContainerRef.current) {
           heroTl.to(hudContainerRef.current, {
@@ -164,14 +154,15 @@ export default function Home() {
     setBankroll(b => Math.max(0, b - 100))
   }, [])
 
-  // Audio Toggle handler
-  const handleToggleAudio = useCallback(() => {
-    SoundEngine.playClick()
-    const next = !isAudioActive
-    setIsAudioActive(next)
-    SoundEngine.setMuted(!next)
-    SoundEngine.toggleAmbient(next)
-  }, [isAudioActive])
+  // Sound Effects Mute / Unmute Toggle handler
+  const handleToggleMute = useCallback(() => {
+    const nextMuted = !isMuted
+    setIsMuted(nextMuted)
+    SoundEngine.setMuted(nextMuted)
+    if (!nextMuted) {
+      SoundEngine.playClick()
+    }
+  }, [isMuted])
 
   // Refill Bankroll
   const handleRefillBankroll = () => {
@@ -293,10 +284,15 @@ export default function Home() {
         {/* Bubble Navbar */}
         <BubbleMenu
           logo={
-            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setIsVIPOpen(true)}>
-              <span className="w-2.5 h-2.5 rounded-full bg-[#d4af37] animate-ping" />
-              <span style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.04em', fontFamily: 'var(--font-geist-sans)' }}>
-                PH
+            <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => setIsVIPOpen(true)}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/PKH_Logo.jpg"
+                alt="POKERHUB Logo"
+                className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
+              />
+              <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
+                POKERHUB
               </span>
             </div>
           }
@@ -317,7 +313,7 @@ export default function Home() {
           <div className="brutal-window flex items-center gap-2.5 px-4 py-2">
             <span className="text-sm">💰</span>
             <span className="text-xs font-black uppercase tracking-wider font-pixel text-true-black">BANKROLL:</span>
-            <span className="text-sm font-black text-ui-pink tracking-tight drop-shadow-[2px_2px_0px_#050505] font-display">${bankroll.toLocaleString()}</span>
+            <span className="text-sm font-black text-emerald-600 tracking-tight drop-shadow-[2px_2px_0px_#050505] font-display">${bankroll.toLocaleString()}</span>
             <button
               onClick={handleRefillBankroll}
               className="brutal-btn bg-accent-yellow text-true-black text-[10px] font-black px-2 py-0.5"
@@ -327,27 +323,18 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Audio / Ambient Music Toggle Button */}
+          {/* Sound Effects Mute / Unmute Toggle Button */}
           <button
-            onClick={handleToggleAudio}
-            className={`brutal-btn flex items-center gap-2 px-3.5 py-2 font-pixel text-[10px] uppercase font-bold ${
-              isAudioActive
+            onClick={handleToggleMute}
+            className={`brutal-btn flex items-center gap-2 px-3.5 py-2 font-pixel text-[10px] uppercase font-bold transition-all ${
+              !isMuted
                 ? 'bg-accent-cyan text-true-black'
                 : 'bg-white text-gray-500'
             }`}
-            title="Toggle Audio & Ambient Casino Lounge"
+            title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
           >
-            {isAudioActive ? (
-              <div className="flex items-end gap-0.5 h-3.5 w-4">
-                <span className="w-0.5 bg-true-black equalizer-bar" />
-                <span className="w-0.5 bg-true-black equalizer-bar" />
-                <span className="w-0.5 bg-true-black equalizer-bar" />
-                <span className="w-0.5 bg-true-black equalizer-bar" />
-              </div>
-            ) : (
-              <span>🔇</span>
-            )}
-            <span>{isAudioActive ? 'ON' : 'MUTE'}</span>
+            <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+            <span>{isMuted ? 'MUTED' : 'SFX ON'}</span>
           </button>
 
           {/* Fullscreen Button */}
@@ -360,10 +347,10 @@ export default function Home() {
           </button>
         </header>
 
-        {/* SECTION 1: MAIN 3D HERO ARENA */}
+        {/* SECTION 1: MAIN 3D HERO ARENA (Desktop / PC Only) */}
         <section
           ref={heroSectionRef}
-          className="relative w-full h-screen overflow-hidden flex items-center justify-center"
+          className="relative w-full h-screen overflow-hidden hidden md:flex items-center justify-center"
         >
           {/* Main 3D Stage & Layers Wrapper */}
           <div ref={contentRef} className="absolute inset-0" style={{ willChange: 'filter, transform' }}>
@@ -371,10 +358,10 @@ export default function Home() {
             {/* Bottom Text Layer — behind 3D cards */}
             <div
               ref={heroTitleBottomRef}
-              className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none will-change-transform"
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none select-none will-change-transform px-5 sm:px-8 md:px-0"
             >
               <h1
-                className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700"
+                className="text-[14vw] sm:text-[15vw] md:text-[16vw] mx-3 sm:mx-6 md:mx-0 font-display text-ui-pink drop-shadow-[5px_5px_0px_#050505] md:drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[1.6] md:scale-y-[2] opacity-100 transition-colors duration-700"
                 style={{ 
                   whiteSpace: 'nowrap',
                   WebkitTextStroke: '4px #050505'
@@ -382,12 +369,19 @@ export default function Home() {
               >
                 {text}
               </h1>
+
+              {/* Small paragraph underneath the POKERHUB text — Mobile Only */}
+              <div className="mt-8 sm:mt-10 max-w-xs sm:max-w-sm text-center px-2 pointer-events-auto block md:hidden">
+                <p className="font-mono-nb text-[10px] sm:text-xs font-bold text-true-black bg-white/95 border-[2px] border-true-black px-3.5 py-2.5 brutal-shadow-sm leading-relaxed uppercase tracking-wider backdrop-blur-xs">
+                  The ultimate high-roller digital poker arena. Real-time procedural 3D card physics, cryptographic fair deck RNG, and multiplayer Texas Hold'em.
+                </p>
+              </div>
             </div>
 
-            {/* 3D Scene Layer — Interactive Canvas (smoothly scales down to 0 on scroll) */}
+            {/* 3D Scene Layer — Interactive Canvas (Hidden on mobile to disable cursor tracking card) */}
             <div
               ref={heroSceneRef}
-              className="absolute inset-0 z-20 will-change-transform origin-center"
+              className="absolute inset-0 z-20 will-change-transform origin-center hidden md:block"
             >
               {mounted && (
                 <PokerScene
@@ -405,10 +399,10 @@ export default function Home() {
               )}
             </div>
 
-            {/* Top Text Layer — in front of cards (P K H B letters only) */}
+            {/* Top Text Layer — in front of cards (P K H B letters only) on desktop */}
             <div
               ref={heroTitleTopRef}
-              className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none select-none will-change-transform"
+              className="absolute inset-0 z-30 hidden md:flex items-center justify-center pointer-events-none select-none will-change-transform"
             >
               <h1
                 className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700 pointer-events-none"
@@ -426,17 +420,6 @@ export default function Home() {
                   </span>
                 ))}
               </h1>
-            </div>
-
-            {/* Section 1 -> Section 2 Smooth Scroll Indicator */}
-            <div
-              ref={scrollCueRef}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-1 select-none will-change-transform"
-            >
-              <div className="font-pixel text-[9px] bg-white/95 border-[2px] border-true-black px-3 py-1.5 brutal-shadow-sm font-bold text-true-black flex items-center gap-2">
-                <span className="animate-bounce text-xs">▼</span>
-                <span>SCROLL TO EXPLORE</span>
-              </div>
             </div>
 
           </div>
