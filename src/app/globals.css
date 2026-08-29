@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "lenis/dist/lenis.css";
 
 :root {
   --primary-base: #f4f0ff;
@@ -41,8 +42,31 @@ body {
   color: var(--foreground);
   font-family: var(--font-display);
   user-select: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Lenis Smooth Scroll Styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
   overflow: hidden;
 }
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
 
 /* Neo-Brutalist Utilities */
 .brutal-border {

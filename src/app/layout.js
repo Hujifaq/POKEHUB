@@ -1,5 +1,6 @@
 import { Bungee, Press_Start_2P } from "next/font/google";
 import "./globals.css";
+import SmoothScroll from "./components/SmoothScroll";
 
 const bungee = Bungee({
   weight: "400",
@@ -22,11 +23,14 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${bungee.variable} ${pressStart.variable} h-full antialiased`}
+      className={`${bungee.variable} ${pressStart.variable} antialiased`}
     >
-      <body className="min-h-full flex flex-col m-0 p-0 overflow-hidden">
-        {children}
+      <body className="m-0 p-0 bg-primary-base">
+        <SmoothScroll>
+          {children}
+        </SmoothScroll>
       </body>
     </html>
   );
 }
+

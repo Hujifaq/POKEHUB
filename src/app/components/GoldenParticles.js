@@ -4,100 +4,7 @@ import React, { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-// 1. Faceted 3D Gold & Crystal Floating Gem Orbs (Instanced 3D Geometries with PBR lighting)
-function FacetedGemOrbs({ count = 45, color = '#d4af37' }) {
-  const meshRef = useRef()
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-
-  // Initialize random particle data
-  const particles = useMemo(() => {
-    return Array.from({ length: count }, () => ({
-      pos: new THREE.Vector3(
-        (Math.random() - 0.5) * 14,
-        (Math.random() - 0.5) * 9,
-        (Math.random() - 0.5) * 6 - 0.5
-      ),
-      rot: new THREE.Vector3(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-      ),
-      rotSpeed: new THREE.Vector3(
-        (Math.random() - 0.5) * 1.5,
-        (Math.random() - 0.5) * 1.8,
-        (Math.random() - 0.5) * 1.5
-      ),
-      scale: Math.random() * 0.12 + 0.06,
-      speedY: Math.random() * 0.25 + 0.15,
-      wobbleSpeed: Math.random() * 1.5 + 0.5,
-      wobbleAmp: Math.random() * 0.006 + 0.002,
-      phase: Math.random() * Math.PI * 2
-    }))
-  }, [count])
-
-  useFrame((state, delta) => {
-    if (!meshRef.current) return
-    const time = state.clock.getElapsedTime()
-    const pointer = state.pointer
-
-    particles.forEach((p, i) => {
-      // Upward floating motion with gentle harmonic bobbing
-      p.pos.y += p.speedY * delta
-      p.pos.x += Math.sin(time * p.wobbleSpeed + p.phase) * p.wobbleAmp
-      p.pos.z += Math.cos(time * p.wobbleSpeed + p.phase) * p.wobbleAmp
-
-      // Subtle mouse parallax influence
-      const mouseDist = Math.hypot(p.pos.x - pointer.x * 5, p.pos.y - pointer.y * 3)
-      if (mouseDist < 2.5) {
-        const angle = Math.atan2(p.pos.y - pointer.y * 3, p.pos.x - pointer.x * 5)
-        p.pos.x += Math.cos(angle) * delta * 0.8
-        p.pos.y += Math.sin(angle) * delta * 0.8
-      }
-
-      // Reset when floating above view
-      if (p.pos.y > 5.5) {
-        p.pos.y = -5.5
-        p.pos.x = (Math.random() - 0.5) * 14
-        p.pos.z = (Math.random() - 0.5) * 6 - 0.5
-      }
-
-      // 3D tumble rotation to catch light on facets
-      p.rot.x += p.rotSpeed.x * delta
-      p.rot.y += p.rotSpeed.y * delta
-      p.rot.z += p.rotSpeed.z * delta
-
-      // Update instanced matrix
-      dummy.position.copy(p.pos)
-      dummy.rotation.set(p.rot.x, p.rot.y, p.rot.z)
-      dummy.scale.setScalar(p.scale)
-      dummy.updateMatrix()
-
-      meshRef.current.setMatrixAt(i, dummy.matrix)
-    })
-
-    meshRef.current.instanceMatrix.needsUpdate = true
-  })
-
-  // Geometry: Faceted Octahedron / Icosahedron (luxury gem facets)
-  const gemGeo = useMemo(() => new THREE.OctahedronGeometry(1, 0), [])
-  const gemMat = useMemo(() => new THREE.MeshStandardMaterial({
-    color: color,
-    metalness: 0.95,
-    roughness: 0.15,
-    flatShading: true,
-    envMapIntensity: 3.0
-  }), [color])
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[gemGeo, gemMat, count]}
-      castShadow
-    />
-  )
-}
-
-// 2. Crisp 4-Point Diamond Sparkles & Casino Star Glints
+// Crisp 4-Point Diamond Sparkles & Casino Star Glints
 function StarGlints({ count = 50, color = '#fff5d6' }) {
   const pointsRef = useRef()
 
@@ -217,14 +124,12 @@ function StarGlints({ count = 50, color = '#fff5d6' }) {
   )
 }
 
-export default function GoldenParticles({ count = 120, color = "#d4af37" }) {
+export default function GoldenParticles({ count = 60, color = "#fff8e7" }) {
   return (
     <group>
-      {/* 3D Faceted Real Gold / Crystal Gem Orbs */}
-      <FacetedGemOrbs count={Math.min(45, Math.floor(count * 0.4))} color={color} />
-
       {/* Needle-Sharp Luxury 4-Point Star Glints */}
-      <StarGlints count={Math.min(55, Math.floor(count * 0.5))} color="#fff8e7" />
+      <StarGlints count={count} color={color} />
     </group>
   )
 }
+
