@@ -17,6 +17,8 @@
 
   --font-display: var(--font-bungee), sans-serif;
   --font-pixel: var(--font-press-start), monospace;
+  --font-archivo: var(--font-archivo-black), var(--font-bungee), sans-serif;
+  --font-mono-nb: var(--font-space-mono), var(--font-press-start), monospace;
 }
 
 @theme inline {
@@ -24,6 +26,8 @@
   --color-foreground: var(--foreground);
   --font-display: var(--font-display);
   --font-pixel: var(--font-pixel);
+  --font-archivo: var(--font-archivo);
+  --font-mono-nb: var(--font-mono-nb);
   --color-ui-pink: var(--ui-pink);
   --color-ui-blue: var(--ui-blue);
   --color-accent-yellow: var(--accent-yellow);
@@ -33,17 +37,27 @@
 
 body {
   background-color: var(--primary-base);
-  /* Faint graph-paper grid */
-  background-image:
-    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: center;
   color: var(--foreground);
   font-family: var(--font-display);
   user-select: none;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* Infinite Seamless Fixed Graph Paper Grid for 100% Visual Continuity */
+.fixed-graph-grid {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  background-color: var(--primary-base);
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.055) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: 0 0;
 }
 
 /* Lenis Smooth Scroll Styles */
@@ -69,6 +83,14 @@ html.lenis, html.lenis body {
 
 
 /* Neo-Brutalist Utilities */
+.font-mono-nb {
+  font-family: var(--font-space-mono), var(--font-press-start), monospace;
+}
+
+.font-archivo {
+  font-family: var(--font-archivo-black), var(--font-bungee), sans-serif;
+}
+
 .brutal-border {
   border: 4px solid var(--true-black);
 }

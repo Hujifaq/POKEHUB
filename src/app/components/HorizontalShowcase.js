@@ -414,10 +414,11 @@ function InteractiveShowcaseCard({ item, onSelectDeck }) {
   )
 }
 
-export default function HorizontalShowcase({ onSelectDeck, onOpenDuel }) {
-  const containerRef = useRef(null)
+export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, containerRefProp }) {
+  const localContainerRef = useRef(null)
   const pinWrapperRef = useRef(null)
   const trackRef = useRef(null)
+  const containerRef = containerRefProp || localContainerRef
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -436,6 +437,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel }) {
         scrollTrigger: {
           trigger: container,
           pin: pinWrapper,
+          pinSpacing: true,
           start: 'top top',
           end: () => `+=${getScrollDistance()}`,
           scrub: 1,
@@ -452,12 +454,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel }) {
     <div ref={containerRef} className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen overflow-hidden bg-primary-base select-none z-30 rounded-t-[36px] sm:rounded-t-[48px] md:rounded-t-[60px] border-t-[4px] border-true-black"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px)',
-          backgroundSize: '40px 40px'
-        }}
+        className="relative w-full h-screen overflow-hidden select-none z-30 rounded-t-[36px] sm:rounded-t-[48px] md:rounded-t-[60px] border-t-[4px] border-true-black bg-transparent"
       >
       {/* Track */}
       <div

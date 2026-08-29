@@ -73,20 +73,20 @@ function ScalableCardGroup({
     }
 
     if (isScrolled) {
-      // Bouncy scale down to 0 when scrolling away from top
+      // Smooth scale down when scrolling away from top
       gsap.to(groupRef.current.scale, {
         x: 0,
         y: 0,
         z: 0,
-        duration: 0.55,
-        ease: 'back.in(2.2)',
+        duration: 0.6,
+        ease: 'power2.inOut',
         overwrite: 'auto',
         onComplete: () => {
           if (groupRef.current) groupRef.current.visible = false
         }
       })
     } else {
-      // Spring scale back up to 1 ONLY when at the very highest top of website
+      // Spring scale back up ONLY when at top of website
       if (groupRef.current) {
         groupRef.current.visible = true
       }
@@ -95,7 +95,7 @@ function ScalableCardGroup({
         y: 1,
         z: 1,
         duration: 0.75,
-        ease: 'back.out(2.2)',
+        ease: 'back.out(1.8)',
         overwrite: 'auto'
       })
     }
@@ -219,16 +219,6 @@ export default function PokerScene({
         isHolo={isHolo}
         isReady={isReady}
         onTelemetry={onTelemetry}
-      />
-
-      {/* Contact Shadows on Table Felt */}
-      <ContactShadows
-        position={[0, -3.2, 0]}
-        opacity={0.65}
-        scale={22}
-        blur={2.4}
-        far={10}
-        color={themeConfig.shadowColor}
       />
     </Canvas>
   )

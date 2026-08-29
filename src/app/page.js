@@ -12,6 +12,7 @@ import PokerDuelGame from './components/PokerDuelGame'
 import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
 import HorizontalShowcase from './components/HorizontalShowcase'
+import NeoBrutalistHero from './components/NeoBrutalistHero'
 import { SoundEngine } from './components/SoundEngine'
 
 if (typeof window !== 'undefined') {
@@ -37,6 +38,12 @@ export default function Home() {
   const contentRef = useRef(null)
   const heroSectionRef = useRef(null)
   const heroSceneRef = useRef(null)
+  const neoSectionRef = useRef(null)
+  const gallerySectionRef = useRef(null)
+  const heroTitleBottomRef = useRef(null)
+  const heroTitleTopRef = useRef(null)
+  const scrollCueRef = useRef(null)
+  const hudContainerRef = useRef(null)
 
   // 3D Scene states
   const [isFlipped, setIsFlipped] = useState(false)
@@ -61,12 +68,12 @@ export default function Home() {
     setMounted(true)
   }, [])
 
-  // Track scroll position: card scales down when scrolled away from top, and scales back up ONLY at the highest top
+  // Track scroll position and animate Section 1 -> Section 2 smooth parallax handoff
   useEffect(() => {
     if (!mounted) return
 
     const updateScrollState = () => {
-      const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 15
+      const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 25
       setIsScrolled(!atTop)
     }
 
@@ -74,16 +81,74 @@ export default function Home() {
     updateScrollState()
 
     const ctx = gsap.context(() => {
+      // General scroll flag tracker
       ScrollTrigger.create({
         start: 0,
         end: 'max',
         onUpdate: (self) => {
-          setIsScrolled(self.scroll > 15)
+          setIsScrolled(self.scroll > 25)
         }
       })
+
+      // Section 1 -> Section 2 Parallax & Smooth Exit Timeline
+      if (heroSectionRef.current) {
+        const heroTl = gsap.timeline({
+          scrollTrigger: {
+            trigger: heroSectionRef.current,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.2,
+            invalidateOnRefresh: true,
+          }
+        })
+
+        // 1. Text layers glide up with subtle scale & smooth fade
+        if (heroTitleBottomRef.current && heroTitleTopRef.current) {
+          heroTl.to([heroTitleBottomRef.current, heroTitleTopRef.current], {
+            yPercent: -35,
+            scale: 1.12,
+            opacity: 0.12,
+            ease: 'none'
+          }, 0)
+        }
+
+        // 2. 3D Scene smoothly scales down and translates with the scroll
+        if (heroSceneRef.current) {
+          heroTl.to(heroSceneRef.current, {
+            scale: 0.7,
+            yPercent: 15,
+            opacity: 0,
+            ease: 'power1.in'
+          }, 0)
+        }
+
+        // 3. Scroll cue fades out quickly
+        if (scrollCueRef.current) {
+          heroTl.to(scrollCueRef.current, {
+            opacity: 0,
+            y: 20,
+            ease: 'power1.out'
+          }, 0)
+        }
+
+        // 4. Floating HUD & ControlDock fade away cleanly
+        if (hudContainerRef.current) {
+          heroTl.to(hudContainerRef.current, {
+            opacity: 0,
+            y: 35,
+            ease: 'power1.in'
+          }, 0)
+        }
+      }
     })
 
+    // Recalculate all pinned trigger positions once components are mounted
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh()
+    }, 400)
+
     return () => {
+      clearTimeout(refreshTimer)
       window.removeEventListener('scroll', updateScrollState)
       ctx.revert()
     }
@@ -184,7 +249,9 @@ export default function Home() {
       hoverStyles: { bgColor: '#ffa6c9', textColor: '#050505' },
       onClick: () => {
         SoundEngine.playClick()
-        if (heroSectionRef.current) {
+        if (gallerySectionRef.current) {
+          gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
+        } else if (heroSectionRef.current) {
           window.scrollTo({ top: heroSectionRef.current.offsetHeight, behavior: 'smooth' })
         }
       }
@@ -216,8 +283,9 @@ export default function Home() {
   ]
 
   return (
-    <main className="w-full relative min-h-screen transition-colors duration-700 text-true-black overflow-x-hidden">
-
+    <main className="w-full relative min-h-screen transition-colors duration-700 text-true-black overflow-x-hidden bg-transparent">
+        {/* Infinite Seamless Fixed Graph Grid across all sections */}
+        <div className="fixed-graph-grid" />
 
         {/* Intro Preloader */}
         {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
@@ -302,7 +370,8 @@ export default function Home() {
 
             {/* Bottom Text Layer — behind 3D cards */}
             <div
-              className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none"
+              ref={heroTitleBottomRef}
+              className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none select-none will-change-transform"
             >
               <h1
                 className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700"
@@ -337,7 +406,10 @@ export default function Home() {
             </div>
 
             {/* Top Text Layer — in front of cards (P K H B letters only) */}
-            <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none select-none">
+            <div
+              ref={heroTitleTopRef}
+              className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none select-none will-change-transform"
+            >
               <h1
                 className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700 pointer-events-none"
                 style={{ 
@@ -356,11 +428,34 @@ export default function Home() {
               </h1>
             </div>
 
+            {/* Section 1 -> Section 2 Smooth Scroll Indicator */}
+            <div
+              ref={scrollCueRef}
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-1 select-none will-change-transform"
+            >
+              <div className="font-pixel text-[9px] bg-white/95 border-[2px] border-true-black px-3 py-1.5 brutal-shadow-sm font-bold text-true-black flex items-center gap-2">
+                <span className="animate-bounce text-xs">▼</span>
+                <span>SCROLL TO EXPLORE</span>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        {/* SECTION 2: GSAP HORIZONTAL SCROLL SHOWCASE (Spylt Prototype Layout) */}
+        {/* SECTION 2: NEO-BRUTALIST HERO STAGE (SCROLLYTELLING 3D ACE OF SPADES) */}
+        <NeoBrutalistHero
+          containerRefProp={neoSectionRef}
+          onOpenDuel={() => setIsDuelOpen(true)}
+          onScrollToGallery={() => {
+            if (gallerySectionRef.current) {
+              gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
+            }
+          }}
+        />
+
+        {/* SECTION 3: GSAP HORIZONTAL SCROLL SHOWCASE (Frame 2 เดิม) */}
         <HorizontalShowcase
+          containerRefProp={gallerySectionRef}
           onSelectDeck={(skin) => {
             setDeckSkin(skin)
             SoundEngine.playCardFlip()
@@ -369,7 +464,7 @@ export default function Home() {
           onOpenDuel={() => setIsDuelOpen(true)}
         />
 
-        {/* SECTION 3: NEO-BRUTALIST ARCADE FOOTER */}
+        {/* SECTION 4: NEO-BRUTALIST ARCADE FOOTER */}
         <footer className="w-full bg-white border-t-[4px] border-true-black py-12 px-6 md:px-16 z-30 relative select-none">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex flex-col items-center md:items-start">
@@ -433,31 +528,32 @@ export default function Home() {
           </div>
         </footer>
 
-        {/* Real-time 3D Telemetry HUD */}
-        <CardInspectorHUD
-          telemetry={telemetry}
-          deckSkin={deckSkin}
-          activeSuit={activeSuit}
-          isHolo={isHolo}
-          isFanMode={isFanMode}
-        />
+        {/* Real-time 3D Telemetry HUD & Control Dock (smoothly fades on scroll towards Section 2) */}
+        <div ref={hudContainerRef} className="contents will-change-transform">
+          <CardInspectorHUD
+            telemetry={telemetry}
+            deckSkin={deckSkin}
+            activeSuit={activeSuit}
+            isHolo={isHolo}
+            isFanMode={isFanMode}
+          />
 
-        {/* Bottom Floating Control Dock */}
-        <ControlDock
-          isFanMode={isFanMode}
-          setIsFanMode={setIsFanMode}
-          isFlipped={isFlipped}
-          setIsFlipped={setIsFlipped}
-          isHolo={isHolo}
-          setIsHolo={setIsHolo}
-          deckSkin={deckSkin}
-          setDeckSkin={setDeckSkin}
-          activeSuit={activeSuit}
-          setActiveSuit={setActiveSuit}
-          onTossChip={handleTossChip}
-          onOpenDuel={() => setIsDuelOpen(true)}
-          onOpenRankings={() => setIsRankingsOpen(true)}
-        />
+          <ControlDock
+            isFanMode={isFanMode}
+            setIsFanMode={setIsFanMode}
+            isFlipped={isFlipped}
+            setIsFlipped={setIsFlipped}
+            isHolo={isHolo}
+            setIsHolo={setIsHolo}
+            deckSkin={deckSkin}
+            setDeckSkin={setDeckSkin}
+            activeSuit={activeSuit}
+            setActiveSuit={setActiveSuit}
+            onTossChip={handleTossChip}
+            onOpenDuel={() => setIsDuelOpen(true)}
+            onOpenRankings={() => setIsRankingsOpen(true)}
+          />
+        </div>
 
         {/* Texas Hold'em 3D Duel Modal Game */}
         <PokerDuelGame
