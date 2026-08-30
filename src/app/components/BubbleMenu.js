@@ -272,13 +272,18 @@ export default function BubbleMenu({
             useFixedPosition ? 'fixed' : 'absolute',
             'inset-0',
             'flex items-center justify-center',
-            'pointer-events-none',
             'z-[1000]'
           ].join(' ')}
           aria-hidden={!isMenuOpen}
         >
+          {/* Glass Backdrop Blur Overlay */}
+          <div
+            className="absolute inset-0 bg-true-black/60 backdrop-blur-md transition-opacity duration-300 pointer-events-auto"
+            onClick={handleToggle}
+          />
+
           <ul
-            className="pill-list list-none m-0 px-6 w-full max-w-[1600px] mx-auto flex flex-wrap gap-x-0 gap-y-1 pointer-events-auto"
+            className="pill-list list-none m-0 px-6 w-full max-w-[1600px] mx-auto flex flex-wrap gap-x-0 gap-y-1 pointer-events-auto relative z-10"
             role="menu"
             aria-label="Menu links"
           >

@@ -471,10 +471,10 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
     cardGroup.add(smokeMesh)
 
-    // Start position: centered in depth with subtle tilt for seamless handoff from Section 1
-    cardGroup.position.set(0, -0.1, -1.2)
-    cardGroup.rotation.set(-0.08, -0.35, 0.04)
-    cardGroup.scale.set(0.88, 0.88, 0.88)
+    // Start position: centered on load as the main Hero Section
+    cardGroup.position.set(0, 0, 0)
+    cardGroup.rotation.set(-0.06, -0.22, 0.02)
+    cardGroup.scale.set(1, 1, 1)
     scene.add(cardGroup)
     cardGroupRef.current = cardGroup
 
