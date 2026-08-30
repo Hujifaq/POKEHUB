@@ -9,6 +9,8 @@ import Preloader from './components/Preloader'
 import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
 import HorizontalShowcase from './components/HorizontalShowcase'
+import RiffleShuffleSection from './components/RiffleShuffleSection'
+import PokerHandOrbitSection from './components/PokerHandOrbitSection'
 import NeoBrutalistHero from './components/NeoBrutalistHero'
 import GameSetupModal from './components/GameSetupModal'
 import { SoundEngine } from './components/SoundEngine'
@@ -269,7 +271,17 @@ export default function Home() {
       />
 
       {/* ======================================================== */}
-      {/* SECTION 3: NEO-BRUTALIST ARCADE FOOTER                  */}
+      {/* SECTION 3: 3D CARD RIFFLE SHUFFLE (SCROLLTRIGGER)       */}
+      {/* ======================================================== */}
+      <RiffleShuffleSection />
+
+      {/* ======================================================== */}
+      {/* SECTION 4: 3D POKER HAND SHOWCASE & ORBIT (SCROLLTRIGGER)*/}
+      {/* ======================================================== */}
+      <PokerHandOrbitSection onOpenDuel={() => setIsSetupModalOpen(true)} />
+
+      {/* ======================================================== */}
+      {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER                  */}
       {/* ======================================================== */}
       <footer className="w-full bg-true-black text-white border-t-[4px] border-true-black relative z-40 py-16 px-6 overflow-hidden">
         <div
