@@ -7,6 +7,7 @@ import Preloader from '../components/Preloader'
 import HandRankingsModal from '../components/HandRankingsModal'
 import VIPClubModal from '../components/VIPClubModal'
 import { SoundEngine } from '../components/SoundEngine'
+import { generateGameUrl } from '../utils/gameUrl'
 
 // Mock High Rollers Hall of Fame Data
 const INITIAL_LEADERBOARD = [
@@ -81,12 +82,12 @@ export default function LeaderboardPage() {
       }
     },
     {
-      label: '3d arena',
-      ariaLabel: '3D Poker Arena',
+      label: 'poker duel',
+      ariaLabel: 'Play Texas Hold\'em Poker Duel',
       rotation: 4,
       hoverStyles: { bgColor: '#00FFA3', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/game'
+        window.location.href = '/'
       }
     },
     {
@@ -119,20 +120,38 @@ export default function LeaderboardPage() {
       {/* Infinite Seamless Fixed Graph Grid */}
       <div className="fixed-graph-grid" />
 
-      {/* Bubble Navbar */}
+      {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => window.location.href = '/'}>
+          <div className="flex items-center justify-center cursor-pointer" onClick={() => window.location.href = '/'}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/PKH_Logo.jpg"
               alt="POKERHUB Logo"
-              className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
+              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
             />
-            <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
-              POKERHUB
-            </span>
           </div>
+        }
+        actions={
+          <>
+            <Link
+              href="/"
+              className="brutal-btn bg-white text-true-black flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-accent-yellow transition-colors shadow-[2px_2px_0px_#000]"
+              title="Back to Home"
+            >
+              <span>🏠</span>
+              <span className="hidden sm:inline">HOME</span>
+            </Link>
+
+            <Link
+              href="/game?mode=3d_arena"
+              className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] -rotate-1"
+              title="Open 3D Arena"
+            >
+              <span className="text-sm">🎮</span>
+              <span className="hidden xs:inline sm:inline">3D ARENA</span>
+            </Link>
+          </>
         }
         useFixedPosition={true}
         menuBg="#ffffff"
@@ -143,27 +162,6 @@ export default function LeaderboardPage() {
         staggerDelay={0.1}
         items={bubbleMenuItems}
       />
-
-      {/* Top Floating Navigation Header */}
-      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto flex items-center gap-2 sm:gap-3">
-        <Link
-          href="/"
-          className="brutal-btn bg-white text-true-black flex items-center gap-1.5 px-3 py-2 font-display text-xs font-black uppercase hover:bg-accent-yellow transition-colors"
-          title="Back to Home"
-        >
-          <span>🏠</span>
-          <span className="hidden sm:inline">HOME</span>
-        </Link>
-
-        <Link
-          href="/game"
-          className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-3.5 py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[3px_3px_0px_#000000] -rotate-1"
-          title="Open 3D Arena"
-        >
-          <span className="text-sm">🎮</span>
-          <span>3D ARENA</span>
-        </Link>
-      </header>
 
       {/* Main Leaderboard Container */}
       <div className="max-w-4xl mx-auto pt-10 relative z-10 flex flex-col gap-6">
@@ -265,7 +263,7 @@ export default function LeaderboardPage() {
           </div>
 
           <Link
-            href="/game"
+            href="/game?mode=texas_holdem&duel=open"
             className="brutal-btn ml-auto px-5 py-2.5 bg-true-black text-white font-display text-xs sm:text-sm font-black uppercase hover:bg-white hover:text-true-black transition-colors"
           >
             🎮 PLAY IN 3D ARENA →
@@ -385,7 +383,7 @@ export default function LeaderboardPage() {
         {/* Footer CTA */}
         <div className="text-center py-6 flex flex-col items-center gap-3">
           <Link
-            href="/game"
+            href="/game?mode=texas_holdem&duel=open"
             className="brutal-btn px-8 py-3.5 bg-[#FFDE59] text-true-black font-display text-base font-black uppercase hover:bg-[#00FFA3] shadow-[5px_5px_0px_#000000] -rotate-1 hover:rotate-0 transition-all cursor-pointer"
           >
             ⚔️ PLAY 3D ARENA &amp; CLIMB LEADERBOARD →

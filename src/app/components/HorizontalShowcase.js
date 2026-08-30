@@ -1061,20 +1061,24 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
         <div
           ref={cardBodyRef}
           onMouseEnter={() => {
-            SoundEngine.playCardFlip()
+            SoundEngine.playThemeCardHover(item.themeStyle || item.cardSkin)
             setIsFlipped(true)
           }}
           onMouseLeave={() => {
             setIsFlipped(false)
           }}
-          onClick={() => setIsFlipped(f => !f)}
+          onClick={() => {
+            SoundEngine.playThemeCardHover(item.themeStyle || item.cardSkin)
+            setIsFlipped(f => !f)
+          }}
           className="relative w-[210px] sm:w-[240px] md:w-[270px] h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
           style={{ perspective: 1200 }}
         >
           {/* Inner 3D Flipping Card Body */}
           <div
-            className={`w-full h-full relative rounded-2xl border-[4px] border-true-black shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''
-              }`}
+            className={`w-full h-full relative rounded-2xl border-[4px] border-true-black shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${
+              isFlipped ? '[transform:rotateY(180deg)]' : ''
+            }`}
           >
             {/* Animated Themed Pixel Fire Effect (Flips seamlessly in 3D with the card) */}
             <PixelFireAura themeStyle={item.themeStyle} isHovered={isFlipped} />
@@ -1115,7 +1119,6 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
 
         <button
           onClick={() => {
-            SoundEngine.playCardFlip()
             if (onSelectDeck) onSelectDeck(item.cardSkin)
           }}
           className={`brutal-btn px-4 py-1.5 font-display text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
@@ -1153,7 +1156,6 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
   }, [])
 
   const handleEquip = (skinKey, skinName) => {
-    SoundEngine.playCardFlip()
     setEquippedSkin(skinKey)
     if (typeof window !== 'undefined') {
       localStorage.setItem('pokehub_equipped_deck', skinKey)
@@ -1198,14 +1200,18 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
 
   return (
     <div ref={containerRef} className="relative w-full">
-      {/* Floating Equip Toast */}
-      {equipToast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1050] pointer-events-none animate-bounce">
-          <div className="bg-[#00FFA3] border-[3px] border-true-black px-6 py-2.5 rounded-xl shadow-[5px_5px_0px_#000000] font-display font-black text-xs sm:text-sm uppercase text-true-black -rotate-1">
-            {equipToast}
-          </div>
+      {/* Floating Equip Toast - Statically rendered with CSS transitions to prevent GSAP ScrollTrigger DOM mutations */}
+      <div
+        className={`fixed top-24 left-1/2 -translate-x-1/2 z-[1050] pointer-events-none transition-all duration-300 ${
+          equipToast
+            ? 'opacity-100 scale-100 translate-y-0 animate-bounce'
+            : 'opacity-0 scale-90 -translate-y-4 pointer-events-none'
+        }`}
+      >
+        <div className="bg-[#00FFA3] border-[3px] border-true-black px-6 py-2.5 rounded-xl shadow-[5px_5px_0px_#000000] font-display font-black text-xs sm:text-sm uppercase text-true-black -rotate-1">
+          {equipToast || ''}
         </div>
-      )}
+      </div>
 
       <section
         ref={pinWrapperRef}
@@ -1264,9 +1270,9 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
                 <span>PLAY IN 3D ARENA</span>
               </button>
 
-              <div className="brutal-window px-4 py-2.5 bg-white flex items-center gap-2">
-                <span className="font-pixel text-[9px] sm:text-[10px] font-bold text-true-black animate-pulse">
-                  SCROLL RIGHT ►
+              <div className="brutal-window px-4 py-2.5 bg-white flex items-center">
+                <span className="font-pixel text-[9px] sm:text-[10px] font-bold text-true-black">
+                  SCROLL RIGHT
                 </span>
               </div>
             </div>

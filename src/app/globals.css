@@ -63,7 +63,8 @@ body {
 }
 
 /* Lenis Smooth Scroll Styles */
-html.lenis, html.lenis body {
+html.lenis,
+html.lenis body {
   height: auto;
 }
 
@@ -190,10 +191,12 @@ html.lenis, html.lenis body {
     opacity: 0;
     transform: translateY(35px) scale(0.6) rotate(-20deg);
   }
+
   60% {
     opacity: 1;
     transform: translateY(-6px) scale(1.15) rotate(8deg);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0) scale(1) rotate(0deg);
@@ -201,11 +204,25 @@ html.lenis, html.lenis body {
 }
 
 @keyframes chipWobble {
-  0% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.15) rotate(-12deg) translateY(-4px); }
-  50% { transform: scale(1.15) rotate(12deg) translateY(-4px); }
-  75% { transform: scale(1.05) rotate(-4deg) translateY(-2px); }
-  100% { transform: scale(1) rotate(0deg) translateY(0); }
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  25% {
+    transform: scale(1.15) rotate(-12deg) translateY(-4px);
+  }
+
+  50% {
+    transform: scale(1.15) rotate(12deg) translateY(-4px);
+  }
+
+  75% {
+    transform: scale(1.05) rotate(-4deg) translateY(-2px);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg) translateY(0);
+  }
 }
 
 @keyframes chipFloatUp {
@@ -213,6 +230,7 @@ html.lenis, html.lenis body {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-35px) scale(1.25);
@@ -237,10 +255,12 @@ html.lenis, html.lenis body {
     transform: translate(0, 220px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(0, 80px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;
@@ -252,10 +272,12 @@ html.lenis, html.lenis body {
     transform: translate(-240px, -150px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(-100px, -70px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;
@@ -267,10 +289,12 @@ html.lenis, html.lenis body {
     transform: translate(0, -180px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(0, -70px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;
@@ -282,10 +306,12 @@ html.lenis, html.lenis body {
     transform: translate(240px, -150px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(100px, -70px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;
@@ -297,10 +323,12 @@ html.lenis, html.lenis body {
     transform: translate(-260px, 110px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(-110px, 40px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;
@@ -312,10 +340,12 @@ html.lenis, html.lenis body {
     transform: translate(260px, 110px) scale(1.1) rotate(0deg);
     opacity: 1;
   }
+
   45% {
     transform: translate(110px, 40px) scale(1.3) rotate(160deg);
     opacity: 1;
   }
+
   100% {
     transform: translate(0, 0) scale(0.6) rotate(360deg);
     opacity: 0;

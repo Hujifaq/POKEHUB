@@ -10,9 +10,16 @@ import Preloader from '../components/Preloader'
 import ControlDock from '../components/ControlDock'
 import CardInspectorHUD from '../components/CardInspectorHUD'
 import PokerDuelGame from '../components/PokerDuelGame'
+import GameSetupModal from '../components/GameSetupModal'
 import HandRankingsModal from '../components/HandRankingsModal'
 import VIPClubModal from '../components/VIPClubModal'
 import { SoundEngine } from '../components/SoundEngine'
+import {
+  parseGameUrlParams,
+  generateGameUrl,
+  getOrCreateUserId,
+  generateGameId
+} from '../utils/gameUrl'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
@@ -39,11 +46,20 @@ export default function GamePage() {
   const heroTitleBottomRef = useRef(null)
   const heroTitleTopRef = useRef(null)
 
+  // URL Slug & Query URI states
+  const [userId, setUserId] = useState('usr_highroller_99')
+  const [gameId, setGameId] = useState('holdem_session')
+  const [tableName, setTableName] = useState('macau_nlh_500')
+  const [stakes, setStakes] = useState('250-500')
+  const [mode, setMode] = useState('texas_holdem')
+  const [initialBots, setInitialBots] = useState(2)
+  const [toastNotification, setToastNotification] = useState(null)
+
   // 3D Scene states
   const [isFlipped, setIsFlipped] = useState(false)
   const [isHolo, setIsHolo] = useState(true)
   const [isFanMode, setIsFanMode] = useState(false)
-  const [deckSkin, setDeckSkin] = useState('classic')
+  const [deckSkin, setDeckSkin] = useState('obsidian')
   const [activeSuit, setActiveSuit] = useState('hearts')
   const [tossSignal, setTossSignal] = useState(0)
   const [telemetry, setTelemetry] = useState({ pitch: 0, yaw: 0, roll: 0, velX: 0, velY: 0, speed: 0 })
@@ -54,17 +70,98 @@ export default function GamePage() {
 
   // Modal Dialogs
   const [isDuelOpen, setIsDuelOpen] = useState(false)
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false)
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
 
-  // Load bankroll from localStorage on mount
+  // Load URL slug, query URI params, and bankroll on mount
   useEffect(() => {
     setMounted(true)
     if (typeof window !== 'undefined') {
+      const parsed = parseGameUrlParams(window.location.search)
+      const pathParts = window.location.pathname.split('/').filter(Boolean)
+      const pathSlugGameId = pathParts.length >= 2 && pathParts[0] === 'game' ? pathParts[1] : null
+
+      const activeUserId = parsed.userId || getOrCreateUserId()
+      const activeGameId = pathSlugGameId || parsed.gameId || generateGameId()
+      const activeTable = parsed.table || 'macau_nlh_500'
+      const activeStakes = parsed.stakes || '250-500'
+      const activeSkin = parsed.skin || 'obsidian'
+      const activeMode = parsed.mode || 'texas_holdem'
+      const activeBotsCount = Number(parsed.bots) || 2
+      const isDuelFromUrl = parsed.duel === 'open' || parsed.duel === 'active' || parsed.duel === 'true' || parsed.duel === '1'
+
+      setUserId(activeUserId)
+      setGameId(activeGameId)
+      setTableName(activeTable)
+      setStakes(activeStakes)
+      setMode(activeMode)
+      setInitialBots(activeBotsCount)
+      if (activeSkin && activeSkin !== 'classic') {
+        setDeckSkin(activeSkin)
+      }
+      if (isDuelFromUrl) {
+        setIsDuelOpen(true)
+      }
+
       const saved = localStorage.getItem('pokehub_bankroll')
       if (saved) {
         setBankroll(Number(saved))
       }
+    }
+  }, [])
+
+  // Sync URL query string when duel is active
+  useEffect(() => {
+    if (mounted && typeof window !== 'undefined') {
+      if (isDuelOpen) {
+        const searchParams = new URLSearchParams()
+        searchParams.set('userId', userId)
+        searchParams.set('gameId', gameId)
+        searchParams.set('table', tableName)
+        searchParams.set('stakes', stakes)
+        searchParams.set('skin', deckSkin)
+        searchParams.set('bots', initialBots.toString())
+        searchParams.set('duel', 'open')
+        window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`)
+      } else {
+        // When leaving or outside game duel, keep URL clean /game
+        if (window.location.search) {
+          window.history.replaceState(null, '', window.location.pathname)
+        }
+      }
+    }
+  }, [mounted, userId, gameId, tableName, stakes, deckSkin, initialBots, isDuelOpen])
+
+  // Leave active poker session & delete session parameters
+  const handleLeaveGame = useCallback(() => {
+    setIsDuelOpen(false)
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [])
+
+  // Launch a new session configured from Setup Modal
+  const handleLaunchSessionFromModal = (sessionConfig) => {
+    setIsSetupModalOpen(false)
+    setUserId(sessionConfig.userId)
+    setGameId(sessionConfig.gameId)
+    setTableName(sessionConfig.table)
+    setStakes(sessionConfig.stakes)
+    setDeckSkin(sessionConfig.skin)
+    setInitialBots(sessionConfig.bots)
+    setIsDuelOpen(true)
+  }
+
+  // Copy Full Game URI with Query Parameters to Clipboard
+  const handleCopyGameUri = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const fullUrl = window.location.href
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        SoundEngine.playClick()
+        setToastNotification('GAME URI COPIED TO CLIPBOARD! 📋')
+        setTimeout(() => setToastNotification(null), 2500)
+      }).catch(() => {})
     }
   }, [])
 
@@ -158,12 +255,13 @@ export default function GamePage() {
       }
     },
     {
-      label: '3d arena',
-      ariaLabel: '3D Poker Arena',
+      label: 'poker duel',
+      ariaLabel: 'Play Texas Hold\'em Poker Duel',
       rotation: 4,
       hoverStyles: { bgColor: '#00FFA3', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/game'
+        handleLeaveGame()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
     {
@@ -199,20 +297,97 @@ export default function GamePage() {
       {/* Intro Preloader */}
       {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
 
-      {/* Bubble Navbar */}
+      {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => window.location.href = '/'}>
+          <div className="flex items-center justify-center cursor-pointer" onClick={() => window.location.href = '/'}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/PKH_Logo.jpg"
               alt="POKERHUB Logo"
-              className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
+              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
             />
-            <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
-              POKERHUB
-            </span>
           </div>
+        }
+        actions={
+          <>
+            {/* Back to Home Button - shown on md+ */}
+            <Link
+              href="/"
+              className="brutal-btn bg-white text-true-black hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-accent-yellow transition-colors shrink-0 shadow-[2px_2px_0px_#000]"
+              title="Back to Home"
+            >
+              <span>🏠</span>
+              <span className="hidden lg:inline">HOME</span>
+            </Link>
+
+            {/* Bankroll Faux Window */}
+            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 shrink-0 shadow-[2px_2px_0px_#000]">
+              <span className="text-xs sm:text-sm">💰</span>
+              <span className="text-[9px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden lg:inline">
+                BANKROLL:
+              </span>
+              <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
+                ${bankroll.toLocaleString()}
+              </span>
+              <button
+                onClick={handleRefillBankroll}
+                className="brutal-btn bg-accent-yellow text-true-black text-[8px] sm:text-[10px] font-black px-1.5 py-0.5"
+                title="Add +$5,000 High Roller Chips"
+              >
+                +$5K
+              </button>
+            </div>
+
+            {/* Live Session URI & Copy Pill */}
+            <div className="brutal-window hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-true-black shadow-[2px_2px_0px_#000]">
+              <span className="font-pixel text-[8px] font-bold text-gray-600 uppercase">URI:</span>
+              <span className="font-mono-nb text-[9px] font-black text-purple-700 bg-purple-100/80 px-1.5 py-0.5 rounded border border-purple-300 truncate max-w-[110px]" title={`User: ${userId} | Game: ${gameId}`}>
+                {userId}
+              </span>
+              <button
+                onClick={handleCopyGameUri}
+                className="brutal-btn bg-[#FFE500] hover:bg-[#00FFA3] text-true-black text-[8px] font-black px-1.5 py-0.5 flex items-center gap-1 cursor-pointer"
+                title="Copy Game URL"
+              >
+                <span>📋</span>
+                <span>COPY URI</span>
+              </button>
+            </div>
+
+            {/* Sound Effects Mute / Unmute Toggle Button */}
+            <button
+              onClick={handleToggleMute}
+              className={`brutal-btn flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000] ${
+                !isMuted
+                  ? 'bg-accent-cyan text-true-black'
+                  : 'bg-white text-gray-500'
+              }`}
+              title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+            >
+              <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+              <span className="hidden lg:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
+            </button>
+
+            {/* Leaderboard Link Button - shown on sm+ */}
+            <Link
+              href="/leaderboard"
+              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] shrink-0"
+              title="Open Leaderboard"
+            >
+              <span>🏆</span>
+              <span className="hidden lg:inline">RANKS</span>
+            </Link>
+
+            {/* Fullscreen Button - shown on xl+ */}
+            <button
+              onClick={handleToggleFullscreen}
+              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-bold font-pixel shrink-0 shadow-[2px_2px_0px_#000]"
+              title="Toggle Fullscreen"
+            >
+              <span className="text-[10px]">🗖</span>
+            </button>
+          </>
         }
         useFixedPosition={true}
         menuBg="#ffffff"
@@ -223,70 +398,6 @@ export default function GamePage() {
         staggerDelay={0.1}
         items={bubbleMenuItems}
       />
-
-      {/* Top Floating Luxury HUD Header -> Y2K Faux OS Taskbar */}
-      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto flex items-center gap-2 sm:gap-3">
-        {/* Back to Home Button */}
-        <Link
-          href="/"
-          className="brutal-btn bg-white text-true-black flex items-center gap-1.5 px-3 py-2 font-display text-xs font-black uppercase hover:bg-accent-yellow transition-colors"
-          title="Back to Home"
-        >
-          <span>🏠</span>
-          <span className="hidden sm:inline">HOME</span>
-        </Link>
-
-        {/* Bankroll Faux Window */}
-        <div className="brutal-window flex items-center gap-2 px-3 sm:px-4 py-2">
-          <span className="text-sm">💰</span>
-          <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
-            BANKROLL:
-          </span>
-          <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
-            ${bankroll.toLocaleString()}
-          </span>
-          <button
-            onClick={handleRefillBankroll}
-            className="brutal-btn bg-accent-yellow text-true-black text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
-            title="Add +$5,000 High Roller Chips"
-          >
-            +$5K
-          </button>
-        </div>
-
-        {/* Sound Effects Mute / Unmute Toggle Button */}
-        <button
-          onClick={handleToggleMute}
-          className={`brutal-btn flex items-center gap-1.5 px-3 py-2 font-pixel text-[10px] uppercase font-bold transition-all ${
-            !isMuted
-              ? 'bg-accent-cyan text-true-black'
-              : 'bg-white text-gray-500'
-          }`}
-          title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
-        >
-          <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-          <span className="hidden sm:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
-        </button>
-
-        {/* Leaderboard Link Button */}
-        <Link
-          href="/leaderboard"
-          className="brutal-btn bg-ui-pink text-true-black flex items-center gap-1.5 px-3 py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000]"
-          title="Open Leaderboard"
-        >
-          <span>🏆</span>
-          <span className="hidden sm:inline">RANKS</span>
-        </Link>
-
-        {/* Fullscreen Button */}
-        <button
-          onClick={handleToggleFullscreen}
-          className="brutal-btn w-9 h-9 bg-accent-yellow text-true-black flex items-center justify-center font-bold font-pixel"
-          title="Toggle Fullscreen"
-        >
-          <span className="text-[10px]">🗖</span>
-        </button>
-      </header>
 
       {/* 3D POKER ARENA STAGE */}
       <section
@@ -299,10 +410,10 @@ export default function GamePage() {
           className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none select-none px-4"
         >
           <h1
-            className="text-[14vw] sm:text-[15vw] md:text-[16vw] font-display text-ui-pink drop-shadow-[6px_6px_0px_#050505] md:drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[1.6] md:scale-y-[2] opacity-100 transition-colors duration-700"
+            className="text-[14vw] sm:text-[15vw] md:text-[16vw] font-display text-ui-pink drop-shadow-[4px_4px_0px_#050505] sm:drop-shadow-[6px_6px_0px_#050505] md:drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[1.4] sm:scale-y-[1.6] md:scale-y-[2] opacity-100 transition-colors duration-700"
             style={{ 
               whiteSpace: 'nowrap',
-              WebkitTextStroke: '4px #050505'
+              WebkitTextStroke: '3px #050505'
             }}
           >
             {text}
@@ -356,24 +467,24 @@ export default function GamePage() {
         {/* ======================================================== */}
         {/* PROMINENT FLOATING "PLAY NOW" BUTTON ON 3D ARENA STAGE  */}
         {/* ======================================================== */}
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex flex-col items-center gap-2">
+        <div className="absolute bottom-20 sm:bottom-28 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex flex-col items-center gap-2 px-4 w-full max-w-xs sm:max-w-none">
           <button
             onClick={() => {
-              SoundEngine.playCardSwoosh()
-              setIsDuelOpen(true)
+              SoundEngine.playClick()
+              setIsSetupModalOpen(true)
             }}
-            className="brutal-btn group flex items-center gap-3 px-8 sm:px-10 py-3.5 sm:py-4 bg-[#FFDE59] text-true-black font-display text-lg sm:text-2xl font-black uppercase tracking-wider shadow-[6px_6px_0px_#000000] hover:bg-[#00FFA3] hover:scale-105 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer -rotate-1 hover:rotate-0"
-            title="Launch Texas Hold'em 3D Duel"
+            className="brutal-btn group flex items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 bg-[#FFDE59] text-true-black font-display text-base sm:text-2xl font-black uppercase tracking-wider shadow-[4px_4px_0px_#000000] sm:shadow-[6px_6px_0px_#000000] hover:bg-[#00FFA3] hover:scale-105 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer -rotate-1 hover:rotate-0"
+            title="Setup & Launch Texas Hold'em 3D Duel"
           >
-            <span className="text-2xl sm:text-3xl animate-bounce">⚔️</span>
+            <span className="text-xl sm:text-3xl animate-bounce">⚔️</span>
             <span>PLAY NOW</span>
-            <span className="font-pixel text-[9px] sm:text-xs bg-true-black text-white px-2 py-1 rounded shadow-[2px_2px_0px_#000000]">
+            <span className="font-pixel text-[8px] sm:text-xs bg-true-black text-white px-2 py-0.5 sm:py-1 rounded shadow-[1.5px_1.5px_0px_#000000]">
               3D DUEL
             </span>
           </button>
           
           <div className="flex items-center gap-2">
-            <span className="font-mono-nb text-[9px] sm:text-[11px] font-bold bg-white/95 border-[2px] border-true-black px-3 py-0.5 shadow-[2px_2px_0px_#000000] uppercase text-true-black">
+            <span className="font-mono-nb text-[8.5px] sm:text-[11px] font-bold bg-white/95 border-[2px] border-true-black px-2.5 sm:px-3 py-0.5 shadow-[1.5px_1.5px_0px_#000000] uppercase text-true-black text-center">
               Texas Hold&apos;em vs 5 Smart AI Bots
             </span>
           </div>
@@ -395,15 +506,20 @@ export default function GamePage() {
         setIsFanMode={setIsFanMode}
         isFlipped={isFlipped}
         setIsFlipped={setIsFlipped}
-        isHolo={isHolo}
-        setIsHolo={setIsHolo}
         deckSkin={deckSkin}
         setDeckSkin={setDeckSkin}
         activeSuit={activeSuit}
         setActiveSuit={setActiveSuit}
         onTossChip={handleTossChip}
-        onOpenDuel={() => setIsDuelOpen(true)}
+        onOpenDuel={() => setIsSetupModalOpen(true)}
         onOpenRankings={() => setIsRankingsOpen(true)}
+      />
+
+      {/* Game Matchmaking & Table Setup Modal */}
+      <GameSetupModal
+        isOpen={isSetupModalOpen}
+        onClose={() => setIsSetupModalOpen(false)}
+        onLaunchSession={handleLaunchSessionFromModal}
       />
 
       {/* Texas Hold'em 3D Duel Modal Game */}
@@ -412,6 +528,14 @@ export default function GamePage() {
         onClose={() => setIsDuelOpen(false)}
         bankroll={bankroll}
         setBankroll={updateBankroll}
+        userId={userId}
+        gameId={gameId}
+        table={tableName}
+        stakes={stakes}
+        initialBots={initialBots}
+        deckSkin={deckSkin}
+        setDeckSkin={setDeckSkin}
+        onCopyUri={handleCopyGameUri}
       />
 
       {/* Poker Hand Rankings Official Guide */}

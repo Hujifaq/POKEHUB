@@ -241,8 +241,11 @@ export default function PinBoxSection({ onOpenDuel }) {
               <div
                 key={card.id}
                 ref={(el) => (cardsRef.current[index] = el)}
+                onMouseEnter={() => {
+                  SoundEngine.playThemeCardHover(card.name)
+                }}
                 onClick={() => {
-                  SoundEngine.playCardFlip()
+                  SoundEngine.playThemeCardHover(card.name)
                   if (onOpenDuel) onOpenDuel()
                 }}
                 className={`vd-card w-44 sm:w-52 md:w-60 lg:w-68 h-64 sm:h-76 md:h-88 lg:h-[390px] shrink-0 rounded-2xl sm:rounded-3xl border-[4px] border-true-black shadow-[8px_8px_0px_#050505] -ms-16 sm:-ms-24 md:-ms-32 ${card.rotation} ${card.translation} bg-gradient-to-br ${card.bg} p-3.5 sm:p-4 flex flex-col justify-between cursor-pointer hover:scale-105 hover:z-50 hover:-translate-y-8 transition-all duration-300 will-change-transform group`}

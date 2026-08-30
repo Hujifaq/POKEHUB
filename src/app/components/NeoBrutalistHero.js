@@ -821,7 +821,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           </h1>
 
           {/* Subtitle */}
-          <p className="font-mono-nb mt-6 max-w-xl text-xs sm:text-sm text-true-black/80 font-bold leading-relaxed">
+          <p
+            className="font-mono-nb mt-6 max-w-xl text-xs sm:text-sm text-accent-yellow font-black leading-relaxed drop-shadow-[2px_2px_0px_#050505]"
+            style={{
+              WebkitTextStroke: '1px #050505',
+              paintOrder: 'stroke fill'
+            }}
+          >
             Scroll to deal. A brutally honest deck engine built for players who hate losing more than they love winning.
           </p>
 
