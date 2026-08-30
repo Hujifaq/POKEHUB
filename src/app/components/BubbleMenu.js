@@ -43,6 +43,7 @@ const DEFAULT_ITEMS = [
 
 export default function BubbleMenu({
   logo,
+  actions,
   onMenuClick,
   className,
   style,
@@ -67,11 +68,12 @@ export default function BubbleMenu({
   const containerClassName = [
     'bubble-menu',
     useFixedPosition ? 'fixed' : 'absolute',
-    'left-0 right-0 top-8',
+    'left-0 right-0 top-3 sm:top-5 md:top-6',
     'flex items-center justify-between',
-    'gap-4 px-8',
+    'gap-2 sm:gap-3 px-3 sm:px-6 md:px-8',
     'pointer-events-none',
     'z-[1001]',
+    'w-full max-w-[1700px] mx-auto',
     className
   ]
     .filter(Boolean)
@@ -117,7 +119,7 @@ export default function BubbleMenu({
           )
         }
       })
-    } else if (showOverlay) {
+    } else {
       gsap.killTweensOf([...bubbles, ...labels])
       gsap.to(labels, {
         y: 24,
@@ -130,12 +132,14 @@ export default function BubbleMenu({
         duration: 0.2,
         ease: 'power3.in',
         onComplete: () => {
-          gsap.set(overlay, { display: 'none' })
-          setShowOverlay(false)
+          if (!isMenuOpen) {
+            setShowOverlay(false)
+            gsap.set(overlay, { display: 'none' })
+          }
         }
       })
     }
-  }, [isMenuOpen, showOverlay, animationEase, animationDuration, staggerDelay])
+  }, [isMenuOpen, animationDuration, animationEase, staggerDelay])
 
   useEffect(() => {
     const handleResize = () => {
@@ -145,7 +149,7 @@ export default function BubbleMenu({
         bubbles.forEach((bubble, i) => {
           const item = menuItems[i]
           if (bubble && item) {
-            const rotation = isDesktop ? (item.rotation ?? 0) : 0
+            const rotation = isDesktop ? (item.rotation ?? 0) : (item.rotation ?? 0)
             gsap.set(bubble, { rotation })
           }
         })
@@ -158,9 +162,26 @@ export default function BubbleMenu({
   return (
     <>
       <style>{`
+        .bubble-menu .bubble {
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      box-shadow 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background-color 0.2s ease;
+        }
+        .bubble-menu .menu-btn:hover {
+          transform: translateY(-2px) scale(1.04);
+        }
+        .bubble-menu .menu-btn:active {
+          transform: translate(2px, 2px) scale(0.96);
+          box-shadow: none;
+        }
         .bubble-menu .menu-line {
           transition: transform 0.3s ease, opacity 0.3s ease;
           transform-origin: center;
+        }
+        .bubble-menu-items .pill-link {
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      background 0.2s ease,
+                      color 0.2s ease;
         }
         .bubble-menu-items .pill-list .pill-col:nth-child(4):nth-last-child(2) {
           margin-left: calc(100% / 6);
@@ -195,73 +216,85 @@ export default function BubbleMenu({
             overflow: visible;
           }
           .bubble-menu-items .pill-link {
+            transform: rotate(var(--item-rot));
             font-size: clamp(1.2rem, 3vw, 4rem);
             padding: clamp(1rem, 2vw, 2rem) 0;
             min-height: 80px !important;
           }
           .bubble-menu-items .pill-link:hover {
-            transform: scale(1.06);
+            transform: rotate(var(--item-rot)) scale(1.06);
             background: var(--hover-bg);
             color: var(--hover-color);
           }
           .bubble-menu-items .pill-link:active {
-            transform: scale(.94);
+            transform: rotate(var(--item-rot)) scale(.94);
           }
         }
       `}</style>
 
       <nav className={containerClassName} style={style} aria-label="Main navigation">
-        {/* Logo bubble */}
-        <div
-          className="bubble logo-bubble inline-flex items-center justify-center brutal-window pointer-events-auto h-12 md:h-14 px-4 md:px-8 gap-2 will-change-transform bg-white"
-          aria-label="Logo"
-          style={{ minHeight: '48px' }}
-        >
-          <span className="logo-content inline-flex items-center justify-center font-display font-black text-true-black">
-            {typeof logo === 'string' ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logo} alt="Logo" className="max-h-[60%] max-w-full object-contain block" />
-            ) : (
-              logo
-            )}
-          </span>
+        {/* Left: Logo bubble */}
+        <div className="flex items-center pointer-events-auto shrink-0 z-20">
+          <div
+            className="bubble logo-bubble inline-flex items-center justify-center brutal-window pointer-events-auto h-11 sm:h-12 md:h-14 px-2.5 sm:px-3.5 rounded-none will-change-transform bg-white shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] overflow-hidden"
+            aria-label="Logo"
+          >
+            <span className="logo-content inline-flex items-center justify-center font-display font-black text-true-black">
+              {typeof logo === 'string' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logo} alt="Logo" className="max-h-[85%] max-w-full object-contain block" />
+              ) : (
+                logo
+              )}
+            </span>
+          </div>
         </div>
 
-        {/* Hamburger toggle bubble */}
-        <button
-          type="button"
-          className={[
-            'bubble toggle-bubble menu-btn brutal-btn',
-            'inline-flex flex-col items-center justify-center',
-            'pointer-events-auto bg-ui-pink',
-            'w-12 h-12 md:w-14 md:h-14',
-            'border-[4px] border-true-black cursor-pointer p-0',
-            'will-change-transform'
-          ].join(' ')}
-          onClick={handleToggle}
-          aria-label={menuAriaLabel}
-          aria-pressed={isMenuOpen}
-        >
-          <span
-            className="menu-line block mx-auto rounded-none"
-            style={{
-              width: 26,
-              height: 4,
-              background: 'var(--true-black)',
-              transform: isMenuOpen ? 'translateY(5px) rotate(45deg)' : 'none'
-            }}
-          />
-          <span
-            className="menu-line short block mx-auto rounded-none"
-            style={{
-              marginTop: '6px',
-              width: 26,
-              height: 4,
-              background: 'var(--true-black)',
-              transform: isMenuOpen ? 'translateY(-5px) rotate(-45deg)' : 'none'
-            }}
-          />
-        </button>
+        {/* Center: Action Buttons HUD (Centered in the middle of the screen on desktop) */}
+        {actions && (
+          <div className="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2 md:gap-2.5 md:absolute md:left-1/2 md:-translate-x-1/2 z-20">
+            {actions}
+          </div>
+        )}
+
+        {/* Right: Hamburger Toggle Button */}
+        <div className="flex items-center pointer-events-auto shrink-0 z-20">
+          <button
+            type="button"
+            className={[
+              'bubble toggle-bubble menu-btn brutal-btn',
+              'inline-flex flex-col items-center justify-center',
+              'pointer-events-auto bg-ui-pink',
+              'w-11 h-11 sm:w-12 sm:h-12 md:h-14 md:w-14',
+              'border-[3px] sm:border-[4px] border-true-black cursor-pointer p-0',
+              'shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505]',
+              'will-change-transform shrink-0'
+            ].join(' ')}
+            onClick={handleToggle}
+            aria-label={menuAriaLabel}
+            aria-pressed={isMenuOpen}
+          >
+            <span
+              className="menu-line block mx-auto rounded-none"
+              style={{
+                width: 20,
+                height: 3,
+                background: 'var(--true-black)',
+                transform: isMenuOpen ? 'translateY(4.5px) rotate(45deg)' : 'none'
+              }}
+            />
+            <span
+              className="menu-line short block mx-auto rounded-none"
+              style={{
+                marginTop: '4.5px',
+                width: 20,
+                height: 3,
+                background: 'var(--true-black)',
+                transform: isMenuOpen ? 'translateY(-4.5px) rotate(-45deg)' : 'none'
+              }}
+            />
+          </button>
+        </div>
       </nav>
 
       {showOverlay && (

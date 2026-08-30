@@ -10,7 +10,9 @@ import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
 import HorizontalShowcase from './components/HorizontalShowcase'
 import NeoBrutalistHero from './components/NeoBrutalistHero'
+import GameSetupModal from './components/GameSetupModal'
 import { SoundEngine } from './components/SoundEngine'
+import { generateGameUrl } from './utils/gameUrl'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
@@ -29,6 +31,7 @@ export default function Home() {
   // Modal Dialogs
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
+  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false)
 
   // Load bankroll from localStorage
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function Home() {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return
 
       if (e.key === 'g' || e.key === 'G') {
-        window.location.href = '/game'
+        window.location.href = generateGameUrl()
       } else if (e.key === 'l' || e.key === 'L') {
         window.location.href = '/leaderboard'
       }
@@ -108,8 +111,8 @@ export default function Home() {
       }
     },
     {
-      label: '3d arena',
-      ariaLabel: 'Play in 3D Poker Arena',
+      label: 'poker duel',
+      ariaLabel: 'Play Texas Hold\'em Poker Duel',
       rotation: 4,
       hoverStyles: { bgColor: '#00FFA3', textColor: '#000000' },
       onClick: () => {
@@ -149,20 +152,81 @@ export default function Home() {
       {/* Intro Preloader */}
       {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
 
-      {/* Bubble Navbar */}
+      {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => setIsVIPOpen(true)}>
+          <div className="flex items-center justify-center cursor-pointer" onClick={() => setIsVIPOpen(true)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/PKH_Logo.jpg"
               alt="POKERHUB Logo"
-              className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
+              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
             />
-            <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
-              POKERHUB
-            </span>
           </div>
+        }
+        actions={
+          <>
+            {/* Play 3D Arena Button (Navigates to /game) - shown on md+ */}
+            <Link
+              href="/game"
+              className="brutal-btn bg-[#00FFA3] text-true-black hidden md:flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-[11px] sm:text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] -rotate-1 cursor-pointer shrink-0"
+              title="Open Standalone 3D Poker Arena"
+            >
+              <span className="text-xs sm:text-sm">🎮</span>
+              <span className="hidden lg:inline">3D ARENA</span>
+            </Link>
+
+            {/* Bankroll Faux Window */}
+            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0">
+              <span className="text-xs sm:text-sm">💰</span>
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden lg:inline">
+                BANKROLL:
+              </span>
+              <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
+                ${bankroll.toLocaleString()}
+              </span>
+              <button
+                onClick={handleRefillBankroll}
+                className="brutal-btn bg-accent-yellow text-true-black text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
+                title="Add +$5,000 High Roller Chips"
+              >
+                +$5K
+              </button>
+            </div>
+
+            {/* Sound Effects Mute / Unmute Toggle Button */}
+            <button
+              onClick={handleToggleMute}
+              className={`brutal-btn flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
+                !isMuted
+                  ? 'bg-accent-cyan text-true-black'
+                  : 'bg-white text-gray-500'
+              }`}
+              title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+            >
+              <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+              <span className="hidden lg:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
+            </button>
+
+            {/* Leaderboard Link Button - shown on sm+ */}
+            <Link
+              href="/leaderboard"
+              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0"
+              title="Open Leaderboard"
+            >
+              <span>🏆</span>
+              <span className="hidden lg:inline">RANKS</span>
+            </Link>
+
+            {/* Fullscreen Button - shown on xl+ */}
+            <button
+              onClick={handleToggleFullscreen}
+              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-bold font-pixel shrink-0 shadow-[2px_2px_0px_#000000]"
+              title="Toggle Fullscreen"
+            >
+              <span className="text-[10px]">🗖</span>
+            </button>
+          </>
         }
         useFixedPosition={true}
         menuBg="#ffffff"
@@ -174,77 +238,13 @@ export default function Home() {
         items={bubbleMenuItems}
       />
 
-      {/* Top Floating Luxury HUD Header -> Y2K Faux OS Taskbar */}
-      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto flex items-center gap-2 sm:gap-3">
-        {/* Play 3D Game Button (Navigates to /game) */}
-        <Link
-          href="/game"
-          className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-3.5 py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[3px_3px_0px_#000000] -rotate-1"
-          title="Open Standalone 3D Poker Arena"
-        >
-          <span className="text-sm">🎮</span>
-          <span className="hidden sm:inline">3D ARENA</span>
-        </Link>
-
-        {/* Bankroll Faux Window */}
-        <div className="brutal-window flex items-center gap-2 px-3 sm:px-4 py-2">
-          <span className="text-sm">💰</span>
-          <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
-            BANKROLL:
-          </span>
-          <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
-            ${bankroll.toLocaleString()}
-          </span>
-          <button
-            onClick={handleRefillBankroll}
-            className="brutal-btn bg-accent-yellow text-true-black text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
-            title="Add +$5,000 High Roller Chips"
-          >
-            +$5K
-          </button>
-        </div>
-
-        {/* Sound Effects Mute / Unmute Toggle Button */}
-        <button
-          onClick={handleToggleMute}
-          className={`brutal-btn flex items-center gap-1.5 px-3 py-2 font-pixel text-[10px] uppercase font-bold transition-all ${
-            !isMuted
-              ? 'bg-accent-cyan text-true-black'
-              : 'bg-white text-gray-500'
-          }`}
-          title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
-        >
-          <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-          <span className="hidden sm:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
-        </button>
-
-        {/* Leaderboard Link Button */}
-        <Link
-          href="/leaderboard"
-          className="brutal-btn bg-ui-pink text-true-black flex items-center gap-1.5 px-3 py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000]"
-          title="Open Leaderboard"
-        >
-          <span>🏆</span>
-          <span className="hidden sm:inline">RANKS</span>
-        </Link>
-
-        {/* Fullscreen Button */}
-        <button
-          onClick={handleToggleFullscreen}
-          className="brutal-btn w-9 h-9 bg-accent-yellow text-true-black flex items-center justify-center font-bold font-pixel"
-          title="Toggle Fullscreen"
-        >
-          <span className="text-[10px]">🗖</span>
-        </button>
-      </header>
-
       {/* ======================================================== */}
       {/* SECTION 1 (HERO): NEO-BRUTALIST 3D ACE OF SPADES STAGE */}
       {/* ======================================================== */}
       <NeoBrutalistHero
         containerRefProp={neoSectionRef}
         onOpenDuel={() => {
-          window.location.href = '/game'
+          setIsSetupModalOpen(true)
         }}
         onScrollToGallery={() => {
           if (gallerySectionRef.current) {
@@ -259,11 +259,12 @@ export default function Home() {
       <HorizontalShowcase
         containerRefProp={gallerySectionRef}
         onSelectDeck={(skin) => {
-          SoundEngine.playCardFlip()
-          window.location.href = `/game?skin=${skin}`
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('pokehub_equipped_deck', skin)
+          }
         }}
         onOpenDuel={() => {
-          window.location.href = '/game'
+          setIsSetupModalOpen(true)
         }}
       />
 
@@ -301,7 +302,7 @@ export default function Home() {
             <div className="flex items-center gap-3 flex-wrap">
               <Link
                 href="/game"
-                className="brutal-btn px-5 py-3 bg-[#00FFA3] text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#00e693]"
+                className="brutal-btn px-5 py-3 bg-[#00FFA3] text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#00e693] cursor-pointer"
               >
                 🎮 PLAY 3D ARENA →
               </Link>
@@ -333,6 +334,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Game Matchmaking & Table Setup Modal */}
+      <GameSetupModal
+        isOpen={isSetupModalOpen}
+        onClose={() => setIsSetupModalOpen(false)}
+      />
 
       {/* Poker Hand Rankings Official Guide */}
       <HandRankingsModal
