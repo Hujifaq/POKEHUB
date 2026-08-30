@@ -184,6 +184,168 @@ html.lenis, html.lenis body {
   animation: scaleUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
+/* 3D Interactive Casino Chip Animations */
+@keyframes chipToss {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) scale(0.6) rotate(-20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.15) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes chipWobble {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.15) rotate(-12deg) translateY(-4px); }
+  50% { transform: scale(1.15) rotate(12deg) translateY(-4px); }
+  75% { transform: scale(1.05) rotate(-4deg) translateY(-2px); }
+  100% { transform: scale(1) rotate(0deg) translateY(0); }
+}
+
+@keyframes chipFloatUp {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-35px) scale(1.25);
+  }
+}
+
+.animate-chipToss {
+  animation: chipToss 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-chipWobble {
+  animation: chipWobble 0.45s ease-in-out both;
+}
+
+.animate-chipFloatUp {
+  animation: chipFloatUp 0.65s ease-out forwards;
+}
+
+/* Physical Flying Chip Trajectories into Center Pot */
+@keyframes flyFromPlayer {
+  0% {
+    transform: translate(0, 220px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(0, 80px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyFromBot0 {
+  0% {
+    transform: translate(-240px, -150px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-100px, -70px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyFromBot1 {
+  0% {
+    transform: translate(0, -180px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(0, -70px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyFromBot2 {
+  0% {
+    transform: translate(240px, -150px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(100px, -70px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyFromBot3 {
+  0% {
+    transform: translate(-260px, 110px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-110px, 40px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes flyFromBot4 {
+  0% {
+    transform: translate(260px, 110px) scale(1.1) rotate(0deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(110px, 40px) scale(1.3) rotate(160deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.6) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-flyFromPlayer {
+  animation: flyFromPlayer 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-flyFromBot0 {
+  animation: flyFromBot0 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-flyFromBot1 {
+  animation: flyFromBot1 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-flyFromBot2 {
+  animation: flyFromBot2 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-flyFromBot3 {
+  animation: flyFromBot3 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-flyFromBot4 {
+  animation: flyFromBot4 0.55s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
 .equalizer-bar:nth-child(1) {
   animation: soundWave 0.8s ease-in-out infinite;
 }

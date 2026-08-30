@@ -664,7 +664,7 @@ const SHOWCASE_EDITIONS = [
     cardSuit: '♥',
     suitKey: 'heart',
     cardRank: 'K',
-    cardSkin: 'classic',
+    cardSkin: 'gold',
     badgeText: '24K MIRROR FINISH',
     stats: { rarity: 'ROYAL TIED', chips: '$25,000 CHIP', finish: 'HAND-ENGRAVED' },
     chipColor: 'bg-[#ffd700] text-[#050505] border-true-black',
@@ -848,7 +848,7 @@ function PixelCardBack({ item }) {
 // ----------------------------------------------------
 // SINGLE INTERACTIVE SHOWCASE CARD FRAME WITH 3D FLIP
 // ----------------------------------------------------
-function InteractiveShowcaseCard({ item, onSelectDeck }) {
+function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
   const [isFlipped, setIsFlipped] = useState(false)
   const cardFrameRef = useRef(null)
   const cardBodyRef = useRef(null)
@@ -1118,11 +1118,15 @@ function InteractiveShowcaseCard({ item, onSelectDeck }) {
             SoundEngine.playCardFlip()
             if (onSelectDeck) onSelectDeck(item.cardSkin)
           }}
-          className="brutal-btn bg-white hover:bg-accent-yellow text-true-black px-3.5 py-1.5 font-display text-xs font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto"
-          title={`Equip ${item.name} skin`}
+          className={`brutal-btn px-4 py-1.5 font-display text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
+            isEquipped
+              ? 'bg-[#00FFA3] text-true-black shadow-[2px_2px_0px_#000000] scale-105'
+              : 'bg-white hover:bg-accent-yellow text-true-black'
+          }`}
+          title={`Equip ${item.name} skin for 3D Duel`}
         >
-          <span>🎴</span>
-          <span>EQUIP DECK</span>
+          <span>{isEquipped ? '✓' : '🎴'}</span>
+          <span>{isEquipped ? 'EQUIPPED' : 'EQUIP DECK'}</span>
         </button>
       </div>
     </div>
@@ -1137,6 +1141,30 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
   const pinWrapperRef = useRef(null)
   const trackRef = useRef(null)
   const containerRef = containerRefProp || localContainerRef
+
+  const [equippedSkin, setEquippedSkin] = useState('obsidian')
+  const [equipToast, setEquipToast] = useState(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pokehub_equipped_deck')
+      if (saved) setEquippedSkin(saved)
+    }
+  }, [])
+
+  const handleEquip = (skinKey, skinName) => {
+    SoundEngine.playCardFlip()
+    setEquippedSkin(skinKey)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pokehub_equipped_deck', skinKey)
+    }
+    if (onSelectDeck) onSelectDeck(skinKey)
+
+    setEquipToast(`✨ EQUIPPED [${skinName}] FOR 3D DUEL!`)
+    setTimeout(() => {
+      setEquipToast(null)
+    }, 2400)
+  }
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -1170,6 +1198,15 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
 
   return (
     <div ref={containerRef} className="relative w-full">
+      {/* Floating Equip Toast */}
+      {equipToast && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[1050] pointer-events-none animate-bounce">
+          <div className="bg-[#00FFA3] border-[3px] border-true-black px-6 py-2.5 rounded-xl shadow-[5px_5px_0px_#000000] font-display font-black text-xs sm:text-sm uppercase text-true-black -rotate-1">
+            {equipToast}
+          </div>
+        </div>
+      )}
+
       <section
         ref={pinWrapperRef}
         className="relative w-full h-screen overflow-hidden select-none z-30 rounded-t-[36px] sm:rounded-t-[48px] md:rounded-t-[60px] border-t-[4px] border-true-black bg-transparent"
@@ -1224,7 +1261,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
                 className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-6 py-3 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
                 <span>⚔️</span>
-                <span>PLAY 3D DUEL</span>
+                <span>PLAY IN 3D ARENA</span>
               </button>
 
               <div className="brutal-window px-4 py-2.5 bg-white flex items-center gap-2">
@@ -1235,12 +1272,13 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
             </div>
           </div>
 
-          {/* SLIDES 2 to 7: The 6 Tilted Product Showcase Frames with Smooth Mouse-Tracking Tilt & 3D Flip on Hover */}
+          {/* SLIDES 2 to 7: The 6 Tilted Product Showcase Frames */}
           {SHOWCASE_EDITIONS.map((item) => (
             <InteractiveShowcaseCard
               key={item.id}
               item={item}
-              onSelectDeck={onSelectDeck}
+              isEquipped={equippedSkin === item.cardSkin}
+              onSelectDeck={() => handleEquip(item.cardSkin, item.name)}
             />
           ))}
 

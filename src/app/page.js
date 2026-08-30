@@ -1,14 +1,11 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import BubbleMenu from './components/BubbleMenu'
 import Preloader from './components/Preloader'
-import ControlDock from './components/ControlDock'
-import CardInspectorHUD from './components/CardInspectorHUD'
-import PokerDuelGame from './components/PokerDuelGame'
 import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
 import HorizontalShowcase from './components/HorizontalShowcase'
@@ -19,142 +16,43 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
 
-// Dynamically import PokerScene with ssr: false for rock-solid 3D Canvas initialization
-const PokerScene = dynamic(() => import('./components/PokerScene'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="w-12 h-12 rounded-full border-4 border-[#d4af37]/30 border-t-[#d4af37] animate-spin" />
-    </div>
-  )
-})
-
-const topLetters = ['P', 'K', 'H', 'B']
-const text = "POKERHUB"
-
 export default function Home() {
   const [showPreloader, setShowPreloader] = useState(true)
   const [mounted, setMounted] = useState(false)
-  const contentRef = useRef(null)
-  const heroSectionRef = useRef(null)
-  const heroSceneRef = useRef(null)
   const neoSectionRef = useRef(null)
   const gallerySectionRef = useRef(null)
-  const heroTitleBottomRef = useRef(null)
-  const heroTitleTopRef = useRef(null)
-  const hudContainerRef = useRef(null)
-
-  // 3D Scene states
-  const [isFlipped, setIsFlipped] = useState(false)
-  const [isHolo, setIsHolo] = useState(true)
-  const [isFanMode, setIsFanMode] = useState(false)
-  const [deckSkin, setDeckSkin] = useState('classic')
-  const [activeSuit, setActiveSuit] = useState('hearts')
-  const [tossSignal, setTossSignal] = useState(0)
-  const [telemetry, setTelemetry] = useState({ pitch: 0, yaw: 0, roll: 0, velX: 0, velY: 0, speed: 0 })
 
   // Financial & Audio states
   const [bankroll, setBankroll] = useState(10000)
   const [isMuted, setIsMuted] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
 
   // Modal Dialogs
-  const [isDuelOpen, setIsDuelOpen] = useState(false)
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
 
+  // Load bankroll from localStorage
   useEffect(() => {
     setMounted(true)
-  }, [])
-
-  // Track scroll position and animate Section 1 -> Section 2 smooth parallax handoff
-  useEffect(() => {
-    if (!mounted) return
-
-    const updateScrollState = () => {
-      const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 25
-      setIsScrolled(!atTop)
-    }
-
-    window.addEventListener('scroll', updateScrollState, { passive: true })
-    updateScrollState()
-
-    const ctx = gsap.context(() => {
-      // General scroll flag tracker
-      ScrollTrigger.create({
-        start: 0,
-        end: 'max',
-        onUpdate: (self) => {
-          setIsScrolled(self.scroll > 25)
-        }
-      })
-
-      // Section 1 -> Section 2 Parallax & Smooth Exit Timeline
-      if (heroSectionRef.current) {
-        const heroTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: heroSectionRef.current,
-            start: 'top top',
-            end: 'bottom top',
-            scrub: 1.2,
-            invalidateOnRefresh: true,
-          }
-        })
-
-        // 1. Text layers glide up with subtle scale & smooth fade
-        if (heroTitleBottomRef.current && heroTitleTopRef.current) {
-          heroTl.to([heroTitleBottomRef.current, heroTitleTopRef.current], {
-            yPercent: -35,
-            scale: 1.12,
-            opacity: 0.12,
-            ease: 'none'
-          }, 0)
-        }
-
-        // 2. 3D Scene smoothly scales down and translates with the scroll
-        if (heroSceneRef.current) {
-          heroTl.to(heroSceneRef.current, {
-            scale: 0.7,
-            yPercent: 15,
-            opacity: 0,
-            ease: 'power1.in'
-          }, 0)
-        }
-
-        // 4. Floating HUD & ControlDock fade away cleanly
-        if (hudContainerRef.current) {
-          heroTl.to(hudContainerRef.current, {
-            opacity: 0,
-            y: 35,
-            ease: 'power1.in'
-          }, 0)
-        }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pokehub_bankroll')
+      if (saved) {
+        setBankroll(Number(saved))
       }
-    })
-
-    // Recalculate all pinned trigger positions once components are mounted
-    const refreshTimer = setTimeout(() => {
-      ScrollTrigger.refresh()
-    }, 400)
-
-    return () => {
-      clearTimeout(refreshTimer)
-      window.removeEventListener('scroll', updateScrollState)
-      ctx.revert()
     }
-  }, [mounted])
-
-
-
-
-
-  // Toss chip handler
-  const handleTossChip = useCallback(() => {
-    setTossSignal(s => s + 1)
-    setBankroll(b => Math.max(0, b - 100))
   }, [])
 
-  // Sound Effects Mute / Unmute Toggle handler
+  // Sync bankroll updates
+  const updateBankroll = (valOrFn) => {
+    setBankroll(prev => {
+      const nextVal = typeof valOrFn === 'function' ? valOrFn(prev) : valOrFn
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pokehub_bankroll', nextVal.toString())
+      }
+      return nextVal
+    })
+  }
+
+  // Sound Effects Mute Toggle handler
   const handleToggleMute = useCallback(() => {
     const nextMuted = !isMuted
     setIsMuted(nextMuted)
@@ -167,7 +65,7 @@ export default function Home() {
   // Refill Bankroll
   const handleRefillBankroll = () => {
     SoundEngine.playJackpot()
-    setBankroll(b => b + 5000)
+    updateBankroll(b => b + 5000)
   }
 
   // Toggle Fullscreen
@@ -187,74 +85,44 @@ export default function Home() {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return
 
-      if (e.code === 'Space') {
-        e.preventDefault()
-        SoundEngine.playCardFlip()
-        setIsFlipped(f => !f)
-      } else if (e.key === 'c' || e.key === 'C') {
-        handleTossChip()
-      } else if (e.key === 'h' || e.key === 'H') {
-        SoundEngine.playClick()
-        setIsHolo(h => !h)
-      } else if (e.key === 'f' || e.key === 'F') {
-        SoundEngine.playCardSwoosh()
-        setIsFanMode(fm => !fm)
-      } else if (e.key === 'd' || e.key === 'D') {
-        setIsDuelOpen(d => !d)
+      if (e.key === 'g' || e.key === 'G') {
+        window.location.href = '/game'
+      } else if (e.key === 'l' || e.key === 'L') {
+        window.location.href = '/leaderboard'
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleTossChip])
-
-  // Nav blur effect
-  const handleNavToggle = useCallback((isOpen) => {
-    if (!contentRef.current) return
-    gsap.to(contentRef.current, {
-      filter: isOpen ? 'blur(20px) brightness(0.6)' : 'blur(0px) brightness(1)',
-      scale: isOpen ? 0.96 : 1,
-      duration: 0.5,
-      ease: 'power3.out',
-    })
   }, [])
 
-  // Custom Bubble menu items wired to active features
+  // Hamburger Menu Items: Home, 3D Arena, Leaderboard, Rankings, VIP Club
   const bubbleMenuItems = [
     {
       label: 'home',
-      ariaLabel: '3D Stage Free Play',
-      rotation: -8,
-      hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' },
+      ariaLabel: 'POKERHUB Home',
+      rotation: -4,
+      hoverStyles: { bgColor: '#FFDE59', textColor: '#000000' },
       onClick: () => {
-        setIsDuelOpen(false)
-        setIsRankingsOpen(false)
-        setIsVIPOpen(false)
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     },
     {
-      label: 'gallery',
-      ariaLabel: 'Deck Showcase Gallery',
-      rotation: 8,
-      hoverStyles: { bgColor: '#ffa6c9', textColor: '#050505' },
+      label: '3d arena',
+      ariaLabel: 'Play in 3D Poker Arena',
+      rotation: 4,
+      hoverStyles: { bgColor: '#00FFA3', textColor: '#000000' },
       onClick: () => {
-        SoundEngine.playClick()
-        if (gallerySectionRef.current) {
-          gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
-        } else if (heroSectionRef.current) {
-          window.scrollTo({ top: heroSectionRef.current.offsetHeight, behavior: 'smooth' })
-        }
+        window.location.href = '/game'
       }
     },
     {
-      label: 'games',
-      ariaLabel: 'Texas Hold\'em 3D Duel',
+      label: 'leaderboard',
+      ariaLabel: 'High Roller Leaderboard',
       rotation: -6,
-      hoverStyles: { bgColor: '#c0392b', textColor: '#ffffff' },
+      hoverStyles: { bgColor: '#FF90E8', textColor: '#000000' },
       onClick: () => {
-        SoundEngine.playCardSwoosh()
-        setIsDuelOpen(true)
+        window.location.href = '/leaderboard'
       }
     },
     {
@@ -275,291 +143,209 @@ export default function Home() {
 
   return (
     <main className="w-full relative min-h-screen transition-colors duration-700 text-true-black overflow-x-hidden bg-transparent">
-        {/* Infinite Seamless Fixed Graph Grid across all sections */}
-        <div className="fixed-graph-grid" />
+      {/* Infinite Seamless Fixed Graph Grid across all sections */}
+      <div className="fixed-graph-grid" />
 
-        {/* Intro Preloader */}
-        {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
+      {/* Intro Preloader */}
+      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
 
-        {/* Bubble Navbar */}
-        <BubbleMenu
-          logo={
-            <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => setIsVIPOpen(true)}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/PKH_Logo.jpg"
-                alt="POKERHUB Logo"
-                className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
-              />
-              <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
-                POKERHUB
-              </span>
-            </div>
-          }
-          useFixedPosition={true}
-          menuBg="#ffffff"
-          menuContentColor="#050505"
-          menuAriaLabel="Toggle navigation"
-          animationEase="back.out(1.5)"
-          animationDuration={0.5}
-          staggerDelay={0.1}
-          items={bubbleMenuItems}
-          onMenuClick={handleNavToggle}
-        />
-
-        {/* Top Floating Luxury HUD Header -> Y2K Faux OS Taskbar */}
-        <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto hidden md:flex items-center gap-3">
-          {/* Bankroll Faux Window */}
-          <div className="brutal-window flex items-center gap-2.5 px-4 py-2">
-            <span className="text-sm">💰</span>
-            <span className="text-xs font-black uppercase tracking-wider font-pixel text-true-black">BANKROLL:</span>
-            <span className="text-sm font-black text-emerald-600 tracking-tight drop-shadow-[2px_2px_0px_#050505] font-display">${bankroll.toLocaleString()}</span>
-            <button
-              onClick={handleRefillBankroll}
-              className="brutal-btn bg-accent-yellow text-true-black text-[10px] font-black px-2 py-0.5"
-              title="Add +$5,000 High Roller Chips"
-            >
-              + $5K
-            </button>
+      {/* Bubble Navbar */}
+      <BubbleMenu
+        logo={
+          <div className="flex items-center gap-2 cursor-pointer py-0.5" onClick={() => setIsVIPOpen(true)}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/PKH_Logo.jpg"
+              alt="POKERHUB Logo"
+              className="h-8 md:h-9 w-auto object-contain rounded-sm border border-true-black/40 drop-shadow-[1px_1px_0px_#050505]"
+            />
+            <span className="font-display font-black text-xs md:text-sm tracking-tight text-true-black uppercase hidden sm:inline-block">
+              POKERHUB
+            </span>
           </div>
+        }
+        useFixedPosition={true}
+        menuBg="#ffffff"
+        menuContentColor="#050505"
+        menuAriaLabel="Toggle navigation"
+        animationEase="back.out(1.5)"
+        animationDuration={0.5}
+        staggerDelay={0.1}
+        items={bubbleMenuItems}
+      />
 
-          {/* Sound Effects Mute / Unmute Toggle Button */}
-          <button
-            onClick={handleToggleMute}
-            className={`brutal-btn flex items-center gap-2 px-3.5 py-2 font-pixel text-[10px] uppercase font-bold transition-all ${
-              !isMuted
-                ? 'bg-accent-cyan text-true-black'
-                : 'bg-white text-gray-500'
-            }`}
-            title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
-          >
-            <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-            <span>{isMuted ? 'MUTED' : 'SFX ON'}</span>
-          </button>
-
-          {/* Fullscreen Button */}
-          <button
-            onClick={handleToggleFullscreen}
-            className="brutal-btn w-9 h-9 bg-ui-pink text-true-black flex items-center justify-center font-bold font-pixel"
-            title="Toggle Fullscreen"
-          >
-            <span className="text-[10px]">🗖</span>
-          </button>
-        </header>
-
-        {/* SECTION 1: MAIN 3D HERO ARENA (Desktop / PC Only) */}
-        <section
-          ref={heroSectionRef}
-          className="relative w-full h-screen overflow-hidden hidden md:flex items-center justify-center"
+      {/* Top Floating Luxury HUD Header -> Y2K Faux OS Taskbar */}
+      <header className="fixed top-8 left-1/2 -translate-x-1/2 z-[950] pointer-events-auto flex items-center gap-2 sm:gap-3">
+        {/* Play 3D Game Button (Navigates to /game) */}
+        <Link
+          href="/game"
+          className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-3.5 py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[3px_3px_0px_#000000] -rotate-1"
+          title="Open Standalone 3D Poker Arena"
         >
-          {/* Main 3D Stage & Layers Wrapper */}
-          <div ref={contentRef} className="absolute inset-0" style={{ willChange: 'filter, transform' }}>
+          <span className="text-sm">🎮</span>
+          <span className="hidden sm:inline">3D ARENA</span>
+        </Link>
 
-            {/* Bottom Text Layer — behind 3D cards */}
-            <div
-              ref={heroTitleBottomRef}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none select-none will-change-transform px-5 sm:px-8 md:px-0"
-            >
-              <h1
-                className="text-[14vw] sm:text-[15vw] md:text-[16vw] mx-3 sm:mx-6 md:mx-0 font-display text-ui-pink drop-shadow-[5px_5px_0px_#050505] md:drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[1.6] md:scale-y-[2] opacity-100 transition-colors duration-700"
-                style={{ 
-                  whiteSpace: 'nowrap',
-                  WebkitTextStroke: '4px #050505'
-                }}
-              >
-                {text}
-              </h1>
+        {/* Bankroll Faux Window */}
+        <div className="brutal-window flex items-center gap-2 px-3 sm:px-4 py-2">
+          <span className="text-sm">💰</span>
+          <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
+            BANKROLL:
+          </span>
+          <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
+            ${bankroll.toLocaleString()}
+          </span>
+          <button
+            onClick={handleRefillBankroll}
+            className="brutal-btn bg-accent-yellow text-true-black text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
+            title="Add +$5,000 High Roller Chips"
+          >
+            +$5K
+          </button>
+        </div>
 
-              {/* Small paragraph underneath the POKERHUB text — Mobile Only */}
-              <div className="mt-8 sm:mt-10 max-w-xs sm:max-w-sm text-center px-2 pointer-events-auto block md:hidden">
-                <p className="font-mono-nb text-[10px] sm:text-xs font-bold text-true-black bg-white/95 border-[2px] border-true-black px-3.5 py-2.5 brutal-shadow-sm leading-relaxed uppercase tracking-wider backdrop-blur-xs">
-                  The ultimate high-roller digital poker arena. Real-time procedural 3D card physics, cryptographic fair deck RNG, and multiplayer Texas Hold'em.
-                </p>
-              </div>
-            </div>
+        {/* Sound Effects Mute / Unmute Toggle Button */}
+        <button
+          onClick={handleToggleMute}
+          className={`brutal-btn flex items-center gap-1.5 px-3 py-2 font-pixel text-[10px] uppercase font-bold transition-all ${
+            !isMuted
+              ? 'bg-accent-cyan text-true-black'
+              : 'bg-white text-gray-500'
+          }`}
+          title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
+        >
+          <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
+          <span className="hidden sm:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
+        </button>
 
-            {/* 3D Scene Layer — Interactive Canvas (Hidden on mobile to disable cursor tracking card) */}
-            <div
-              ref={heroSceneRef}
-              className="absolute inset-0 z-20 will-change-transform origin-center hidden md:block"
-            >
-              {mounted && (
-                <PokerScene
-                  isReady={!showPreloader}
-                  isFlipped={isFlipped}
-                  isHolo={isHolo}
-                  isFanMode={isFanMode}
-                  deckSkin={deckSkin}
-                  activeSuit={activeSuit}
-                  theme="macau"
-                  tossSignal={tossSignal}
-                  isScrolled={isScrolled}
-                  onTelemetry={setTelemetry}
+        {/* Leaderboard Link Button */}
+        <Link
+          href="/leaderboard"
+          className="brutal-btn bg-ui-pink text-true-black flex items-center gap-1.5 px-3 py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000]"
+          title="Open Leaderboard"
+        >
+          <span>🏆</span>
+          <span className="hidden sm:inline">RANKS</span>
+        </Link>
+
+        {/* Fullscreen Button */}
+        <button
+          onClick={handleToggleFullscreen}
+          className="brutal-btn w-9 h-9 bg-accent-yellow text-true-black flex items-center justify-center font-bold font-pixel"
+          title="Toggle Fullscreen"
+        >
+          <span className="text-[10px]">🗖</span>
+        </button>
+      </header>
+
+      {/* ======================================================== */}
+      {/* SECTION 1 (HERO): NEO-BRUTALIST 3D ACE OF SPADES STAGE */}
+      {/* ======================================================== */}
+      <NeoBrutalistHero
+        containerRefProp={neoSectionRef}
+        onOpenDuel={() => {
+          window.location.href = '/game'
+        }}
+        onScrollToGallery={() => {
+          if (gallerySectionRef.current) {
+            gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
+          }
+        }}
+      />
+
+      {/* ======================================================== */}
+      {/* SECTION 2: GSAP HORIZONTAL SCROLL SHOWCASE (6 DECKS)   */}
+      {/* ======================================================== */}
+      <HorizontalShowcase
+        containerRefProp={gallerySectionRef}
+        onSelectDeck={(skin) => {
+          SoundEngine.playCardFlip()
+          window.location.href = `/game?skin=${skin}`
+        }}
+        onOpenDuel={() => {
+          window.location.href = '/game'
+        }}
+      />
+
+      {/* ======================================================== */}
+      {/* SECTION 3: NEO-BRUTALIST ARCADE FOOTER                  */}
+      {/* ======================================================== */}
+      <footer className="w-full bg-true-black text-white border-t-[4px] border-true-black relative z-40 py-16 px-6 overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-5"
+          style={{
+            backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)',
+            backgroundSize: '24px 24px'
+          }}
+        />
+
+        <div className="max-w-7xl mx-auto flex flex-col gap-12 relative z-10">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 pb-10 border-b-[2px] border-white/20">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/PKH_Logo.jpg"
+                  alt="POKERHUB Logo"
+                  className="h-10 w-auto rounded border border-white/40"
                 />
-              )}
-            </div>
-
-            {/* Top Text Layer — in front of cards (P K H B letters only) on desktop */}
-            <div
-              ref={heroTitleTopRef}
-              className="absolute inset-0 z-30 hidden md:flex items-center justify-center pointer-events-none select-none will-change-transform"
-            >
-              <h1
-                className="text-[16vw] font-display text-ui-pink drop-shadow-[8px_8px_0px_#050505] tracking-tighter leading-none scale-y-[2] opacity-100 transition-colors duration-700 pointer-events-none"
-                style={{ 
-                  whiteSpace: 'nowrap',
-                  WebkitTextStroke: '4px #050505'
-                }}
-              >
-                {text.split('').map((char, i) => (
-                  <span
-                    key={i}
-                    style={{ visibility: topLetters.includes(char) ? 'visible' : 'hidden' }}
-                  >
-                    {char}
-                  </span>
-                ))}
-              </h1>
-            </div>
-
-          </div>
-        </section>
-
-        {/* SECTION 2: NEO-BRUTALIST HERO STAGE (SCROLLYTELLING 3D ACE OF SPADES) */}
-        <NeoBrutalistHero
-          containerRefProp={neoSectionRef}
-          onOpenDuel={() => setIsDuelOpen(true)}
-          onScrollToGallery={() => {
-            if (gallerySectionRef.current) {
-              gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
-            }
-          }}
-        />
-
-        {/* SECTION 3: GSAP HORIZONTAL SCROLL SHOWCASE (Frame 2 เดิม) */}
-        <HorizontalShowcase
-          containerRefProp={gallerySectionRef}
-          onSelectDeck={(skin) => {
-            setDeckSkin(skin)
-            SoundEngine.playCardFlip()
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }}
-          onOpenDuel={() => setIsDuelOpen(true)}
-        />
-
-        {/* SECTION 4: NEO-BRUTALIST ARCADE FOOTER */}
-        <footer className="w-full bg-white border-t-[4px] border-true-black py-12 px-6 md:px-16 z-30 relative select-none">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex flex-col items-center md:items-start">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🎴</span>
-                <span className="font-display text-2xl font-black text-true-black tracking-tight">
+                <span className="font-display text-2xl md:text-3xl font-black tracking-tight uppercase text-accent-yellow">
                   POKERHUB
                 </span>
-                <span className="font-pixel text-[9px] bg-accent-yellow border-[2px] border-true-black px-1.5 py-0.5 font-bold">
-                  v2.5
-                </span>
               </div>
-              <p className="font-pixel text-[10px] text-gray-600 max-w-sm text-center md:text-left">
-                Next-Gen 3D WebGL Poker Experience. Procedural cards, real-time physics, high-roller duels &amp; luxury foil archives.
+              <p className="font-mono-nb text-xs text-gray-400 max-w-md uppercase tracking-wider">
+                Next-Gen Neo-Brutalist 3D Poker Arena with Procedural Physics & Intelligent AI Opponents.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => {
-                  SoundEngine.playCardSwoosh()
-                  setIsDuelOpen(true)
-                }}
-                className="brutal-btn bg-ui-pink text-true-black px-4 py-2 font-display text-xs uppercase font-bold"
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link
+                href="/game"
+                className="brutal-btn px-5 py-3 bg-[#00FFA3] text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#00e693]"
               >
-                ⚔️ 3D Duel
-              </button>
-              <button
-                onClick={() => {
-                  SoundEngine.playClick()
-                  setIsRankingsOpen(true)
-                }}
-                className="brutal-btn bg-accent-yellow text-true-black px-4 py-2 font-display text-xs uppercase font-bold"
+                🎮 PLAY 3D ARENA →
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="brutal-btn px-5 py-3 bg-ui-pink text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#ff8cb8]"
               >
-                📜 Hand Rankings
-              </button>
+                🏆 LEADERBOARD
+              </Link>
               <button
-                onClick={() => {
-                  SoundEngine.playClick()
-                  setIsVIPOpen(true)
-                }}
-                className="brutal-btn bg-accent-cyan text-true-black px-4 py-2 font-display text-xs uppercase font-bold"
+                onClick={() => setIsRankingsOpen(true)}
+                className="brutal-btn px-4 py-3 bg-white text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-accent-yellow"
               >
-                💎 VIP Club
-              </button>
-              <button
-                onClick={() => {
-                  SoundEngine.playClick()
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                }}
-                className="brutal-btn bg-white text-true-black px-4 py-2 font-pixel text-[10px] uppercase font-bold"
-              >
-                ▲ Top
+                📜 HAND RULES
               </button>
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto mt-8 pt-6 border-t-[2px] border-true-black flex flex-col sm:flex-row items-center justify-between text-gray-500 font-pixel text-[9px] gap-2">
-            <span>© 2026 POKERHUB CASINO. ALL RIGHTS RESERVED.</span>
-            <span>BUILT WITH THREE.JS, REACT THREE FIBER, GSAP &amp; LENIS.</span>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left font-mono-nb text-xs text-gray-500">
+            <div>
+              © 2026 POKERHUB ARCHIVES. ALL RIGHTS RESERVED.
+            </div>
+            <div className="flex items-center gap-6 text-gray-400">
+              <Link href="/leaderboard" className="hover:text-white">LEADERBOARD</Link>
+              <span className="cursor-pointer hover:text-white" onClick={() => setIsVIPOpen(true)}>VIP CLUB</span>
+              <span className="cursor-pointer hover:text-white" onClick={() => setIsRankingsOpen(true)}>RULES</span>
+              <span className="cursor-pointer hover:text-white" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>BACK TO TOP ↑</span>
+            </div>
           </div>
-        </footer>
-
-        {/* Real-time 3D Telemetry HUD & Control Dock (smoothly fades on scroll towards Section 2) */}
-        <div ref={hudContainerRef} className="contents will-change-transform">
-          <CardInspectorHUD
-            telemetry={telemetry}
-            deckSkin={deckSkin}
-            activeSuit={activeSuit}
-            isHolo={isHolo}
-            isFanMode={isFanMode}
-          />
-
-          <ControlDock
-            isFanMode={isFanMode}
-            setIsFanMode={setIsFanMode}
-            isFlipped={isFlipped}
-            setIsFlipped={setIsFlipped}
-            isHolo={isHolo}
-            setIsHolo={setIsHolo}
-            deckSkin={deckSkin}
-            setDeckSkin={setDeckSkin}
-            activeSuit={activeSuit}
-            setActiveSuit={setActiveSuit}
-            onTossChip={handleTossChip}
-            onOpenDuel={() => setIsDuelOpen(true)}
-            onOpenRankings={() => setIsRankingsOpen(true)}
-          />
         </div>
+      </footer>
 
-        {/* Texas Hold'em 3D Duel Modal Game */}
-        <PokerDuelGame
-          isOpen={isDuelOpen}
-          onClose={() => setIsDuelOpen(false)}
-          bankroll={bankroll}
-          setBankroll={setBankroll}
-        />
+      {/* Poker Hand Rankings Official Guide */}
+      <HandRankingsModal
+        isOpen={isRankingsOpen}
+        onClose={() => setIsRankingsOpen(false)}
+      />
 
-        {/* Poker Hand Rankings Official Guide */}
-        <HandRankingsModal
-          isOpen={isRankingsOpen}
-          onClose={() => setIsRankingsOpen(false)}
-        />
+      {/* VIP High Roller Club Modal */}
+      <VIPClubModal
+        isOpen={isVIPOpen}
+        onClose={() => setIsVIPOpen(false)}
+      />
 
-        {/* VIP High Roller Club Modal */}
-        <VIPClubModal
-          isOpen={isVIPOpen}
-          onClose={() => setIsVIPOpen(false)}
-        />
-
-      </main>
-    )
-  }
-
-
+    </main>
+  )
+}
