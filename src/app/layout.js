@@ -36,6 +36,11 @@ const instrumentSerif = Instrument_Serif({
 export const metadata = {
   title: "POKERHUB",
   description: "Y2K Retro Poker Experience",
+  icons: {
+    icon: "/PKH_Logo.jpg",
+    shortcut: "/PKH_Logo.jpg",
+    apple: "/PKH_Logo.jpg",
+  },
 };
 
 export default function RootLayout({ children }) {

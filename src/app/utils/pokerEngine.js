@@ -1,13 +1,4 @@
-/**
- * pokerEngine.js
- * 
- * Standard Texas Hold'em Poker Engine (WSOP / TDA Standard)
- * - Strict Turn Order (Pre-Flop: UTG -> BB, Post-Flop: Left of Button -> Button)
- * - Deterministic Betting Round completion logic (isBettingRoundComplete)
- * - Re-opening action upon Raise
- * - Layered Main Pot & Multi-way Side Pots calculation
- * - 7-card best 5-card Hand Evaluator & Pot distribution
- */
+
 
 export const GamePhase = {
   IDLE: 'IDLE',
