@@ -73,6 +73,8 @@ export function parseGameUrlParams(searchString) {
       table: 'macau_nlh_500',
       stakes: '250-500',
       skin: 'obsidian',
+      theme: 'classic_pink',
+      bots: '2',
       mode: 'texas_holdem',
       duel: null,
       hand: '1'
@@ -88,6 +90,8 @@ export function parseGameUrlParams(searchString) {
   const stakes = params.get('stakes') || '250-500'
   const rawSkin = params.get('skin') || 'obsidian'
   const skin = rawSkin === 'classic' ? 'gold' : rawSkin
+  const theme = params.get('theme') || 'classic_pink'
+  const bots = params.get('bots') || '2'
   const mode = params.get('mode') || 'texas_holdem'
   const duel = params.get('duel') || null
   const hand = params.get('hand') || '1'
@@ -98,6 +102,8 @@ export function parseGameUrlParams(searchString) {
     table,
     stakes,
     skin,
+    theme,
+    bots,
     mode,
     duel,
     hand

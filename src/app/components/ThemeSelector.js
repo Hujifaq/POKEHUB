@@ -51,26 +51,23 @@ export default function ThemeSelector({ activeTheme, onThemeChange, isOpen, onCl
 
   return (
     <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-fadeIn">
-      <div className="relative w-full max-w-xl bg-gradient-to-b from-[#181a24] via-[#10121a] to-[#0a0b10] border border-[#d4af37]/40 rounded-3xl shadow-[0_0_60px_rgba(212,175,55,0.25)] p-6 overflow-hidden">
+      <div className="relative w-full max-w-md bg-[#10121a] border border-white/20 rounded-2xl p-5 overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-          <div className="flex items-center gap-3">
-            <div>
-              <h2 className="text-xl font-black text-white tracking-wide">CASINO ATMOSPHERE & FELT</h2>
-              <p className="text-xs text-gray-400">Change 3D lighting, table felt & ambience</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+          <h2 className="text-base font-black text-white uppercase tracking-wider">
+            ATMOSPHERE
+          </h2>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer font-bold"
+            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-all cursor-pointer font-bold text-sm"
           >
             ✕
           </button>
         </div>
 
         {/* Theme Options */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           {THEMES.map(theme => (
             <button
               key={theme.key}
@@ -79,24 +76,18 @@ export default function ThemeSelector({ activeTheme, onThemeChange, isOpen, onCl
                 onThemeChange(theme.key)
                 onClose()
               }}
-              className={`p-4 rounded-2xl border text-left transition-all duration-300 flex items-center gap-3.5 cursor-pointer relative overflow-hidden group ${
+              className={`p-3 rounded-xl border text-left transition-all duration-300 flex items-center gap-2.5 cursor-pointer relative overflow-hidden group ${
                 activeTheme === theme.key
-                  ? 'border-[#d4af37] bg-gradient-to-br ' + theme.gradient + ' shadow-[0_0_20px_rgba(212,175,55,0.4)] scale-[1.02]'
+                  ? 'border-[#d4af37] bg-gradient-to-br ' + theme.gradient + ' shadow-[0_0_15px_rgba(212,175,55,0.3)] scale-[1.02]'
                   : 'border-white/10 bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08]'
               }`}
             >
-              <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform">
+              <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center text-lg shrink-0">
                 {theme.icon}
               </div>
-              <div>
-                <h3 className="text-sm font-black text-white flex items-center gap-1.5">
-                  {theme.name}
-                  {activeTheme === theme.key && (
-                    <span className="text-[10px] bg-[#d4af37] text-black px-1.5 py-0.2 rounded font-bold">ACTIVE</span>
-                  )}
-                </h3>
-                <p className="text-xs text-gray-400 mt-0.5 capitalize">{theme.key} ambiance</p>
-              </div>
+              <h3 className="text-xs font-black text-white truncate">
+                {theme.name}
+              </h3>
             </button>
           ))}
         </div>

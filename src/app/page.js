@@ -166,6 +166,11 @@ export default function Home() {
           setTimeout(() => {
             scrollToDeckSkins()
           }, 350)
+        } else if (window.location.hash === '#about') {
+          setTimeout(() => {
+            const el = document.getElementById('about')
+            if (el) el.scrollIntoView({ behavior: 'smooth' })
+          }, 350)
         }
       }
       checkHash()
@@ -204,11 +209,13 @@ export default function Home() {
       }
     },
     {
-      label: 'rankings',
-      ariaLabel: 'Poker Hand Rankings Guide',
+      label: 'about us',
+      ariaLabel: 'About POKEHUB & Team KMUTT',
       rotation: 6,
       hoverStyles: { bgColor: '#d4af37', textColor: '#14161c' },
-      onClick: () => setIsRankingsOpen(true)
+      onClick: () => {
+        window.location.href = '/about'
+      }
     },
     {
       label: 'how to play',
@@ -310,15 +317,6 @@ export default function Home() {
               <span>{isMuted ? 'MUTED' : 'SFX: ON'}</span>
             </button>
 
-            {/* Leaderboard Link Button - shown on sm+ */}
-            <Link
-              href="/leaderboard"
-              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0"
-              title="Open Leaderboard"
-            >
-              <span>RANKS</span>
-            </Link>
-
             {/* Fullscreen Button - shown on xl+ */}
             <button
               onClick={handleToggleFullscreen}
@@ -380,9 +378,9 @@ export default function Home() {
       />
 
       {/* ======================================================== */}
-      {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER                  */}
+      {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER (ABOUT US)       */}
       {/* ======================================================== */}
-      <footer className="w-full bg-true-black text-white border-t-[4px] border-true-black relative z-40 py-16 px-6 overflow-hidden">
+      <footer id="about" className="w-full bg-true-black text-white border-t-[4px] border-true-black relative z-40 py-16 px-6 overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none opacity-5"
           style={{

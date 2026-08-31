@@ -101,11 +101,13 @@ export default function LeaderboardPage() {
       }
     },
     {
-      label: 'rankings',
-      ariaLabel: 'Poker Hand Rankings Guide',
+      label: 'about us',
+      ariaLabel: 'About POKEHUB & Team KMUTT',
       rotation: 6,
       hoverStyles: { bgColor: '#d4af37', textColor: '#14161c' },
-      onClick: () => setIsRankingsOpen(true)
+      onClick: () => {
+        window.location.href = '/about'
+      }
     },
     {
       label: 'how to play',

@@ -77,7 +77,7 @@ export default function ControlDock({
           title={isExpanded ? "Collapse Controls (Click)" : "Expand Controls (Click)"}
         >
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="w-2 h-2 rounded-full bg-true-black animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-true-black" />
             <span className="font-pixel text-true-black font-bold text-[9px] sm:text-[10px] uppercase tracking-wider">
               Controls.exe
             </span>

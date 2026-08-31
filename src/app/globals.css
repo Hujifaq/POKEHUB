@@ -416,3 +416,91 @@ html.lenis body {
   transform-origin: center bottom;
   animation: cardFlip3DEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ========================================================================= */
+/* POKER CARD DEALING & FLIP ANIMATIONS                                      */
+/* ========================================================================= */
+@keyframes dealCommunityCard {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) translateY(-90px) scale(0.65) rotateY(180deg) rotateZ(-14deg);
+    filter: blur(2px) drop-shadow(0 20px 25px rgba(0,0,0,0.6));
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(900px) translateY(8px) scale(1.08) rotateY(20deg) rotateZ(3deg);
+    filter: blur(0px) drop-shadow(0 8px 12px rgba(0,0,0,0.4));
+  }
+  85% {
+    transform: perspective(900px) translateY(-3px) scale(0.98) rotateY(-5deg) rotateZ(-1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(900px) translateY(0px) scale(1) rotateY(0deg) rotateZ(0deg);
+    filter: none;
+  }
+}
+
+@keyframes dealPlayerCard {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) translateY(-140px) translateX(40px) scale(0.6) rotateZ(-20deg);
+    filter: blur(3px);
+  }
+  65% {
+    opacity: 1;
+    transform: perspective(1000px) translateY(12px) scale(1.08) rotateZ(4deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) translateY(0px) scale(1) rotateZ(0deg);
+    filter: none;
+  }
+}
+
+@keyframes dealBotCard {
+  0% {
+    opacity: 0;
+    transform: perspective(800px) translateY(70px) scale(0.6) rotateZ(15deg);
+  }
+  70% {
+    opacity: 1;
+    transform: perspective(800px) translateY(-6px) scale(1.06) rotateZ(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(800px) translateY(0px) scale(1) rotateZ(0deg);
+  }
+}
+
+@keyframes cardRevealShowdown {
+  0% {
+    transform: perspective(800px) rotateY(180deg) scale(0.95);
+  }
+  50% {
+    transform: perspective(800px) rotateY(90deg) scale(1.1);
+  }
+  100% {
+    transform: perspective(800px) rotateY(0deg) scale(1);
+  }
+}
+
+.animate-deal-community {
+  animation: dealCommunityCard 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-deal-player {
+  animation: dealPlayerCard 0.48s cubic-bezier(0.18, 0.89, 0.32, 1.15) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-deal-bot {
+  animation: dealBotCard 0.38s cubic-bezier(0.2, 0.85, 0.4, 1.1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-card-reveal {
+  animation: cardRevealShowdown 0.4s ease-out forwards;
+}

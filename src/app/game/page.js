@@ -67,6 +67,7 @@ export default function GamePage() {
   // Financial & Audio states
   const [bankroll, setBankroll] = useState(10000)
   const [isMuted, setIsMuted] = useState(false)
+  const [tableTheme, setTableTheme] = useState('classic_pink')
 
   // Modal Dialogs
   const [isDuelOpen, setIsDuelOpen] = useState(false)
@@ -87,6 +88,7 @@ export default function GamePage() {
       const activeTable = parsed.table || 'macau_nlh_500'
       const activeStakes = parsed.stakes || '250-500'
       const activeSkin = parsed.skin || 'obsidian'
+      const activeTheme = parsed.theme || localStorage.getItem('pokehub_table_theme') || 'classic_pink'
       const activeMode = parsed.mode || 'texas_holdem'
       const activeBotsCount = Number(parsed.bots) || 2
       const isDuelFromUrl = parsed.duel === 'open' || parsed.duel === 'active' || parsed.duel === 'true' || parsed.duel === '1'
@@ -97,6 +99,7 @@ export default function GamePage() {
       setStakes(activeStakes)
       setMode(activeMode)
       setInitialBots(activeBotsCount)
+      setTableTheme(activeTheme)
       if (activeSkin && activeSkin !== 'classic') {
         setDeckSkin(activeSkin)
       }
@@ -121,6 +124,7 @@ export default function GamePage() {
         searchParams.set('table', tableName)
         searchParams.set('stakes', stakes)
         searchParams.set('skin', deckSkin)
+        searchParams.set('theme', tableTheme)
         searchParams.set('bots', initialBots.toString())
         searchParams.set('duel', 'open')
         window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`)
@@ -131,7 +135,7 @@ export default function GamePage() {
         }
       }
     }
-  }, [mounted, userId, gameId, tableName, stakes, deckSkin, initialBots, isDuelOpen])
+  }, [mounted, userId, gameId, tableName, stakes, deckSkin, tableTheme, initialBots, isDuelOpen])
 
   // Leave active poker session & delete session parameters
   const handleLeaveGame = useCallback(() => {
@@ -148,8 +152,19 @@ export default function GamePage() {
     setGameId(sessionConfig.gameId)
     setTableName(sessionConfig.table)
     setStakes(sessionConfig.stakes)
-    setDeckSkin(sessionConfig.skin)
-    setInitialBots(sessionConfig.bots)
+    if (sessionConfig.skin) {
+      setDeckSkin(sessionConfig.skin)
+    }
+    if (sessionConfig.theme) {
+      setTableTheme(sessionConfig.theme)
+    }
+    if (sessionConfig.bots) {
+      setInitialBots(Number(sessionConfig.bots))
+    }
+    if (typeof window !== 'undefined') {
+      if (sessionConfig.theme) localStorage.setItem('pokehub_table_theme', sessionConfig.theme)
+      if (sessionConfig.skin) localStorage.setItem('pokehub_equipped_deck', sessionConfig.skin)
+    }
     setIsDuelOpen(true)
   }
 
@@ -274,11 +289,13 @@ export default function GamePage() {
       }
     },
     {
-      label: 'rankings',
-      ariaLabel: 'Poker Hand Rankings Guide',
+      label: 'about us',
+      ariaLabel: 'About POKEHUB & Team KMUTT',
       rotation: 6,
       hoverStyles: { bgColor: '#d4af37', textColor: '#14161c' },
-      onClick: () => setIsRankingsOpen(true)
+      onClick: () => {
+        window.location.href = '/about'
+      }
     },
     {
       label: 'how to play',
@@ -537,6 +554,8 @@ export default function GamePage() {
         gameId={gameId}
         table={tableName}
         stakes={stakes}
+        theme={tableTheme}
+        setTheme={setTableTheme}
         initialBots={initialBots}
         deckSkin={deckSkin}
         setDeckSkin={setDeckSkin}
