@@ -133,7 +133,7 @@ export default function AboutPage() {
   ], [])
 
   return (
-    <main className="w-full relative min-h-screen text-true-black overflow-x-hidden bg-[#F6F5FA] font-display pt-24 pb-20 px-4 sm:px-8">
+    <main className="w-full relative min-h-screen text-true-black overflow-x-hidden bg-[#F6F5FA] font-display pt-24 pb-0">
       {/* Infinite Seamless Fixed Graph Grid */}
       <div className="fixed-graph-grid opacity-20" />
 
@@ -183,7 +183,7 @@ export default function AboutPage() {
         items={bubbleMenuItems}
       />
 
-      <div className="max-w-6xl mx-auto flex flex-col gap-10 sm:gap-14 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col gap-10 sm:gap-14 relative z-10 pb-16">
 
         {/* ======================================================== */}
         {/* HERO TITLE & UNIVERSITY BANNER                           */}
