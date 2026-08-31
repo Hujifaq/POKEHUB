@@ -789,36 +789,36 @@ function PixelCardFront({ item }) {
 
   return (
     <div
-      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-xl ${item.frontBg} border-[2px] ${item.frontBorder} p-3 flex flex-col justify-between overflow-hidden select-none`}
+      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-xl ${item.frontBg} border-[2px] ${item.frontBorder} p-3 sm:p-4 flex flex-col justify-between overflow-hidden select-none`}
     >
       {/* Subtle CRT / Hologram Grid Pattern */}
       <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:6px_6px]" />
 
       {/* Top-Left Index (Rank + Pixel Suit) */}
       <div className="flex flex-col items-center leading-none z-10 self-start">
-        <span className={`font-pixel text-lg sm:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
+        <span className={`font-pixel text-base sm:text-lg md:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
           {item.cardRank}
         </span>
-        <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.2} defaultColor={suitColor} />
+        <div className="mt-0.5 sm:mt-1">
+          <PixelArt matrix={suitMat} size={1.8} defaultColor={suitColor} />
         </div>
       </div>
 
       {/* Central Pixel Art Motif in Square Emblem Box (Matching Desktop Design) */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30 rounded-xl sm:rounded-2xl border-[3px] border-true-black bg-white shadow-[4px_4px_0px_#050505] flex items-center justify-center p-2 sm:p-2.5">
-          <PixelArt matrix={motif} size={5} defaultColor={item.accentColor} className="w-full h-full object-contain" />
+        <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-xl sm:rounded-2xl border-[2.5px] sm:border-[3px] border-true-black bg-white shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] flex items-center justify-center p-2 sm:p-2.5">
+          <PixelArt matrix={motif} size={4.2} defaultColor={item.accentColor} className="w-full h-full object-contain" />
         </div>
       </div>
 
       {/* Bottom-Right Inverted Index */}
-      <div className="flex flex-col items-center leading-none self-end rotate-180 z-10">
-        <span className={`font-pixel text-lg sm:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
+      <div className="flex flex-col items-center leading-none self-end z-10 select-none pb-0.5">
+        <div className="rotate-180 mb-0.5 sm:mb-1">
+          <PixelArt matrix={suitMat} size={1.8} defaultColor={suitColor} />
+        </div>
+        <span className={`rotate-180 font-pixel text-base sm:text-lg md:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff] leading-none inline-block`}>
           {item.cardRank}
         </span>
-        <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.2} defaultColor={suitColor} />
-        </div>
       </div>
     </div>
   )
