@@ -273,20 +273,15 @@ export default function BubbleMenu({
       `}</style>
 
       <nav className={containerClassName} style={style} aria-label="Main navigation">
-        {/* Left: Logo bubble */}
+        {/* Left: 3D Floating Logo (Frameless, floating freely without rectangular boxes) */}
         <div className="flex items-center pointer-events-auto shrink-0 z-20">
-          <div
-            className="bubble logo-bubble inline-flex items-center justify-center brutal-window pointer-events-auto h-11 sm:h-12 md:h-14 px-2.5 sm:px-3.5 rounded-none will-change-transform bg-white shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] overflow-hidden"
-            aria-label="Logo"
-          >
-            <span className="logo-content inline-flex items-center justify-center font-display font-black text-true-black">
-              {typeof logo === 'string' ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logo} alt="Logo" className="max-h-[85%] max-w-full object-contain block" />
-              ) : (
-                logo
-              )}
-            </span>
+          <div className="logo-bubble inline-flex items-center justify-center pointer-events-auto will-change-transform">
+            {typeof logo === 'string' ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="Logo" className="h-10 sm:h-12 md:h-13 w-auto object-contain block drop-shadow-[3px_3px_0px_#050505] hover:scale-105 transition-transform" />
+            ) : (
+              logo
+            )}
           </div>
         </div>
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import BubbleMenu from '../components/BubbleMenu'
+import Floating3DLogo from '../components/Floating3DLogo'
 import Preloader from '../components/Preloader'
 import { PixelAvatar } from '../components/PixelAvatars'
 import Footer from '../components/Footer'
@@ -143,14 +144,11 @@ export default function AboutPage() {
       {/* Navigation Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center justify-center cursor-pointer" onClick={() => window.location.href = '/'}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/PKH_Logo.jpg"
-              alt="POKERHUB Logo"
-              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
-            />
-          </div>
+          <Floating3DLogo
+            onClick={() => {
+              window.location.href = '/'
+            }}
+          />
         }
         actions={
           <>
