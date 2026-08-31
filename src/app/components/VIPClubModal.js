@@ -8,21 +8,21 @@ export default function VIPClubModal({ isOpen, onClose }) {
   const tiers = [
     {
       name: 'ROYAL OBSIDIAN',
-      icon: '👑',
+      badge: 'TIER 1',
       stakes: '$100K+ Stakes',
       perk: 'Private Macau Penthouse Tables & Instant Chip Credit',
       active: true
     },
     {
       name: 'DIAMOND ELITE',
-      icon: '💎',
+      badge: 'TIER 2',
       stakes: '$25K+ Stakes',
       perk: 'Custom 3D Holographic Card Skins & Rakeback 45%',
       active: false
     },
     {
       name: 'PLATINUM HIGH ROLLER',
-      icon: '⚡',
+      badge: 'TIER 3',
       stakes: '$5K+ Stakes',
       perk: 'Priority Heads-up Tournaments & Audio Customizer',
       active: false
@@ -50,7 +50,6 @@ export default function VIPClubModal({ isOpen, onClose }) {
         <div className="p-3 sm:p-6 bg-primary-base overflow-y-auto custom-scrollbar">
           {/* Header */}
           <div className="bg-white border-[3px] sm:border-[4px] border-true-black p-3 sm:p-4 brutal-shadow-sm mb-3 sm:mb-6 text-center">
-            <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">🏛️</div>
             <h2 className="text-lg sm:text-2xl font-display uppercase text-true-black mb-0.5 sm:mb-1">
               POKEHUB VIP HIGH ROLLER CLUB
             </h2>
@@ -66,7 +65,7 @@ export default function VIPClubModal({ isOpen, onClose }) {
                   t.active ? 'bg-accent-yellow' : 'bg-white'
                 }`}
               >
-                <div className="text-2xl sm:text-3xl bg-white border-[2.5px] sm:border-[4px] border-true-black w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center brutal-shadow-sm shrink-0">{t.icon}</div>
+                <div className="font-mono-nb font-black text-xs sm:text-sm bg-white border-[2.5px] sm:border-[3px] border-true-black w-12 h-10 sm:w-16 sm:h-12 flex items-center justify-center brutal-shadow-sm shrink-0">{t.badge}</div>
                 <div className="flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-0.5 sm:mb-1 gap-1">
                     <h3 className="font-display text-base sm:text-lg uppercase text-true-black">{t.name}</h3>

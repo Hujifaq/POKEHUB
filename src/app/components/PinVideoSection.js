@@ -156,7 +156,7 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
             {/* Visual Casino Highlights Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-8 w-full max-w-3xl">
               <div className="bg-[#161822] border-[3px] border-true-black p-3 rounded-xl brutal-shadow-sm">
-                <span className="text-2xl sm:text-3xl block mb-1">🎲</span>
+                <span className="font-mono-nb text-lg font-black text-accent-cyan block mb-1">01</span>
                 <span className="font-pixel text-[8px] sm:text-[9px] text-accent-cyan font-bold block uppercase">
                   PROVABLY FAIR
                 </span>
@@ -164,7 +164,7 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
               </div>
 
               <div className="bg-[#161822] border-[3px] border-true-black p-3 rounded-xl brutal-shadow-sm">
-                <span className="text-2xl sm:text-3xl block mb-1">✨</span>
+                <span className="font-mono-nb text-lg font-black text-ui-pink block mb-1">02</span>
                 <span className="font-pixel text-[8px] sm:text-[9px] text-ui-pink font-bold block uppercase">
                   PBR FOILS
                 </span>
@@ -172,7 +172,7 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
               </div>
 
               <div className="bg-[#161822] border-[3px] border-true-black p-3 rounded-xl brutal-shadow-sm">
-                <span className="text-2xl sm:text-3xl block mb-1">⚡</span>
+                <span className="font-mono-nb text-lg font-black text-accent-yellow block mb-1">03</span>
                 <span className="font-pixel text-[8px] sm:text-[9px] text-accent-yellow font-bold block uppercase">
                   ZERO LAG
                 </span>
@@ -180,7 +180,7 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
               </div>
 
               <div className="bg-[#161822] border-[3px] border-true-black p-3 rounded-xl brutal-shadow-sm">
-                <span className="text-2xl sm:text-3xl block mb-1">💎</span>
+                <span className="font-mono-nb text-lg font-black text-[#b388ff] block mb-1">04</span>
                 <span className="font-pixel text-[8px] sm:text-[9px] text-[#b388ff] font-bold block uppercase">
                   VIP RANKINGS
                 </span>
@@ -197,8 +197,7 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
                 }}
                 className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-6 sm:px-8 py-3.5 sm:py-4 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
-                <span>⚔️</span>
-                <span>ENTER 3D POKER DUEL</span>
+                <span>ENTER 3D POKER DUEL →</span>
               </button>
 
               <button
@@ -208,7 +207,6 @@ export default function PinVideoSection({ onOpenDuel, onOpenRankings, onOpenVIP 
                 }}
                 className="brutal-btn bg-accent-yellow hover:bg-[#fff952] text-true-black px-6 sm:px-8 py-3.5 sm:py-4 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
-                <span>📜</span>
                 <span>HAND RANKINGS</span>
               </button>
             </div>

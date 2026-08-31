@@ -11,11 +11,11 @@ const anim = {
   },
   open: (i) => ({
     opacity: 1,
-    transition: { duration: 0, delay: 0.05 * i }
+    transition: { duration: 0, delay: 0.015 * i }
   }),
   closed: (i) => ({
     opacity: 0,
-    transition: { duration: 0, delay: 0.05 * i }
+    transition: { duration: 0.38, delay: 0.02 * i, ease: [0.25, 1, 0.5, 1] }
   })
 }
 
@@ -72,20 +72,20 @@ export default function Preloader({ onComplete }) {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline()
 
-      // 1. Letters of POKERHUB slide up letter by letter
+      // 1. Letters of POKERHUB slide up with crisp energy
       tl.fromTo(
         '.brand-letter',
         { yPercent: 120, opacity: 0 },
         {
           yPercent: 0,
           opacity: 1,
-          duration: 0.6,
+          duration: 0.52,
           ease: 'power3.out',
-          stagger: 0.05
+          stagger: 0.045
         }
       )
 
-      // 2. 0-100 count up in pixel font
+      // 2. 0-100 count up in pixel font (Balanced & Snappy: 1.35s)
       const progressObj = { value: 0 }
       let lastTick = 0
 
@@ -93,7 +93,7 @@ export default function Preloader({ onComplete }) {
         progressObj,
         {
           value: 100,
-          duration: 1.8,
+          duration: 1.35,
           ease: 'power2.inOut',
           onUpdate: () => {
             const val = Math.round(progressObj.value)
@@ -106,17 +106,17 @@ export default function Preloader({ onComplete }) {
             }
           }
         },
-        '-=0.1'
+        '-=0.08'
       )
 
-      // 3. Slide letters and counter up and out
+      // 3. Slide letters and counter up and out after brief 100% pause (0.18s)
       tl.to(
         ['.brand-letter', counterRef.current],
         {
           yPercent: -120,
           opacity: 0,
-          duration: 0.3,
-          ease: 'power3.in',
+          duration: 0.32,
+          ease: 'power3.inOut',
           onComplete: () => {
             if (isFinishedRef.current) return
             isFinishedRef.current = true
@@ -124,15 +124,15 @@ export default function Preloader({ onComplete }) {
             SoundEngine.playCardSwoosh()
             setIsActive(false)
 
-            // Wait for all pixel blocks to complete their randomized transition
+            // Balanced pixel curtain dissolve transition
             const maxBlocks = columnsData[0]?.length || 15
-            const totalDelay = maxBlocks * 0.08 + 0.3
+            const totalDelay = maxBlocks * 0.02 + 0.4
             setTimeout(() => {
               if (onComplete) onComplete()
             }, totalDelay * 1000)
           }
         },
-        '+=0.15'
+        '+=0.18'
       )
     }, containerRef)
 
@@ -142,7 +142,9 @@ export default function Preloader({ onComplete }) {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-none"
+      className={`fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-auto transition-colors duration-500 ${
+        isActive ? 'bg-[#ff6b00]' : 'bg-transparent pointer-events-none'
+      }`}
     >
       {/* 20 Columns of Orange Pixel Blocks (Olivier Larose Architecture) */}
       <div className="fixed inset-0 h-screen w-screen flex overflow-hidden z-10">

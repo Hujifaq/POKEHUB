@@ -98,11 +98,15 @@ export default function BubbleMenu({
       gsap.set(bubbles, { scale: 0, transformOrigin: '50% 50%' })
       gsap.set(labels, { y: 24, autoAlpha: 0 })
 
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 900
       bubbles.forEach((bubble, i) => {
-        const delay = i * staggerDelay + gsap.utils.random(-0.05, 0.05)
+        const item = menuItems[i]
+        const targetRotation = isDesktop ? (item?.rotation ?? 0) : 0
+        const delay = i * staggerDelay + gsap.utils.random(-0.03, 0.03)
         const tl = gsap.timeline({ delay })
         tl.to(bubble, {
           scale: 1,
+          rotation: targetRotation,
           duration: animationDuration,
           ease: animationEase
         })
@@ -139,7 +143,7 @@ export default function BubbleMenu({
         }
       })
     }
-  }, [isMenuOpen, animationDuration, animationEase, staggerDelay])
+  }, [isMenuOpen, animationDuration, animationEase, staggerDelay, menuItems])
 
   useEffect(() => {
     const handleResize = () => {
@@ -149,7 +153,7 @@ export default function BubbleMenu({
         bubbles.forEach((bubble, i) => {
           const item = menuItems[i]
           if (bubble && item) {
-            const rotation = isDesktop ? (item.rotation ?? 0) : (item.rotation ?? 0)
+            const rotation = isDesktop ? (item.rotation ?? 0) : 0
             gsap.set(bubble, { rotation })
           }
         })
@@ -204,11 +208,17 @@ export default function BubbleMenu({
         }
         @media (max-width: 899px) {
           .bubble-menu-items {
-            padding-top: 120px;
-            align-items: flex-start;
+            padding-top: 90px;
+            padding-bottom: 30px;
+            align-items: center;
+            justify-content: center;
           }
           .bubble-menu-items .pill-list {
-            row-gap: 16px;
+            row-gap: 10px;
+            padding-left: 16px;
+            padding-right: 16px;
+            max-width: 440px;
+            width: 100%;
           }
           .bubble-menu-items .pill-list .pill-col {
             flex: 0 0 100% !important;
@@ -216,18 +226,23 @@ export default function BubbleMenu({
             overflow: visible;
           }
           .bubble-menu-items .pill-link {
-            transform: rotate(var(--item-rot));
-            font-size: clamp(1.2rem, 3vw, 4rem);
-            padding: clamp(1rem, 2vw, 2rem) 0;
-            min-height: 80px !important;
+            transform: none !important;
+            --item-rot: 0deg !important;
+            font-size: clamp(1.2rem, 5vw, 1.8rem) !important;
+            padding: 0.85rem 0 !important;
+            min-height: 56px !important;
+            height: auto !important;
+            border-radius: 0px !important;
+            box-shadow: 4px 4px 0px #050505 !important;
           }
           .bubble-menu-items .pill-link:hover {
-            transform: rotate(var(--item-rot)) scale(1.06);
-            background: var(--hover-bg);
-            color: var(--hover-color);
+            transform: translateY(-2px) !important;
+            background: var(--hover-bg) !important;
+            color: var(--hover-color) !important;
           }
           .bubble-menu-items .pill-link:active {
-            transform: rotate(var(--item-rot)) scale(.94);
+            transform: translate(2px, 2px) !important;
+            box-shadow: 1px 1px 0px #050505 !important;
           }
         }
       `}</style>

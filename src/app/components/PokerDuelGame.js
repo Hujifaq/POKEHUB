@@ -11,6 +11,19 @@ import {
   DECK_SKIN_THEMES
 } from './PixelDeckAssets'
 import { PixelAvatar } from './PixelAvatars'
+import {
+  GamePhase,
+  PlayerActionType,
+  createShuffledDeck,
+  evaluate7CardHand,
+  calculateSidePots,
+  startNewHand as engineStartNewHand,
+  executePlayerAction as engineExecuteAction,
+  isBettingRoundComplete
+} from '../utils/pokerEngine'
+import { TABLE_THEMES, getTableTheme } from '../utils/themeConfig'
+import TableThemeModal from './TableThemeModal'
+import HandRankingsModal from './HandRankingsModal'
 
 const SUITS = [
   { key: 'hearts', symbol: '♥', color: '#FF3333', name: 'HEARTS' },
@@ -269,7 +282,7 @@ function evaluateHand(cards) {
         if (topVal === 14) {
           return {
             score: 9e10,
-            name: 'ROYAL FLUSH 👑',
+            name: 'ROYAL FLUSH',
             rank: 9,
             matchingCards: sfCards,
             bestFiveCards: sfCards
@@ -277,7 +290,7 @@ function evaluateHand(cards) {
         }
         return {
           score: 8e10 + topVal * 1e8,
-          name: `STRAIGHT FLUSH (${getCardRankName(topVal)} HIGH) 🔥`,
+          name: `STRAIGHT FLUSH (${getCardRankName(topVal)} HIGH)`,
           rank: 8,
           matchingCards: sfCards,
           bestFiveCards: sfCards
@@ -548,7 +561,8 @@ function BrutalistCard({
   small = false,
   large = false,
   deckSkin = 'obsidian',
-  isBot = false
+  isBot = false,
+  animClass = ''
 }) {
   const [isHovered, setIsHovered] = useState(false)
   const isDefaultSkin = deckSkin === 'default' || isBot
@@ -585,7 +599,7 @@ function BrutalistCard({
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative inline-block select-none transform transition-all duration-300 ${(highlighted || isWinner) && !hidden
+      className={`relative inline-block select-none transform transition-all duration-300 ${animClass} ${(highlighted || isWinner) && !hidden
         ? '-translate-y-2 scale-105 z-20'
         : 'hover:-translate-y-1 hover:scale-105'
         }`}
@@ -614,7 +628,7 @@ function BrutalistCard({
                 : 'bg-[#00F5FF] text-[#0D0D0D]'
               }`}
           >
-            <span>{isWinner ? '👑' : '★'}</span>
+            <span>★</span>
             <span>{isWinner ? 'WINNER' : (matchBadge || 'MATCH')}</span>
           </span>
         </div>
@@ -727,11 +741,11 @@ function BrutalistCard({
 }
 
 const GAME_STAGES = [
-  { key: 'preflop', label: 'PRE-FLOP', icon: '🃏' },
-  { key: 'flop', label: 'FLOP', icon: '🎴' },
-  { key: 'turn', label: 'TURN', icon: '🔥' },
-  { key: 'river', label: 'RIVER', icon: '🌊' },
-  { key: 'showdown', label: 'SHOWDOWN', icon: '👑' }
+  { key: 'preflop', label: 'PRE-FLOP' },
+  { key: 'flop', label: 'FLOP' },
+  { key: 'turn', label: 'TURN' },
+  { key: 'river', label: 'RIVER' },
+  { key: 'showdown', label: 'SHOWDOWN' }
 ]
 
 export default function PokerDuelGame({
@@ -743,6 +757,8 @@ export default function PokerDuelGame({
   gameId = 'holdem_session',
   table = 'macau_nlh_500',
   stakes = '250-500',
+  theme = 'classic_pink',
+  setTheme,
   initialBots = 2,
   deckSkin = 'obsidian',
   setDeckSkin,
@@ -778,6 +794,41 @@ export default function PokerDuelGame({
   const [showWinnerOverlay, setShowWinnerOverlay] = useState(false)
   const [isPlayerFolded, setIsPlayerFolded] = useState(false)
   const [isPlayerAllIn, setIsPlayerAllIn] = useState(false)
+
+  // Standard Texas Hold'em Positions & Side Pots
+  const [dealerButtonIndex, setDealerButtonIndex] = useState(0)
+  const [sbIndex, setSbIndex] = useState(1)
+  const [bbIndex, setBbIndex] = useState(2)
+  const [sidePots, setSidePots] = useState([])
+  const [showdownPotsSummary, setShowdownPotsSummary] = useState([])
+  const engineStateRef = useRef(null)
+
+  // Customizable Table Felt & Arena Theme States
+  const [tableThemeKey, setTableThemeKey] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pokehub_table_theme') || theme || 'classic_pink'
+    }
+    return theme || 'classic_pink'
+  })
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false)
+  const [isRankingsOpen, setIsRankingsOpen] = useState(false)
+
+  useEffect(() => {
+    if (theme) {
+      setTableThemeKey(theme)
+    }
+  }, [theme])
+
+  const handleSelectTableTheme = (themeKey) => {
+    setTableThemeKey(themeKey)
+    if (setTheme) setTheme(themeKey)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pokehub_table_theme', themeKey)
+    }
+    const th = getTableTheme(themeKey)
+    triggerToast('THEME', `${th.name.toUpperCase()} APPLIED!`, th.headerBg, th.icon)
+    setIsThemeModalOpen(false)
+  }
 
   // Bankruptcy & Table Seating Management States
   const [isHeroSittingOut, setIsHeroSittingOut] = useState(false)
@@ -852,7 +903,7 @@ export default function PokerDuelGame({
   const [actionToast, setActionToast] = useState(null)
   const toastTimerRef = useRef(null)
 
-  const triggerToast = (actor, actionText, color = '#FFE500', icon = '💬') => {
+  const triggerToast = (actor, actionText, color = '#FFE500', icon = '•') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setActionToast({ actor, actionText, color, icon, id: Math.random() })
     toastTimerRef.current = setTimeout(() => {
@@ -890,13 +941,13 @@ export default function PokerDuelGame({
       localStorage.setItem('pokehub_equipped_deck', skinKey)
     }
     if (DECK_SKIN_THEMES[skinKey]) {
-      triggerToast('DECK', `EQUIPPED ${DECK_SKIN_THEMES[skinKey].name}!`, '#FFE500', '🎴')
+      triggerToast('DECK', `EQUIPPED ${DECK_SKIN_THEMES[skinKey].name}!`, '#FFE500', '✓')
     }
   }
 
   // Initialize Table Seats according to initialBots
   useEffect(() => {
-    const seatedCount = Math.max(1, Math.min(4, Number(initialBots) || 2))
+    const seatedCount = Math.max(1, Math.min(5, Number(initialBots) || 2))
     const initialSeats = BOT_ROSTER.map((bot, idx) => ({
       ...bot,
       isSeated: idx < seatedCount,
@@ -938,7 +989,7 @@ export default function PokerDuelGame({
       activeBotsRef.current = updated
       return updated
     })
-    triggerToast('TABLE', `${rosterBot.name} SEATED ($10,000)! 🪑`, '#FFE500', '🪑')
+    triggerToast('TABLE', `${rosterBot.name} SEATED ($10,000)!`, '#FFE500', '+')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
     }
@@ -962,7 +1013,7 @@ export default function PokerDuelGame({
       activeBotsRef.current = updated
       return updated
     })
-    triggerToast('TABLE', `${rosterBot.name} LEFT THE TABLE 🚪`, '#CCCCCC', '🚪')
+    triggerToast('TABLE', `${rosterBot.name} LEFT THE TABLE`, '#CCCCCC', '✕')
   }
 
   // Table & Player Rebuy Management
@@ -970,7 +1021,7 @@ export default function PokerDuelGame({
     SoundEngine.playJackpot()
     setHeroQueuedToJoin(true)
     heroQueuedToJoinRef.current = true
-    triggerToast('YOU', 'REBUY $10,000! QUEUED TO JOIN NEXT HAND ⏳', '#00F5FF', '💰')
+    triggerToast('YOU', 'REBUY $10,000! QUEUED TO JOIN NEXT HAND', '#00F5FF', '✓')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
     }
@@ -982,7 +1033,7 @@ export default function PokerDuelGame({
     setActiveBots(updated)
     activeBotsRef.current = updated
     const bot = activeBots.find(b => b.id === botId)
-    triggerToast('TABLE', `${bot?.name || 'BOT'} +$10,000! QUEUED TO RE-JOIN NEXT HAND 🔄`, '#FFE500', '🔄')
+    triggerToast('TABLE', `${bot?.name || 'BOT'} +$10,000! QUEUED TO RE-JOIN NEXT HAND`, '#FFE500', '✓')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
     }
@@ -993,18 +1044,363 @@ export default function PokerDuelGame({
     const updated = activeBots.map(b => ({ ...b, isSeated: true, queuedToJoin: true, isBusted: false, bankroll: 10000 }))
     setActiveBots(updated)
     activeBotsRef.current = updated
-    triggerToast('TABLE', 'ALL BOTS SEATED & REBOUGHT ($10,000)! 🤖', '#FFE500', '🤖')
+    triggerToast('TABLE', 'ALL BOTS SEATED & REBOUGHT ($10,000)!', '#FFE500', '✓')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
     }
   }
 
-  // Start a new hand
+  // Sync pure PokerEngine state into React state & UI
+  const syncEngineToReact = useCallback((engineState) => {
+    if (!engineState || !engineState.players) return
+
+    const hero = engineState.players[0] || {}
+    const bots = engineState.players.slice(1)
+
+    const stageMap = {
+      [GamePhase.IDLE]: 'idle',
+      [GamePhase.PRE_FLOP]: 'preflop',
+      [GamePhase.FLOP]: 'flop',
+      [GamePhase.TURN]: 'turn',
+      [GamePhase.RIVER]: 'river',
+      [GamePhase.SHOWDOWN]: 'showdown',
+      [GamePhase.HAND_RESOLVED]: 'showdown'
+    }
+
+    const prevStage = stageRef.current
+    const currentStage = stageMap[engineState.phase] || 'preflop'
+    setStage(currentStage)
+    stageRef.current = currentStage
+
+    // Play dealing animations & sound effects on street changes
+    if (prevStage && prevStage !== currentStage && prevStage !== 'idle' && prevStage !== 'showdown') {
+      if (currentStage === 'flop') {
+        SoundEngine.playCardSlide()
+        setTimeout(() => SoundEngine.playCardFlip(), 220)
+        triggerToast('DEALER', 'THE FLOP — 3 COMMUNITY CARDS DEALT', '#FFE500', '♠')
+      } else if (currentStage === 'turn') {
+        SoundEngine.playCardSlide()
+        setTimeout(() => SoundEngine.playCardFlip(), 220)
+        triggerToast('DEALER', 'THE TURN — 4TH COMMUNITY CARD DEALT', '#00F5FF', '♦')
+      } else if (currentStage === 'river') {
+        SoundEngine.playCardSlide()
+        setTimeout(() => SoundEngine.playCardFlip(), 220)
+        triggerToast('DEALER', 'THE RIVER — FINAL COMMUNITY CARD DEALT', '#FF70A6', '♥')
+      }
+    }
+
+    setDeck(engineState.deck || [])
+    deckRef.current = engineState.deck || []
+
+    setCommunityCards(engineState.communityCards || [])
+    communityCardsRef.current = engineState.communityCards || []
+
+    setPot(engineState.totalPot || 0)
+    potRef.current = engineState.totalPot || 0
+
+    setCurrentRoundHighBet(engineState.currentRoundHighBet || 0)
+    highBetRef.current = engineState.currentRoundHighBet || 0
+
+    setPlayerRoundBet(hero.roundBet || 0)
+    if (hero.bankroll !== undefined) {
+      setBankroll(hero.bankroll)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pokehub_bankroll', hero.bankroll.toString())
+      }
+    }
+
+    setIsPlayerFolded(hero.folded || false)
+    isPlayerFoldedRef.current = hero.folded || false
+
+    setIsPlayerAllIn(hero.isAllIn || false)
+    isPlayerAllInRef.current = hero.isAllIn || false
+
+    setDealerButtonIndex(engineState.dealerButtonIndex || 0)
+    setSbIndex(engineState.sbIndex !== undefined ? engineState.sbIndex : 1)
+    setBbIndex(engineState.bbIndex !== undefined ? engineState.bbIndex : 2)
+    setSidePots(engineState.sidePots || [])
+
+    // Map bots to activeBots format
+    const mappedBots = BOT_ROSTER.map((roster, idx) => {
+      const b = bots[idx]
+      if (!b) return { ...roster, isSeated: false, bankroll: 0, cards: [], isBusted: true, folded: true }
+      return {
+        ...roster,
+        ...b,
+        currentBet: b.roundBet || 0,
+        isBusted: b.bankroll < (engineState.bbAmount || 500) && !b.totalHandBet,
+        cards: b.cards || []
+      }
+    })
+
+    setActiveBots(mappedBots)
+    activeBotsRef.current = mappedBots
+
+    if (hero.cards && hero.cards.length === 2) {
+      setPlayerCards(hero.cards)
+    }
+  }, [setBankroll])
+
+  // Showdown and Hand Resolution Handler
+  const handleShowdownConclusion = useCallback((state) => {
+    if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
+    if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
+    if (botThinkTimeoutRef.current) clearTimeout(botThinkTimeoutRef.current)
+
+    setStage('showdown')
+    stageRef.current = 'showdown'
+    setCurrentTurnActor('SHOWDOWN')
+    setActiveTurnName('SHOWDOWN — REVEALING HANDS')
+    setShowWinnerOverlay(false)
+    SoundEngine.playCardFlip()
+
+    const hero = state.players[0]
+    const isHeroWinner = (state.winners || []).some(w => w.id === 'player_hero')
+    const winnerNames = (state.winners || []).map(w => w.name).join(' & ')
+    const isSplit = (state.winners || []).length > 1
+
+    setWinnerName(winnerNames || 'TABLE')
+    setWinningHandName(state.winningHandName || 'BEST 5-CARD HAND')
+    setGameResult(isSplit ? 'split' : isHeroWinner ? 'win' : hero.folded ? 'bot_win' : 'lose')
+    setShowdownPotsSummary(state.showdownPotsSummary || [])
+
+    setTimeout(() => {
+      if (isHeroWinner) {
+        SoundEngine.playJackpot()
+        triggerToast('DEALER', `YOU WON $${state.totalPot.toLocaleString()}!`, '#00F5FF', '★')
+      } else {
+        SoundEngine.playChipsStack()
+        triggerToast('DEALER', `${winnerNames} WON $${state.totalPot.toLocaleString()}!`, '#FFE500', '★')
+      }
+      setShowWinnerOverlay(true)
+
+      // Auto-advance to next hand after 6 seconds
+      if (autoNextIntervalRef.current) clearInterval(autoNextIntervalRef.current)
+      let remaining = 6
+      setAutoNextSeconds(remaining)
+      autoNextIntervalRef.current = setInterval(() => {
+        remaining--
+        if (remaining <= 0) {
+          clearInterval(autoNextIntervalRef.current)
+          setAutoNextSeconds(null)
+          startNewHand()
+        } else {
+          setAutoNextSeconds(remaining)
+        }
+      }, 1000)
+    }, 2400)
+  }, [])
+
+  // Universal Turn Runner (Manages turn sequence between Hero & Bots)
+  const runTurnLoop = useCallback((state) => {
+    if (!isOpen) return
+
+    // 1. If hand resolved or reached showdown -> trigger reveal
+    if (state.phase === GamePhase.HAND_RESOLVED || state.phase === GamePhase.SHOWDOWN) {
+      handleShowdownConclusion(state)
+      return
+    }
+
+    const turnIdx = state.currentTurnIndex
+
+    // 2. If no actionable player left -> auto runout
+    if (turnIdx < 0) {
+      const survivors = state.players.filter(p => p.isSeated && !p.folded)
+      if (survivors.length <= 1) {
+        handleShowdownConclusion(state)
+        return
+      }
+      setTimeout(() => {
+        if (!isOpen) return
+        const nextState = engineExecuteAction(state, state.currentTurnIndex, PlayerActionType.CHECK)
+        engineStateRef.current = nextState
+        syncEngineToReact(nextState)
+        runTurnLoop(nextState)
+      }, 800)
+      return
+    }
+
+    // 3. Hero's turn (Seat Index 0)
+    if (turnIdx === 0) {
+      const hero = state.players[0]
+      if (hero.folded || hero.isAllIn || hero.bankroll <= 0) {
+        const nextState = engineExecuteAction(state, 0, PlayerActionType.CHECK)
+        engineStateRef.current = nextState
+        syncEngineToReact(nextState)
+        runTurnLoop(nextState)
+        return
+      }
+
+      setCurrentTurnActor('PLAYER')
+      setActiveTurnName('YOUR MOVE')
+      setIsProcessingBot(false)
+
+      // Start 10-second Shot Clock for Hero
+      if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
+      setTurnTimeRemaining(TURN_TIME_LIMIT)
+      const startTime = Date.now()
+      const totalDuration = TURN_TIME_LIMIT * 1000
+
+      turnTimerIntervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTime
+        const remainingMs = Math.max(0, totalDuration - elapsed)
+        const remainingSec = Math.max(0, remainingMs / 1000)
+        setTurnTimeRemaining(remainingSec)
+
+        if (remainingSec <= 0) {
+          clearInterval(turnTimerIntervalRef.current)
+          turnTimerIntervalRef.current = null
+          const callNeeded = Math.max(0, state.currentRoundHighBet - (hero.roundBet || 0))
+          if (callNeeded === 0) {
+            handlePlayerCheck()
+          } else {
+            handlePlayerFold()
+          }
+        }
+      }, 100)
+      return
+    }
+
+    // 4. Bot's turn (Seat Index 1 to 5)
+    const botIdx = turnIdx - 1
+    const bot = state.players[turnIdx]
+    setCurrentTurnActor(bot.id)
+    setActiveTurnName(`${bot.name}'S TURN`)
+    setIsProcessingBot(true)
+
+    executeBotTurn(turnIdx, state)
+  }, [isOpen, handleShowdownConclusion, syncEngineToReact])
+
+  // Execute Bot AI Turn with Realistic 2-8s Timing & Smart Decisioning
+  const executeBotTurn = useCallback((seatIndex, state) => {
+    if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
+    if (botThinkTimeoutRef.current) clearTimeout(botThinkTimeoutRef.current)
+
+    const bot = state.players[seatIndex]
+    if (!bot || bot.folded || bot.isAllIn || bot.bankroll <= 0) {
+      const nextState = engineExecuteAction(state, seatIndex, PlayerActionType.CHECK)
+      engineStateRef.current = nextState
+      syncEngineToReact(nextState)
+      runTurnLoop(nextState)
+      return
+    }
+
+    const callNeeded = Math.max(0, state.currentRoundHighBet - (bot.roundBet || 0))
+    const isFacingPressure = callNeeded > 1000
+
+    // Randomized think duration (2.0s to 7.0s)
+    const thinkDuration = isFacingPressure
+      ? Math.floor(Math.random() * 4000) + 3000
+      : Math.floor(Math.random() * 3200) + 2000
+
+    const startTime = Date.now()
+    const BOT_ACTION_TIME_LIMIT = 10
+
+    setActiveBots(prev => prev.map((b, i) => i === seatIndex - 1 ? {
+      ...b,
+      isThinking: true,
+      timeRemaining: BOT_ACTION_TIME_LIMIT,
+      timePercent: 100
+    } : { ...b, isThinking: false }))
+
+    botThinkIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime
+      const remainingMs = Math.max(0, (BOT_ACTION_TIME_LIMIT * 1000) - elapsed)
+      const remainingSec = Math.max(0, remainingMs / 1000)
+      const percent = (remainingSec / BOT_ACTION_TIME_LIMIT) * 100
+
+      setActiveBots(prev => prev.map((b, i) => i === seatIndex - 1 ? {
+        ...b,
+        isThinking: true,
+        timeRemaining: remainingSec,
+        timePercent: percent
+      } : b))
+    }, 100)
+
+    botThinkTimeoutRef.current = setTimeout(() => {
+      if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
+
+      // Evaluate Hand Strength
+      const allCards = [...(bot.cards || []), ...(state.communityCards || [])]
+      const evalResult = evaluate7CardHand(allCards)
+      const rank = evalResult.rank || 0
+
+      let actionType = PlayerActionType.CHECK
+      let targetRaise = 0
+
+      if (callNeeded === 0) {
+        // Free to check
+        if (rank >= 2 && Math.random() < 0.35) {
+          actionType = PlayerActionType.RAISE
+          targetRaise = state.currentRoundHighBet + (state.minRaise || 500)
+        } else {
+          actionType = PlayerActionType.CHECK
+        }
+      } else {
+        // Facing a bet
+        if (rank >= 3) {
+          // Three of a kind or higher
+          if (Math.random() < 0.45 && bot.bankroll > callNeeded + (state.minRaise || 500)) {
+            actionType = PlayerActionType.RAISE
+            targetRaise = state.currentRoundHighBet + (state.minRaise || 500)
+          } else {
+            actionType = PlayerActionType.CALL
+          }
+        } else if (rank >= 1) {
+          // One pair or two pair
+          if (callNeeded > bot.bankroll * 0.7 && rank === 1) {
+            actionType = Math.random() < 0.35 ? PlayerActionType.CALL : PlayerActionType.FOLD
+          } else {
+            actionType = PlayerActionType.CALL
+          }
+        } else {
+          // High card
+          if (callNeeded <= 500) {
+            actionType = Math.random() < 0.4 ? PlayerActionType.CALL : PlayerActionType.FOLD
+          } else {
+            actionType = Math.random() < 0.12 ? PlayerActionType.CALL : PlayerActionType.FOLD
+          }
+        }
+      }
+
+      // Execute in engine
+      const nextState = engineExecuteAction(state, seatIndex, actionType, targetRaise)
+      engineStateRef.current = nextState
+
+      // Audio & Chip particle effects
+      if (actionType === PlayerActionType.FOLD) {
+        SoundEngine.playCardSwoosh()
+        triggerToast(bot.name, 'FOLDED', '#CCCCCC', '✕')
+      } else if (actionType === PlayerActionType.CHECK) {
+        SoundEngine.playClick()
+        triggerToast(bot.name, 'CHECKED', '#FFE500', '✓')
+      } else if (actionType === PlayerActionType.CALL) {
+        const added = (nextState.players[seatIndex].roundBet || 0) - (bot.roundBet || 0)
+        if (added > 0) triggerChipFlight(`bot_${seatIndex - 1}`, added)
+        triggerToast(bot.name, `CALLED $${added.toLocaleString()}`, '#00F5FF', '✓')
+      } else if (actionType === PlayerActionType.RAISE || actionType === PlayerActionType.ALL_IN) {
+        const added = (nextState.players[seatIndex].roundBet || 0) - (bot.roundBet || 0)
+        if (added > 0) triggerChipFlight(`bot_${seatIndex - 1}`, added)
+        triggerToast(bot.name, `RAISED TO $${nextState.currentRoundHighBet.toLocaleString()}`, '#FF70A6', '+')
+      }
+
+      syncEngineToReact(nextState)
+
+      setTimeout(() => {
+        runTurnLoop(nextState)
+      }, 450)
+    }, thinkDuration)
+  }, [syncEngineToReact, runTurnLoop, triggerChipFlight])
+
+  // Start a new standard Texas Hold'em hand
   const startNewHand = useCallback(() => {
     if (autoNextIntervalRef.current) clearInterval(autoNextIntervalRef.current)
+    if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
+    if (botThinkTimeoutRef.current) clearTimeout(botThinkTimeoutRef.current)
+    if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
     setAutoNextSeconds(null)
 
-    // Check Hero Rebuy Queue & Status
+    // 1. Process Hero Rebuy / Status
     let currentHeroBankroll = bankroll
     let heroParticipating = !isHeroSittingOut && currentHeroBankroll >= 500
 
@@ -1023,12 +1419,9 @@ export default function PokerDuelGame({
       heroParticipating = false
     }
 
-    const ante = 500
-    let totalPot = 0
-
-    // Process Bot Rebuys and Active Status
+    // 2. Process Bot Rebuys & Seated Status
     const currentBotsList = activeBotsRef.current.length > 0 ? activeBotsRef.current : activeBots
-    const newBots = BOT_ROSTER.map((rosterBot, idx) => {
+    const updatedBots = BOT_ROSTER.map((rosterBot, idx) => {
       const existing = currentBotsList[idx]
       if (!existing || !existing.isSeated) {
         return {
@@ -1038,10 +1431,12 @@ export default function PokerDuelGame({
           isBusted: true,
           queuedToJoin: false,
           cards: [],
-          currentBet: 0,
-          lastAction: '',
-          actionType: 'none',
+          roundBet: 0,
+          totalHandBet: 0,
           folded: true,
+          isAllIn: false,
+          hasActed: true,
+          lastAction: 'LEFT TABLE',
           handName: '',
           isThinking: false
         }
@@ -1053,7 +1448,7 @@ export default function PokerDuelGame({
       if (existing.queuedToJoin) {
         bBankroll = 10000
         bBusted = false
-      } else if (bBankroll < ante) {
+      } else if (bBankroll < 500) {
         bBusted = true
       }
 
@@ -1064,113 +1459,92 @@ export default function PokerDuelGame({
         isBusted: bBusted,
         queuedToJoin: false,
         cards: [],
-        currentBet: 0,
-        lastAction: bBusted ? 'BUSTED 💀' : 'WAITING',
-        actionType: 'none',
+        roundBet: 0,
+        totalHandBet: 0,
         folded: bBusted,
+        isAllIn: false,
+        hasActed: false,
+        lastAction: bBusted ? 'BUSTED' : 'WAITING',
         handName: '',
         isThinking: false
       }
     })
 
-    const playingBots = newBots.filter(b => b.isSeated && !b.isBusted)
+    // 3. Assemble all 6 seats for pokerEngine (Seat 0: Hero, Seats 1-5: Bots)
+    const heroSeat = {
+      id: 'player_hero',
+      name: 'YOU',
+      avatarKey: 'hero',
+      bankroll: currentHeroBankroll,
+      isSeated: true,
+      isSittingOut: !heroParticipating,
+      isBusted: currentHeroBankroll < 500,
+      cards: [],
+      roundBet: 0,
+      totalHandBet: 0,
+      folded: !heroParticipating,
+      isAllIn: false,
+      hasActed: false,
+      lastAction: heroParticipating ? 'WAITING' : 'OUT'
+    }
 
-    // Check if table has at least 2 active players to deal
-    const totalActivePlayers = (heroParticipating ? 1 : 0) + playingBots.length
-    if (totalActivePlayers < 2) {
-      setActiveBots(newBots)
-      activeBotsRef.current = newBots
+    const allSeats = [heroSeat, ...updatedBots]
+    const seatedAndFunded = allSeats.filter(p => p.isSeated && !p.isSittingOut && p.bankroll >= 500)
+
+    if (seatedAndFunded.length < 2) {
+      setActiveBots(updatedBots)
+      activeBotsRef.current = updatedBots
       setStage('table_paused')
       stageRef.current = 'table_paused'
       setCurrentTurnActor('TABLE_PAUSED')
-      if (heroParticipating && playingBots.length === 0) {
-        setActiveTurnName('👑 TABLE CONQUERED!')
-        triggerToast('CHAMPION', 'ALL OPPONENTS BUSTED! 🏆', '#00F5FF', '🏆')
+      if (heroParticipating && updatedBots.every(b => b.isBusted)) {
+        setActiveTurnName('TABLE CONQUERED!')
+        triggerToast('CHAMPION', 'ALL OPPONENTS BUSTED!', '#00F5FF', '★')
       } else {
-        setActiveTurnName('TABLE PAUSED ⏸️')
+        setActiveTurnName('TABLE PAUSED')
       }
       return
     }
 
-    const newDeck = createDeck()
-
-    // Deal to Hero if participating
-    let pCards = []
-    if (heroParticipating) {
-      pCards = [newDeck.pop(), newDeck.pop()]
-      currentHeroBankroll = Math.max(0, currentHeroBankroll - ante)
-      setBankroll(currentHeroBankroll)
-      setPlayerRoundBet(ante)
-      totalPot += ante
-      triggerChipFlight('player', ante)
-      isPlayerFoldedRef.current = false
-      setIsPlayerFolded(false)
-      isPlayerAllInRef.current = false
-      setIsPlayerAllIn(false)
-    } else {
-      isPlayerFoldedRef.current = true
-      setIsPlayerFolded(true)
-      setPlayerRoundBet(0)
-    }
-
-    // Deal to Playing Bots
-    const finalBots = newBots.map(bot => {
-      if (!bot.isSeated || bot.isBusted) return bot
-      const bCards = [newDeck.pop(), newDeck.pop()]
-      totalPot += ante
-      return {
-        ...bot,
-        cards: bCards,
-        bankroll: Math.max(0, bot.bankroll - ante),
-        currentBet: ante,
-        lastAction: 'ANTE $500',
-        actionType: 'ante',
-        folded: false
-      }
+    // 4. Initialize Hand with pokerEngine
+    const prevEngineState = engineStateRef.current || {}
+    const nextHandState = engineStartNewHand({
+      ...prevEngineState,
+      dealerButtonIndex: prevEngineState.dealerButtonIndex !== undefined ? prevEngineState.dealerButtonIndex : 0,
+      sbAmount: 250,
+      bbAmount: 500,
+      players: allSeats
     })
 
-    playingBots.forEach((b, idx) => {
-      const realIdx = finalBots.findIndex(x => x.id === b.id)
-      setTimeout(() => triggerChipFlight(`bot_${realIdx}`, ante), idx * 90 + 50)
-    })
+    engineStateRef.current = nextHandState
 
-    setCurrentRoundHighBet(ante)
-    highBetRef.current = ante
-    potRef.current = totalPot
-    deckRef.current = newDeck
-    communityCardsRef.current = []
-    stageRef.current = 'preflop'
-
-    setDeck(newDeck)
-    setPlayerCards(pCards)
-    setActiveBots(finalBots)
-    activeBotsRef.current = finalBots
-    setCommunityCards([])
-    setPot(totalPot)
-    setRaiseAmount(500)
-    setStage('preflop')
+    // 5. Sync React state
+    syncEngineToReact(nextHandState)
     setShowWinnerOverlay(false)
     setGameResult(null)
     setWinnerName('')
     setWinningHandName('')
-    setPlayerHandName('')
+    setRaiseAmount(500)
 
-    if (heroParticipating) {
-      setCurrentTurnActor('PLAYER')
-      setActiveTurnName('YOUR MOVE 👑')
-    } else {
-      setCurrentTurnActor('BOTS_SPECTATING')
-      setActiveTurnName('SPECTATING BOTS 🍿')
-      setTimeout(() => {
-        runSequentialBotTurns(newDeck, true, true, finalBots)
-      }, 800)
-    }
+    SoundEngine.playCardSlide()
+    setTimeout(() => SoundEngine.playCardSwoosh(), 150)
+    setTimeout(() => SoundEngine.playCardFlip(), 350)
+    triggerToast('DEALER', 'HOLE CARDS DEALT — PRE-FLOP BETTING', '#00FFA3', '★')
 
-    setIsProcessingBot(false)
-    setActionToast(null)
-    SoundEngine.playCardSwoosh()
-    setTimeout(() => SoundEngine.playCardFlip(), 200)
-  }, [activeBots, bankroll, isHeroSittingOut, triggerChipFlight, setBankroll])
+    // Trigger Blinds chip animations
+    const sbIdx = nextHandState.sbIndex
+    const bbIdx = nextHandState.bbIndex
+    if (sbIdx === 0) triggerChipFlight('player', 250)
+    else triggerChipFlight(`bot_${sbIdx - 1}`, 250)
+
+    setTimeout(() => {
+      if (bbIdx === 0) triggerChipFlight('player', 500)
+      else triggerChipFlight(`bot_${bbIdx - 1}`, 500)
+    }, 120)
+
+    // 6. Run turn loop
+    runTurnLoop(nextHandState)
+  }, [bankroll, isHeroSittingOut, syncEngineToReact, runTurnLoop, triggerChipFlight, setBankroll])
 
   useEffect(() => {
     if (isOpen && stage === 'idle') {
@@ -1178,677 +1552,125 @@ export default function PokerDuelGame({
     }
   }, [isOpen, stage, startNewHand])
 
-  // Turn Timer Effect: 10s Countdown with Auto-Fold on Expiry
-  useEffect(() => {
-    if (turnTimerIntervalRef.current) {
-      clearInterval(turnTimerIntervalRef.current)
-      turnTimerIntervalRef.current = null
-    }
-
-    if (isOpen && currentTurnActor === 'PLAYER' && stage !== 'showdown' && !isPlayerFolded && !isPlayerAllIn) {
-      setTurnTimeRemaining(TURN_TIME_LIMIT)
-      const startTime = Date.now()
-      const totalDuration = TURN_TIME_LIMIT * 1000
-
-      turnTimerIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime
-        const remainingMs = Math.max(0, totalDuration - elapsed)
-        const remainingSec = Math.max(0, remainingMs / 1000)
-
-        setTurnTimeRemaining(remainingSec)
-
-        if (remainingSec <= 0) {
-          clearInterval(turnTimerIntervalRef.current)
-          turnTimerIntervalRef.current = null
-          isPlayerFoldedRef.current = true
-          setIsPlayerFolded(true)
-          SoundEngine.playCardSwoosh()
-          triggerToast('DEALER', "⏱️ TIME'S UP (10s)! AUTO-FOLDED 🏳️", '#FF3333', '⏱️')
-          setCurrentTurnActor('BOTS_SPECTATING')
-          setActiveTurnName('SPECTATING BOTS 🍿')
-          runSequentialBotTurns(deckRef.current, true, true)
-        }
-      }, 100)
-    } else {
-      setTurnTimeRemaining(TURN_TIME_LIMIT)
-    }
-
-    return () => {
-      if (turnTimerIntervalRef.current) {
-        clearInterval(turnTimerIntervalRef.current)
-        turnTimerIntervalRef.current = null
-      }
-    }
-  }, [isOpen, currentTurnActor, stage, isPlayerFolded, isPlayerAllIn])
-
   // Real-time Player Hand Evaluator
   useEffect(() => {
     if (playerCards.length > 0) {
-      const evalResult = evaluateHand([...playerCards, ...communityCards])
+      const evalResult = evaluate7CardHand([...playerCards, ...communityCards])
       setPlayerHandName(evalResult.name)
     }
   }, [playerCards, communityCards])
 
   const playerCallAmount = Math.max(0, currentRoundHighBet - playerRoundBet)
 
-  // Bot Victory When All Others Folded
-  const triggerBotVictory = (winnerBot, potVal, botsState) => {
-    if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    setStage('showdown')
-    stageRef.current = 'showdown'
-    setCurrentTurnActor('SHOWDOWN')
-    setActiveTurnName(`${winnerBot.name} WINS! (ALL OTHERS FOLDED)`)
-    setShowWinnerOverlay(false)
-
-    // Reveal the winner bot's cards on table first
-    const updatedBots = (botsState || activeBots).map(b => {
-      if (b.id === winnerBot.id) {
-        return { ...b, handName: 'LAST SURVIVOR' }
-      }
-      return b
-    })
-    setActiveBots(updatedBots)
-    triggerToast('DEALER', 'ALL OTHER PLAYERS FOLDED 🏳️', '#FFE500', '🏳️')
-
-    // Delay 2.4s to let user see cards before popping winner overlay
-    setTimeout(() => {
-      if (stageRef.current !== 'showdown') return
-      setWinnerName(winnerBot.name)
-      setWinningHandName('LAST SURVIVOR')
-      setGameResult('bot_win')
-
-      const finalBots = updatedBots.map(b => {
-        if (b.id === winnerBot.id) {
-          const newB = b.bankroll + potVal
-          return { ...b, bankroll: newB, isBusted: newB < 500, handName: 'WINNER 👑' }
-        }
-        return { ...b, isBusted: b.bankroll < 500 }
-      })
-      setActiveBots(finalBots)
-      SoundEngine.playChipsStack()
-      triggerToast(winnerBot.name, `WINS $${potVal.toLocaleString()}! 🏆`, '#FFE500', '🏆')
-      setShowWinnerOverlay(true)
-
-      // Auto-advance countdown
-      if (autoNextIntervalRef.current) clearInterval(autoNextIntervalRef.current)
-      let remaining = 6
-      setAutoNextSeconds(remaining)
-      autoNextIntervalRef.current = setInterval(() => {
-        remaining--
-        if (remaining <= 0) {
-          clearInterval(autoNextIntervalRef.current)
-          setAutoNextSeconds(null)
-          startNewHand()
-        } else {
-          setAutoNextSeconds(remaining)
-        }
-      }, 1000)
-    }, 2400)
-  }
-
-  // Showdown Evaluation with Split Pot Support (2-Phase Reveal Delay)
-  const triggerMultiShowdown = (botsState, potVal, playerFoldedNow = false, customBoard = null) => {
-    if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    setStage('showdown')
-    stageRef.current = 'showdown'
-    setCurrentTurnActor('SHOWDOWN')
-    setActiveTurnName('SHOWDOWN — REVEALING HANDS 🎴')
-    setShowWinnerOverlay(false)
-    SoundEngine.playCardFlip()
-
-    const board = customBoard || communityCardsRef.current || communityCards
-    const finalPot = potVal || pot
-    const isHeroFolded = playerFoldedNow || isPlayerFoldedRef.current
-
-    const contenders = []
-
-    // Evaluate Hero
-    let heroEval = null
-    if (!isHeroFolded && playerCards.length > 0) {
-      heroEval = evaluateHand([...playerCards, ...board])
-      setPlayerHandName(heroEval.name)
-      contenders.push({
-        id: 'player',
-        name: 'YOU',
-        isHero: true,
-        score: heroEval.score,
-        handName: heroEval.name
-      })
-    }
-
-    // Evaluate Bots & reveal cards in place on table
-    const revealedBots = (botsState || activeBots).map(bot => {
-      if (bot.folded || bot.isBusted) return bot
-      const bEval = evaluateHand([...bot.cards, ...board])
-      contenders.push({
-        id: bot.id,
-        name: bot.name,
-        isHero: false,
-        score: bEval.score,
-        handName: bEval.name,
-        botObj: bot
-      })
-      return { ...bot, handName: bEval.name }
-    })
-
-    setActiveBots(revealedBots)
-    triggerToast('SHOWDOWN', 'REVEALING HOLE CARDS... 🃏', '#FFE500', '🃏')
-
-    if (contenders.length === 0) return
-
-    // Find Highest Hand Score
-    const maxScore = Math.max(...contenders.map(c => c.score))
-    const winners = contenders.filter(c => c.score === maxScore)
-    const winningHand = winners[0].handName
-    const splitPayout = Math.floor(finalPot / winners.length)
-    const winnerNames = winners.map(w => w.name).join(' & ')
-    const isHeroWinner = winners.some(w => w.isHero)
-
-    // PHASE 2: Wait 2.8s so player can comfortably inspect all bots' cards before winner is declared
-    setTimeout(() => {
-      if (stageRef.current !== 'showdown') return
-
-      setWinningHandName(winningHand)
-      setWinnerName(winnerNames)
-
-      // Distribute Chips & Check Bankruptcy
-      const finalBots = revealedBots.map(bot => {
-        const isThisBotWinner = winners.some(w => w.id === bot.id)
-        const newBankroll = isThisBotWinner ? bot.bankroll + splitPayout : bot.bankroll
-        const isBustedNow = newBankroll < 500
-        return {
-          ...bot,
-          bankroll: newBankroll,
-          isBusted: isBustedNow,
-          handName: isThisBotWinner ? `${winningHand} (WINNER)` : bot.handName
-        }
-      })
-      setActiveBots(finalBots)
-
-      if (winners.length > 1) {
-        // Split Pot Scenario
-        if (isHeroWinner) {
-          setBankroll(b => {
-            const newB = b + splitPayout
-            if (newB < 500) setIsHeroSittingOut(true)
-            return newB
-          })
-          setGameResult('split')
-          SoundEngine.playJackpot()
-          triggerToast('DEALER', `SPLIT POT! ${winnerNames} SPLIT $${finalPot.toLocaleString()} ($${splitPayout.toLocaleString()} EACH) 🤝`, '#FFE500', '🤝')
-        } else {
-          if (bankroll < 500) setIsHeroSittingOut(true)
-          setGameResult('bot_win')
-          SoundEngine.playChipsStack()
-          triggerToast('DEALER', `SPLIT POT! ${winnerNames} SPLIT $${finalPot.toLocaleString()} 🤝`, '#FFE500', '🤝')
-        }
-      } else {
-        // Single Winner Scenario
-        if (isHeroWinner) {
-          setGameResult('win')
-          setBankroll(b => b + finalPot)
-          SoundEngine.playJackpot()
-          triggerToast('DEALER', `YOU WON $${finalPot.toLocaleString()}! 🏆`, '#00F5FF', '🏆')
-        } else {
-          if (bankroll < 500) {
-            setIsHeroSittingOut(true)
-            triggerToast('YOU', '💀 OUT OF CHIPS! SITTING OUT. REBUY TO JOIN NEXT HAND.', '#FF3333', '💀')
-          }
-          setGameResult(isHeroFolded ? 'bot_win' : 'lose')
-          SoundEngine.playChipsStack()
-          triggerToast(winners[0].name, `WINS $${finalPot.toLocaleString()}! 🏆`, '#FFE500', '🏆')
-        }
-      }
-
-      setShowWinnerOverlay(true)
-
-      // Auto-advance countdown
-      if (autoNextIntervalRef.current) clearInterval(autoNextIntervalRef.current)
-      let remaining = 6
-      setAutoNextSeconds(remaining)
-      autoNextIntervalRef.current = setInterval(() => {
-        remaining--
-        if (remaining <= 0) {
-          clearInterval(autoNextIntervalRef.current)
-          setAutoNextSeconds(null)
-          startNewHand()
-        } else {
-          setAutoNextSeconds(remaining)
-        }
-      }, 1000)
-    }, 2800)
-  }
-
-  // Advance Board Street (Deterministic length-based street transitions)
-  const advanceBoardStreet = (deckSource, botsState, currentPotVal, currentHighBetVal, autoDrive = false) => {
-    const curDeck = deckSource || deckRef.current || [...deck]
-    const activeBotsList = botsState || (activeBotsRef.current.length > 0 ? activeBotsRef.current : activeBots)
-
-    setPlayerRoundBet(0)
-    setCurrentRoundHighBet(0)
-    highBetRef.current = 0
-    potRef.current = currentPotVal !== undefined ? currentPotVal : pot
-    const resetBots = activeBotsList.map(b => ({ ...b, currentBet: 0 }))
-    setActiveBots(resetBots)
-    activeBotsRef.current = resetBots
-
-    const currentLen = communityCardsRef.current.length
-
-    if (currentLen === 0) {
-      // Dealing Preflop -> FLOP (3 Cards)
-      const c1 = curDeck.pop()
-      const c2 = curDeck.pop()
-      const c3 = curDeck.pop()
-      const newBoard = [c1, c2, c3]
-      communityCardsRef.current = newBoard
-      deckRef.current = curDeck
-      stageRef.current = 'flop'
-
-      setCommunityCards(newBoard)
-      setDeck([...curDeck])
-      setStage('flop')
-      SoundEngine.playCardFlip()
-      triggerToast('DEALER', 'FLOP (3 CARDS) 🃏', '#FFE500', '🃏')
-    } else if (currentLen === 3) {
-      // Dealing Flop -> TURN (4th Card)
-      const turnCard = curDeck.pop()
-      const newBoard = [...communityCardsRef.current, turnCard]
-      communityCardsRef.current = newBoard
-      deckRef.current = curDeck
-      stageRef.current = 'turn'
-
-      setCommunityCards(newBoard)
-      setDeck([...curDeck])
-      setStage('turn')
-      SoundEngine.playCardFlip()
-      triggerToast('DEALER', 'TURN (4TH CARD) 🃏', '#FFE500', '🃏')
-    } else if (currentLen === 4) {
-      // Dealing Turn -> RIVER (5th Card)
-      const riverCard = curDeck.pop()
-      const newBoard = [...communityCardsRef.current, riverCard]
-      communityCardsRef.current = newBoard
-      deckRef.current = curDeck
-      stageRef.current = 'river'
-
-      setCommunityCards(newBoard)
-      setDeck([...curDeck])
-      setStage('river')
-      SoundEngine.playCardFlip()
-      triggerToast('DEALER', 'RIVER (FINAL CARD) 🃏', '#FFE500', '🃏')
-    } else {
-      // 5 Cards Already Dealt -> SHOWDOWN!
-      stageRef.current = 'showdown'
-      triggerMultiShowdown(resetBots, currentPotVal, isPlayerFoldedRef.current, communityCardsRef.current)
-      return
-    }
-
-    if (autoDrive) {
-      setTimeout(() => {
-        runSequentialBotTurns(deckRef.current, true, isPlayerFoldedRef.current, resetBots, 0, currentPotVal)
-      }, 900)
-    }
-  }
-
-  // Execute Bot AI Turn with Real-Time HighBet & Pot Synchronization
-  const runSequentialBotTurns = (
-    startingDeck,
-    nextBoardStage,
-    isPlayerFoldedNow = false,
-    botsSource = null,
-    overrideHighBet = null,
-    overridePot = null
-  ) => {
-    const heroFolded = isPlayerFoldedNow || isPlayerFoldedRef.current
-    const heroAllIn = isPlayerAllInRef.current
-    setIsProcessingBot(true)
-    let curDeck = startingDeck || deckRef.current || [...deck]
-    let bots = botsSource ? [...botsSource] : (activeBotsRef.current.length > 0 ? [...activeBotsRef.current] : [...activeBots])
-    let runningPot = overridePot !== null ? overridePot : (potRef.current || pot)
-    let highBet = overrideHighBet !== null ? overrideHighBet : (highBetRef.current || currentRoundHighBet)
-
-    potRef.current = runningPot
-    highBetRef.current = highBet
-
-    let botIndex = 0
-
-    const processNextBot = () => {
-      if (botIndex >= bots.length) {
-        setIsProcessingBot(false)
-        const remainingBots = bots.filter(b => !b.folded && !b.isBusted)
-
-        // If only 1 bot remaining and hero folded:
-        if (heroFolded && remainingBots.length === 1) {
-          triggerBotVictory(remainingBots[0], runningPot, bots)
-          return
-        }
-
-        // If all bots folded and hero NOT folded:
-        if (!heroFolded && remainingBots.length === 0) {
-          setStage('showdown')
-          stageRef.current = 'showdown'
-          setCurrentTurnActor('SHOWDOWN')
-          setActiveTurnName('ALL OPPONENTS FOLDED! 🏆')
-          setShowWinnerOverlay(false)
-          triggerToast('DEALER', 'ALL OPPONENTS FOLDED 🏳️', '#00F5FF', '🏳️')
-
-          setTimeout(() => {
-            if (stageRef.current !== 'showdown') return
-            setGameResult('win')
-            setWinnerName('PLAYER')
-            setWinningHandName(playerHandName || 'UNCONTESTED')
-            setBankroll(b => b + runningPot)
-            SoundEngine.playJackpot()
-            triggerToast('DEALER', `YOU WON $${runningPot.toLocaleString()}! 🏆`, '#00F5FF', '🏆')
-            setShowWinnerOverlay(true)
-
-            if (autoNextIntervalRef.current) clearInterval(autoNextIntervalRef.current)
-            let remaining = 6
-            setAutoNextSeconds(remaining)
-            autoNextIntervalRef.current = setInterval(() => {
-              remaining--
-              if (remaining <= 0) {
-                clearInterval(autoNextIntervalRef.current)
-                setAutoNextSeconds(null)
-                startNewHand()
-              } else {
-                setAutoNextSeconds(remaining)
-              }
-            }, 1000)
-          }, 2200)
-          return
-        }
-
-        // If hero is folded OR hero is all-in: auto-advance board until Showdown!
-        if (heroFolded || heroAllIn) {
-          if (heroFolded) {
-            setCurrentTurnActor('BOTS_SPECTATING')
-            setActiveTurnName('SPECTATING BOTS 🍿')
-          } else {
-            setCurrentTurnActor('ALL_IN_RUNOUT')
-            setActiveTurnName('ALL-IN BOARD RUNOUT 🚀')
-          }
-
-          if (communityCardsRef.current.length === 5) {
-            triggerMultiShowdown(bots, runningPot, heroFolded, communityCardsRef.current)
-          } else {
-            advanceBoardStreet(curDeck, bots, runningPot, highBet, true)
-          }
-          return
-        }
-
-        // Normal flow (hero still playing):
-        // If current street is River (5 cards) and bets are settled -> trigger Showdown!
-        if (communityCardsRef.current.length === 5) {
-          triggerMultiShowdown(bots, runningPot, false, communityCardsRef.current)
-          return
-        }
-
-        // Advance to next street for Hero
-        setCurrentTurnActor('PLAYER')
-        setActiveTurnName('YOUR MOVE 👑')
-        if (nextBoardStage) {
-          advanceBoardStreet(curDeck, bots, runningPot, highBet, false)
-        }
-        return
-      }
-
-      const bot = bots[botIndex]
-      if (!bot || bot.folded || bot.isBusted || !bot.cards || bot.cards.length < 2) {
-        botIndex++
-        processNextBot()
-        return
-      }
-
-      // If bot is already all-in (bankroll === 0), it has already put all chips in! Skip its betting turn smoothly!
-      if (bot.bankroll <= 0) {
-        botIndex++
-        processNextBot()
-        return
-      }
-
-      setCurrentTurnActor(bot.id)
-      setActiveTurnName(`${bot.name}'S TURN`)
-
-      // Universal 10-Second Action Clock (Time Bank) for the Bot
-      const BOT_ACTION_TIME_LIMIT = 10
-      const startTime = Date.now()
-      const totalDuration = BOT_ACTION_TIME_LIMIT * 1000
-
-      // The bot decides how long to consider its move within the 10s window (2.0s - 8.0s)
-      const callNeeded = Math.max(0, highBet - bot.currentBet)
-      const isFacingPressure = callNeeded > 1000
-      const thinkDuration = isFacingPressure
-        ? Math.floor(Math.random() * 4500) + 3500 // 3.5s to 8.0s under pressure/big bet
-        : Math.floor(Math.random() * 4000) + 2000 // 2.0s to 6.0s for standard actions
-
-      if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
-      if (botThinkTimeoutRef.current) clearTimeout(botThinkTimeoutRef.current)
-
-      // Initialize Bot with 10.0s full gauge (100%)
-      bots = bots.map((b, i) => i === botIndex ? {
-        ...b,
-        isThinking: true,
-        timeRemaining: BOT_ACTION_TIME_LIMIT,
-        timePercent: 100
-      } : b)
-      setActiveBots([...bots])
-      activeBotsRef.current = [...bots]
-
-      // Live 10-second Shot Clock countdown (out of 10s total action time)
-      botThinkIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime
-        const remainingMs = Math.max(0, totalDuration - elapsed)
-        const remainingSec = Math.max(0, remainingMs / 1000)
-        const percent = (remainingSec / BOT_ACTION_TIME_LIMIT) * 100
-
-        setActiveBots(prev => prev.map((b, i) => i === botIndex ? {
-          ...b,
-          isThinking: true,
-          timeRemaining: remainingSec,
-          timePercent: percent
-        } : b))
-      }, 100)
-
-      botThinkTimeoutRef.current = setTimeout(() => {
-        if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
-        const decision = decideBotAction({
-          bot,
-          cards: bot.cards,
-          communityCards: communityCardsRef.current,
-          stage: stageRef.current,
-          pot: runningPot,
-          currentCallAmount: callNeeded,
-          minRaise: 500,
-          bankroll: bot.bankroll
-        })
-
-        if (decision.action === 'FOLD') {
-          bots = bots.map((b, i) => i === botIndex ? {
-            ...b,
-            folded: true,
-            isThinking: false,
-            lastAction: 'FOLDED',
-            actionType: 'fold'
-          } : b)
-          SoundEngine.playCardSwoosh()
-          triggerToast(bot.name, 'FOLDED 🏳️', '#CCCCCC', '🏳️')
-        } else if (decision.action === 'CHECK' && callNeeded === 0) {
-          bots = bots.map((b, i) => i === botIndex ? {
-            ...b,
-            isThinking: false,
-            lastAction: 'CHECK',
-            actionType: 'check'
-          } : b)
-          SoundEngine.playClick()
-          triggerToast(bot.name, 'CHECKED ✓', '#00F5FF', '✓')
-        } else if (decision.action === 'CALL' || (decision.action === 'CHECK' && callNeeded > 0)) {
-          // If bot wants to stay in the hand with bet owed, it must pay the call amount!
-          const actualCall = Math.min(bot.bankroll, callNeeded)
-          runningPot += actualCall
-          potRef.current = runningPot
-          const isBotAllIn = (bot.bankroll - actualCall) <= 0
-          bots = bots.map((b, i) => i === botIndex ? {
-            ...b,
-            bankroll: Math.max(0, b.bankroll - actualCall),
-            currentBet: b.currentBet + actualCall,
-            isThinking: false,
-            lastAction: isBotAllIn ? `ALL-IN $${actualCall.toLocaleString()}` : `CALL $${actualCall.toLocaleString()}`,
-            actionType: 'call'
-          } : b)
-          triggerChipFlight(`bot_${botIndex}`, actualCall)
-          triggerToast(bot.name, isBotAllIn ? `ALL-IN $${actualCall.toLocaleString()}! 🚀` : `CALLED $${actualCall.toLocaleString()} ✓`, '#00F5FF', '🪙')
-        } else if (decision.action === 'RAISE') {
-          const actualCall = Math.min(bot.bankroll, callNeeded)
-          const remainingAfterCall = Math.max(0, bot.bankroll - actualCall)
-          const actualRaise = Math.min(remainingAfterCall, decision.amount)
-          const totalBotBet = actualCall + actualRaise
-          runningPot += totalBotBet
-          potRef.current = runningPot
-          highBet += actualRaise
-          highBetRef.current = highBet
-          const isBotAllIn = (bot.bankroll - totalBotBet) <= 0
-          bots = bots.map((b, i) => i === botIndex ? {
-            ...b,
-            bankroll: Math.max(0, b.bankroll - totalBotBet),
-            currentBet: b.currentBet + totalBotBet,
-            isThinking: false,
-            lastAction: isBotAllIn ? `ALL-IN $${totalBotBet.toLocaleString()}` : `RAISE $${actualRaise.toLocaleString()}`,
-            actionType: 'raise'
-          } : b)
-          triggerChipFlight(`bot_${botIndex}`, totalBotBet)
-          triggerToast(bot.name, isBotAllIn ? `ALL-IN $${totalBotBet.toLocaleString()}! 🚀` : `RAISED +$${actualRaise.toLocaleString()} 🔥`, '#FF70A6', '🔥')
-        } else {
-          // Fallback Fold
-          bots = bots.map((b, i) => i === botIndex ? {
-            ...b,
-            folded: true,
-            isThinking: false,
-            lastAction: 'FOLDED',
-            actionType: 'fold'
-          } : b)
-          SoundEngine.playCardSwoosh()
-          triggerToast(bot.name, 'FOLDED 🏳️', '#CCCCCC', '🏳️')
-        }
-
-        setPot(runningPot)
-        potRef.current = runningPot
-        setCurrentRoundHighBet(highBet)
-        highBetRef.current = highBet
-        setActiveBots([...bots])
-        activeBotsRef.current = [...bots]
-
-        botIndex++
-        setTimeout(processNextBot, 400)
-      }, thinkDuration)
-    }
-
-    processNextBot()
-  }
-
   // Player Actions
   const handlePlayerCheck = () => {
     if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
     SoundEngine.playClick()
-    triggerToast('YOU', 'CHECKED ✓', '#00F5FF', '✓')
-    runSequentialBotTurns(deckRef.current, true, false, activeBotsRef.current, highBetRef.current, potRef.current)
+    triggerToast('YOU', 'CHECKED', '#00F5FF', '✓')
+
+    const currentState = engineStateRef.current
+    const nextState = engineExecuteAction(currentState, 0, PlayerActionType.CHECK)
+    engineStateRef.current = nextState
+    syncEngineToReact(nextState)
+
+    setTimeout(() => {
+      runTurnLoop(nextState)
+    }, 350)
   }
 
   const handlePlayerCall = () => {
     if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    const callAmt = Math.min(bankroll, playerCallAmount)
-    const newBankroll = Math.max(0, bankroll - callAmt)
-    const newPot = (potRef.current || pot) + callAmt
-    const newPlayerRoundBet = playerRoundBet + callAmt
+    const currentState = engineStateRef.current
+    const hero = currentState.players[0]
+    const callAmt = Math.min(hero.bankroll, playerCallAmount)
 
-    potRef.current = newPot
+    const nextState = engineExecuteAction(currentState, 0, PlayerActionType.CALL)
+    engineStateRef.current = nextState
 
-    setBankroll(newBankroll)
-    setPot(newPot)
-    setPlayerRoundBet(newPlayerRoundBet)
+    if (callAmt > 0) triggerChipFlight('player', callAmt)
+    triggerToast('YOU', `CALLED $${callAmt.toLocaleString()}`, '#00F5FF', '✓')
+    syncEngineToReact(nextState)
 
-    triggerChipFlight('player', callAmt)
-    triggerToast('YOU', `CALLED $${callAmt.toLocaleString()} ✓`, '#00F5FF', '🪙')
-    runSequentialBotTurns(deckRef.current, true, false, activeBotsRef.current, highBetRef.current, newPot)
+    setTimeout(() => {
+      runTurnLoop(nextState)
+    }, 350)
   }
 
   const handlePlayerRaise = (amount) => {
     if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    const finalRaise = amount || raiseAmount
-    const callPortion = Math.min(bankroll, playerCallAmount)
-    const remainingBankroll = Math.max(0, bankroll - callPortion)
-    const actualRaise = Math.min(remainingBankroll, finalRaise)
-    const totalToPutIn = callPortion + actualRaise
+    const currentState = engineStateRef.current
+    const targetTotal = currentState.currentRoundHighBet + (amount || raiseAmount)
 
-    const newBankroll = Math.max(0, bankroll - totalToPutIn)
-    const newPot = (potRef.current || pot) + totalToPutIn
-    const newPlayerRoundBet = playerRoundBet + totalToPutIn
-    const newHighBet = (highBetRef.current || currentRoundHighBet) + actualRaise
+    const nextState = engineExecuteAction(currentState, 0, PlayerActionType.RAISE, targetTotal)
+    engineStateRef.current = nextState
 
-    potRef.current = newPot
-    highBetRef.current = newHighBet
+    const hero = currentState.players[0]
+    const added = (nextState.players[0].roundBet || 0) - (hero.roundBet || 0)
+    if (added > 0) triggerChipFlight('player', added)
+    triggerToast('YOU', `RAISED TO $${nextState.currentRoundHighBet.toLocaleString()}`, '#FF70A6', '+')
+    syncEngineToReact(nextState)
 
-    setBankroll(newBankroll)
-    setPot(newPot)
-    setPlayerRoundBet(newPlayerRoundBet)
-    setCurrentRoundHighBet(newHighBet)
-
-    triggerChipFlight('player', totalToPutIn)
-    triggerToast('YOU', `RAISED +$${actualRaise.toLocaleString()} (BET: $${newHighBet.toLocaleString()}) 🔥`, '#FF70A6', '🔥')
-
-    runSequentialBotTurns(deckRef.current, true, false, activeBotsRef.current, newHighBet, newPot)
+    setTimeout(() => {
+      runTurnLoop(nextState)
+    }, 350)
   }
 
   const handlePlayerAllIn = () => {
     if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    const allInAmt = Math.max(0, bankroll)
-    const newPot = (potRef.current || pot) + allInAmt
-    const newPlayerRoundBet = playerRoundBet + allInAmt
-    const newHighBet = Math.max(highBetRef.current || currentRoundHighBet, newPlayerRoundBet)
+    const currentState = engineStateRef.current
+    const hero = currentState.players[0]
+    const allInAmt = hero.bankroll
 
-    potRef.current = newPot
-    highBetRef.current = newHighBet
+    const nextState = engineExecuteAction(currentState, 0, PlayerActionType.ALL_IN)
+    engineStateRef.current = nextState
 
-    setBankroll(0)
-    setPot(newPot)
-    setPlayerRoundBet(newPlayerRoundBet)
-    setCurrentRoundHighBet(newHighBet)
+    if (allInAmt > 0) triggerChipFlight('player', allInAmt)
+    triggerToast('YOU', `ALL-IN $${allInAmt.toLocaleString()}!`, '#FF3333', '!')
+    syncEngineToReact(nextState)
 
-    isPlayerAllInRef.current = true
-    setIsPlayerAllIn(true)
-
-    triggerChipFlight('player', allInAmt)
-    triggerToast('YOU', `ALL-IN $${allInAmt.toLocaleString()}! 🚀`, '#FF3333', '🚀')
-    runSequentialBotTurns(deckRef.current, true, false, activeBotsRef.current, newHighBet, newPot)
+    setTimeout(() => {
+      runTurnLoop(nextState)
+    }, 350)
   }
 
   const handlePlayerFold = () => {
     if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-    isPlayerFoldedRef.current = true
-    setIsPlayerFolded(true)
+    const currentState = engineStateRef.current
+    const nextState = engineExecuteAction(currentState, 0, PlayerActionType.FOLD)
+    engineStateRef.current = nextState
+
     SoundEngine.playCardSwoosh()
-    triggerToast('YOU', 'YOU FOLDED 🏳️ (SPECTATING BOTS)', '#CCCCCC', '🏳️')
-    setCurrentTurnActor('BOTS_SPECTATING')
-    setActiveTurnName('SPECTATING BOTS 🍿')
-    runSequentialBotTurns(deckRef.current, true, true, activeBotsRef.current, highBetRef.current, potRef.current)
+    triggerToast('YOU', 'YOU FOLDED (SPECTATING BOTS)', '#CCCCCC', '✕')
+    syncEngineToReact(nextState)
+
+    setTimeout(() => {
+      runTurnLoop(nextState)
+    }, 350)
   }
 
   const handleSkipToShowdown = () => {
     if (stageRef.current === 'showdown') return
     SoundEngine.playCardFlip()
-    const curDeck = [...deckRef.current]
-    const needed = 5 - communityCardsRef.current.length
-    const dealt = []
-    for (let i = 0; i < needed; i++) {
-      if (curDeck.length > 0) dealt.push(curDeck.pop())
+    const currentState = engineStateRef.current
+    if (!currentState) return
+
+    const deck = [...currentState.deck]
+    const community = [...currentState.communityCards]
+    while (community.length < 5 && deck.length > 0) {
+      deck.pop()
+      community.push(deck.pop())
     }
-    const finalBoard = [...communityCardsRef.current, ...dealt]
-    communityCardsRef.current = finalBoard
-    deckRef.current = curDeck
-    stageRef.current = 'showdown'
-    setCommunityCards(finalBoard)
-    setDeck(curDeck)
-    setStage('showdown')
-    triggerMultiShowdown(activeBots, pot, isPlayerFoldedRef.current, finalBoard)
+
+    const showdownState = {
+      ...currentState,
+      deck,
+      communityCards: community,
+      phase: GamePhase.SHOWDOWN
+    }
+    const resolvedState = evaluateShowdownAndDistributePots(showdownState)
+    engineStateRef.current = resolvedState
+    syncEngineToReact(resolvedState)
+    handleShowdownConclusion(resolvedState)
   }
 
   if (!isOpen) return null
@@ -1881,7 +1703,7 @@ export default function PokerDuelGame({
 
   // Standard Poker Seat Pod Component (ENLARGED)
   const renderBotSeat = (bot, index, positionClasses, chipPosClasses) => {
-    const rosterBot = BOT_ROSTER[index] || { name: `BOT ${index + 1}`, avatar: '🤖' }
+    const rosterBot = BOT_ROSTER[index] || { name: `BOT ${index + 1}` }
     const isSeated = bot && bot.isSeated
 
     // If no bot or not seated: Render Empty Seat Pod with [+] Button!
@@ -1894,7 +1716,7 @@ export default function PokerDuelGame({
             title={`Sit ${rosterBot.name} ($10,000)`}
           >
             <span className="font-display font-black text-2xl sm:text-3xl text-[#0D0D0D] group-hover:scale-125 transition-transform">
-              ➕
+              +
             </span>
           </button>
           <div className="mt-1 bg-[#FFFFFF]/95 border-[2px] border-[#0D0D0D] px-2 py-0.5 rounded-lg shadow-[1.5px_1.5px_0px_#0D0D0D] text-center">
@@ -1937,10 +1759,29 @@ export default function PokerDuelGame({
                 className="w-full h-full object-contain"
               />
 
-              {/* All-in Rocket Badge on Avatar */}
+              {/* Position Badges (D / SB / BB) */}
+              <div className="absolute -bottom-2 -left-2 flex items-center gap-1 z-40 pointer-events-none">
+                {dealerButtonIndex === (index + 1) && (
+                  <div className="w-5 h-5 rounded-full bg-[#FFFFFF] border-[2px] border-[#0D0D0D] font-pixel font-black text-[9px] text-[#0D0D0D] flex items-center justify-center shadow-[1.5px_1.5px_0px_#0D0D0D]" title="Dealer Button">
+                    D
+                  </div>
+                )}
+                {sbIndex === (index + 1) && (
+                  <div className="px-1.5 py-0.5 rounded bg-[#00F5FF] border-[1.5px] border-[#0D0D0D] font-pixel font-bold text-[7.5px] text-[#0D0D0D] shadow-[1px_1px_0px_#0D0D0D]" title="Small Blind ($250)">
+                    SB
+                  </div>
+                )}
+                {bbIndex === (index + 1) && (
+                  <div className="px-1.5 py-0.5 rounded bg-[#FFE500] border-[1.5px] border-[#0D0D0D] font-pixel font-bold text-[7.5px] text-[#0D0D0D] shadow-[1px_1px_0px_#0D0D0D]" title="Big Blind ($500)">
+                    BB
+                  </div>
+                )}
+              </div>
+
+              {/* All-in Badge on Avatar */}
               {isBotAllIn && (
-                <div className="absolute -bottom-1 -right-1 px-1 py-0.2 bg-[#FF3333] border-[1.5px] border-[#0D0D0D] rounded-full text-white font-pixel text-[6px] sm:text-[7px] font-black shadow-[1px_1px_0px_#000] animate-pulse z-40">
-                  🚀 ALL-IN
+                <div className="absolute -bottom-1 -right-1 px-1.5 py-0.2 bg-[#FF3333] border-[1.5px] border-[#0D0D0D] rounded-full text-white font-pixel text-[6px] sm:text-[7px] font-black shadow-[1px_1px_0px_#000] animate-pulse z-40">
+                  ALL-IN
                 </div>
               )}
 
@@ -1954,7 +1795,7 @@ export default function PokerDuelGame({
                   className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full bg-[#FFE500] hover:bg-[#00F5FF] border-[2px] border-[#0D0D0D] text-[#0D0D0D] font-display font-black text-xs sm:text-base md:text-lg flex items-center justify-center shadow-[1.5px_1.5px_0px_#0D0D0D] cursor-pointer animate-bounce z-40 transition-transform active:scale-90"
                   title="Click to bring this bot back with $10,000"
                 >
-                  ＋
+                  +
                 </button>
               )}
 
@@ -1987,20 +1828,26 @@ export default function PokerDuelGame({
                 return (
                   <>
                     <BrutalistCard
+                      key={bot.cards[0]?.id || `bot_${index}_card_0`}
                       card={bot.cards[0]}
                       hidden={stage !== 'showdown' || bot.folded}
                       small
                       isBot={true}
+                      delay={isBotShowdown ? 0 : 50}
+                      animClass={isBotShowdown ? 'animate-card-reveal' : 'animate-deal-bot'}
                       deckSkin="default"
                       highlighted={isBotShowdown && botMatchedIds.has(bot.cards[0]?.id)}
                       isWinner={isThisBotWinner && botMatchedIds.has(bot.cards[0]?.id)}
                       matchBadge={isBotShowdown && botMatchedIds.has(bot.cards[0]?.id) ? botBadge : null}
                     />
                     <BrutalistCard
+                      key={bot.cards[1]?.id || `bot_${index}_card_1`}
                       card={bot.cards[1]}
                       hidden={stage !== 'showdown' || bot.folded}
                       small
                       isBot={true}
+                      delay={isBotShowdown ? 100 : 120}
+                      animClass={isBotShowdown ? 'animate-card-reveal' : 'animate-deal-bot'}
                       deckSkin="default"
                       highlighted={isBotShowdown && botMatchedIds.has(bot.cards[1]?.id)}
                       isWinner={isThisBotWinner && botMatchedIds.has(bot.cards[1]?.id)}
@@ -2027,7 +1874,7 @@ export default function PokerDuelGame({
               title={bot.queuedToJoin ? 'Rejoining next hand with $10,000' : 'Click [+] to bring back with $10,000'}
             >
               <span className={`font-pixel text-[7px] sm:text-[9px] font-black block ${bot.queuedToJoin ? 'text-[#0D0D0D] animate-pulse' : 'text-[#FF3333]'}`}>
-                {bot.queuedToJoin ? '⏳ RE-ENTERING ($10K)' : '💀 OUT (CLICK ＋)'}
+                {bot.queuedToJoin ? 'RE-ENTERING ($10K)' : 'OUT (CLICK +)'}
               </span>
             </div>
           )}
@@ -2040,15 +1887,15 @@ export default function PokerDuelGame({
             {bot.name}
           </div>
           <div className={`font-mono-nb text-[8.5px] xs:text-[10px] sm:text-sm font-black ${isBotAllIn
-            ? 'text-[#FF3333] animate-pulse'
+            ? 'text-[#FF3333]'
             : isBusted
               ? (bot.queuedToJoin ? 'text-emerald-600' : 'text-red-500')
               : 'text-[#00F5FF]'
             }`}>
             {isBotAllIn
-              ? '🚀 ALL-IN'
+              ? 'ALL-IN'
               : isBusted
-                ? (bot.queuedToJoin ? '+$10K ⏳' : '$0 💀')
+                ? (bot.queuedToJoin ? '+$10K' : '$0')
                 : `$${bot.bankroll.toLocaleString()}`}
           </div>
 
@@ -2068,8 +1915,8 @@ export default function PokerDuelGame({
         {isBusted && (
           <div className="mt-1 flex flex-col items-center">
             {bot.queuedToJoin ? (
-              <div className="px-2 py-0.5 bg-[#00F5FF] text-[#0D0D0D] border-[1.5px] border-[#0D0D0D] rounded font-pixel text-[7px] font-black shadow-[1px_1px_0px_#0D0D0D] animate-pulse">
-                ✓ QUEUED ($10K)
+              <div className="px-2 py-0.5 bg-[#00F5FF] text-[#0D0D0D] border-[1.5px] border-[#0D0D0D] rounded font-pixel text-[7px] font-black shadow-[1px_1px_0px_#0D0D0D]">
+                QUEUED ($10K)
               </div>
             ) : (
               <button
@@ -2077,7 +1924,7 @@ export default function PokerDuelGame({
                 className="px-2.5 py-0.5 bg-[#FFE500] hover:bg-[#00F5FF] text-[#0D0D0D] border-[1.5px] border-[#0D0D0D] rounded-full font-display text-[8px] sm:text-[9px] font-black uppercase shadow-[1.5px_1.5px_0px_#0D0D0D] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer flex items-center gap-1 transition-all animate-bounce"
                 title="Rebuy this bot with $10,000 for next hand"
               >
-                <span>➕</span> REBUY $10K
+                + REBUY $10K
               </button>
             )}
           </div>
@@ -2111,7 +1958,7 @@ export default function PokerDuelGame({
 
             <span className="font-pixel text-[7px] sm:text-[8px] text-gray-800 mt-0.5 font-bold flex items-center gap-1">
               <span>⏱️</span>
-              <span className={`font-mono-nb font-black ${(bot.timeRemaining !== undefined ? bot.timeRemaining : 10) <= 3 ? 'text-[#FF3333] animate-pulse' : 'text-[#0D0D0D]'}`}>
+              <span className={`font-mono-nb font-black ${(bot.timeRemaining !== undefined ? bot.timeRemaining : 10) <= 3 ? 'text-[#FF3333]' : 'text-[#0D0D0D]'}`}>
                 {(bot.timeRemaining !== undefined ? bot.timeRemaining : 10.0).toFixed(1)}s / 10.0s
               </span>
             </span>
@@ -2120,15 +1967,19 @@ export default function PokerDuelGame({
 
         {/* Bet Chips On Felt */}
         {bot.currentBet > 0 && !bot.folded && !isBusted && (
-          <div className={`absolute ${chipPosClasses} z-10 whitespace-nowrap animate-fadeIn`}>
-            <ChipStack
-              amount={bot.currentBet}
-              size="sm"
-              animate={true}
+          <div className={`absolute ${chipPosClasses} z-30 whitespace-nowrap animate-fadeIn select-none`}>
+            <div
               onClick={() => {
                 SoundEngine.playChipClink({ brightness: 1.2 })
               }}
-            />
+              className="flex items-center gap-1 bg-[#FFFFFF] border-[1.5px] sm:border-[2px] border-[#0D0D0D] px-2 py-0.5 rounded-full shadow-[1.5px_1.5px_0px_#0D0D0D] cursor-pointer hover:scale-105 active:scale-95 transition-transform"
+              title={`${bot.name}'s active bet: $${bot.currentBet.toLocaleString()}`}
+            >
+              <ChipStack amount={bot.currentBet} size="xs" />
+              <span className="font-pixel text-[7px] sm:text-[8px] font-black text-[#0D0D0D]">
+                ${bot.currentBet.toLocaleString()}
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -2137,15 +1988,20 @@ export default function PokerDuelGame({
 
   if (!isOpen) return null
 
+  const currentTheme = getTableTheme(tableThemeKey)
+
   return (
-    <div className="fixed inset-0 w-screen h-screen z-[1500] bg-[#F6F5FA] text-[#0D0D0D] flex flex-col justify-between select-none overflow-hidden font-display">
+    <div
+      className="fixed inset-0 w-screen h-screen z-[1500] flex flex-col justify-between select-none overflow-hidden font-display transition-colors duration-300"
+      style={{ backgroundColor: currentTheme.arenaBg, color: '#0D0D0D' }}
+    >
 
       {/* 8-Bit Graph Paper Grid Background */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage:
-            'linear-gradient(to right, #0D0D0D 1px, transparent 1px), linear-gradient(to bottom, #0D0D0D 1px, transparent 1px)',
+            `linear-gradient(to right, ${currentTheme.arenaGridColor} 1px, transparent 1px), linear-gradient(to bottom, ${currentTheme.arenaGridColor} 1px, transparent 1px)`,
           backgroundSize: '32px 32px'
         }}
       />
@@ -2153,7 +2009,10 @@ export default function PokerDuelGame({
       {/* ======================================================== */}
       {/* 1. TOP RETRO BAR (STREET PROGRESSION & CONTROLS)         */}
       {/* ======================================================== */}
-      <header className="h-12 sm:h-16 shrink-0 bg-[#FF70A6] border-b-[3px] sm:border-b-[4px] border-[#0D0D0D] px-2 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-3 z-30 relative shadow-[0px_3px_0px_#0D0D0D] sm:shadow-[0px_4px_0px_#0D0D0D]">
+      <header
+        className="h-12 sm:h-16 shrink-0 border-b-[3px] sm:border-b-[4px] border-[#0D0D0D] px-2 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-3 z-30 relative shadow-[0px_3px_0px_#0D0D0D] sm:shadow-[0px_4px_0px_#0D0D0D] transition-colors duration-300"
+        style={{ backgroundColor: currentTheme.headerBg }}
+      >
 
         {/* Left: Brand, Stakes & Live Game ID */}
         <div className="flex items-center gap-1 sm:gap-2.5">
@@ -2184,13 +2043,13 @@ export default function PokerDuelGame({
                 } else if (typeof window !== 'undefined') {
                   navigator.clipboard.writeText(window.location.href)
                   SoundEngine.playClick()
-                  triggerToast('SESSION', 'GAME URI COPIED TO CLIPBOARD! 📋', '#00F5FF', '📋')
+                  triggerToast('SESSION', 'GAME URI COPIED TO CLIPBOARD!', '#00F5FF', '✓')
                 }
               }}
               className="font-pixel text-[7.5px] font-black bg-[#FFE500] hover:bg-[#00FFA3] text-[#0D0D0D] border border-black px-1.5 py-0.2 rounded cursor-pointer transition-colors"
               title="Copy Game URI with all parameters"
             >
-              📋 COPY URI
+              COPY URI
             </button>
           </div>
         </div>
@@ -2208,7 +2067,6 @@ export default function PokerDuelGame({
                 }`}
               title="Toggle Street Breakdown Menu"
             >
-              <span>{GAME_STAGES.find(s => s.key === stage)?.icon || '🃏'}</span>
               <span>{GAME_STAGES.find(s => s.key === stage)?.label || stage.toUpperCase()}</span>
               <span className="text-[7px] bg-[#0D0D0D] text-[#FFE500] px-1 py-0.2 rounded font-mono-nb">
                 {Math.max(1, GAME_STAGES.findIndex(s => s.key === stage) + 1)}/5
@@ -2242,11 +2100,8 @@ export default function PokerDuelGame({
                           : 'bg-gray-100 text-gray-400 border-dashed'
                         }`}
                     >
-                      <span className="flex items-center gap-1.5">
-                        <span>{s.icon}</span>
-                        <span>{s.label}</span>
-                      </span>
-                      <span>{isActive ? '★ LIVE' : isPassed ? '✓ DONE' : '—'}</span>
+                      <span>{s.label}</span>
+                      <span>{isActive ? 'LIVE' : isPassed ? 'DONE' : '—'}</span>
                     </div>
                   )
                 })}
@@ -2276,8 +2131,32 @@ export default function PokerDuelGame({
           </div>
         </div>
 
-        {/* Right: Exit */}
+        {/* Right: Tips, Theme Selector & Exit */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <button
+            onClick={() => {
+              SoundEngine.playClick()
+              setIsRankingsOpen(true)
+            }}
+            className="brutal-btn px-2 sm:px-3 py-0.5 sm:py-1 bg-[#00FFA3] hover:bg-[#FFE500] text-[#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D] font-display text-[9px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_#0D0D0D] cursor-pointer flex items-center gap-1 transition-all"
+            title="View Poker Hand Rankings & Tips"
+          >
+            <span>★</span>
+            <span className="hidden xs:inline">TIPS</span>
+          </button>
+
+          <button
+            onClick={() => {
+              SoundEngine.playClick()
+              setIsThemeModalOpen(true)
+            }}
+            className="brutal-btn px-2 sm:px-3 py-0.5 sm:py-1 bg-[#FFE500] hover:bg-[#00F5FF] text-[#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D] font-display text-[9px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_#0D0D0D] cursor-pointer flex items-center gap-1 transition-all"
+            title="Change Table Felt & Arena Theme"
+          >
+            <span>{currentTheme.icon}</span>
+            <span className="hidden xs:inline">THEME</span>
+          </button>
+
           <button
             onClick={onClose}
             className="brutal-btn px-2.5 sm:px-4 py-0.5 sm:py-1 bg-[#FFFFFF] hover:bg-[#FF3333] hover:text-white text-[#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[2.5px_2.5px_0px_#0D0D0D] cursor-pointer"
@@ -2311,27 +2190,37 @@ export default function PokerDuelGame({
         )}
 
         {/* ------------------------------------------------------ */}
-        {/* THE POKER TABLE STRUCTURE (LARGE OVAL FELT)            */}
+        {/* THE POKER TABLE STRUCTURE (EXPANDED OVAL FELT ARENA)   */}
         {/* ------------------------------------------------------ */}
-        <div className="relative w-full max-w-6xl h-[420px] xs:h-[460px] sm:h-[540px] md:h-[620px] max-h-[64vh] xs:max-h-[68vh] sm:max-h-[76vh] flex items-center justify-center">
+        <div className="relative w-full max-w-[1360px] h-[480px] xs:h-[530px] sm:h-[600px] md:h-[660px] lg:h-[700px] max-h-[74vh] sm:max-h-[80vh] flex items-center justify-center">
 
-          {/* Outer Table Rim (Lavender / Off-White Neo-Brutalist Border) */}
-          <div className="absolute inset-x-1 sm:inset-x-6 md:inset-x-8 inset-y-2 sm:inset-y-6 md:inset-y-8 rounded-[40px] xs:rounded-[60px] sm:rounded-[120px] md:rounded-[180px] bg-[#FFFFFF] border-[3px] sm:border-[5px] border-[#0D0D0D] shadow-[4px_4px_0px_#0D0D0D] sm:shadow-[10px_10px_0px_#0D0D0D] flex items-center justify-center overflow-hidden">
+          {/* Outer Table Rim */}
+          <div
+            className="absolute inset-x-0.5 sm:inset-x-3 md:inset-x-5 inset-y-1 sm:inset-y-2 md:inset-y-3 rounded-[45px] xs:rounded-[70px] sm:rounded-[130px] md:rounded-[180px] lg:rounded-[220px] border-[3px] sm:border-[4.5px] border-[#0D0D0D] shadow-[4px_4px_0px_#0D0D0D] sm:shadow-[8px_8px_0px_#0D0D0D] flex items-center justify-center overflow-hidden transition-colors duration-300"
+            style={{ backgroundColor: currentTheme.tableRimBg }}
+          >
 
             {/* Inner Felt Area */}
-            <div className="w-[96%] h-[94%] rounded-[36px] xs:rounded-[56px] sm:rounded-[110px] md:rounded-[170px] bg-[#F6F5FA] border-[2px] sm:border-[3px] border-[#0D0D0D]/25 flex flex-col items-center justify-center relative">
+            <div
+              className="w-[97%] h-[95%] rounded-[40px] xs:rounded-[64px] sm:rounded-[120px] md:rounded-[170px] lg:rounded-[210px] border-[2px] sm:border-[2.5px] border-[#0D0D0D]/20 flex flex-col items-center justify-center relative transition-colors duration-300"
+              style={{ backgroundColor: currentTheme.feltBg }}
+            >
 
-              {/* Subtle Halftone Pattern */}
+              {/* Subtle Halftone Pattern / Felt Texture */}
               <div
-                className="absolute inset-0 pointer-events-none opacity-10"
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  backgroundImage: 'radial-gradient(#0D0D0D 2px, transparent 2px)',
-                  backgroundSize: '20px 20px'
+                  backgroundImage: currentTheme.feltPattern,
+                  backgroundSize: currentTheme.feltPatternSize,
+                  opacity: currentTheme.feltPatternOpacity
                 }}
               />
 
               {/* Watermark Logo in Center */}
-              <div className="absolute font-display font-black text-4xl xs:text-6xl sm:text-8xl text-[#0D0D0D]/5 tracking-widest pointer-events-none select-none">
+              <div
+                className="absolute font-display font-black text-4xl xs:text-6xl sm:text-8xl tracking-widest pointer-events-none select-none"
+                style={{ color: currentTheme.watermarkColor }}
+              >
                 POKERHUB
               </div>
 
@@ -2345,8 +2234,9 @@ export default function PokerDuelGame({
                   onClick={() => {
                     SoundEngine.playChipsStack()
                   }}
-                  className={`bg-[#FFE500] border-[2.5px] sm:border-[3.5px] border-[#0D0D0D] px-3.5 sm:px-8 py-1 sm:py-2 rounded-xl sm:rounded-2xl shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[5px_5px_0px_#0D0D0D] flex items-center gap-1.5 sm:gap-3 -rotate-1 relative transition-all cursor-pointer hover:scale-105 active:scale-95 ${stage === 'flop' || stage === 'turn' || stage === 'river' ? 'ring-2 sm:ring-4 ring-[#00F5FF] scale-105' : ''
+                  className={`border-[2.5px] sm:border-[3.5px] border-[#0D0D0D] px-3.5 sm:px-8 py-1 sm:py-2 rounded-xl sm:rounded-2xl shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[5px_5px_0px_#0D0D0D] flex items-center gap-1.5 sm:gap-3 -rotate-1 relative transition-all cursor-pointer hover:scale-105 active:scale-95 ${stage === 'flop' || stage === 'turn' || stage === 'river' ? 'ring-2 sm:ring-4 ring-[#00F5FF] scale-105' : ''
                     }`}
+                  style={{ backgroundColor: currentTheme.potPillBg, color: currentTheme.potPillText }}
                   title="Click to hear chips!"
                 >
                   <div className="flex -space-x-2.5 sm:-space-x-3.5 items-center">
@@ -2360,10 +2250,43 @@ export default function PokerDuelGame({
                   </span>
                 </div>
 
-                {/* 5 Community Cards */}
+                {/* Multi-way Side Pots Breakdown Pills */}
+                {sidePots.length > 1 && (
+                  <div className="flex items-center gap-1.5 flex-wrap justify-center animate-fadeIn z-20">
+                    {sidePots.map((sp, spIdx) => (
+                      <div
+                        key={spIdx}
+                        className={`px-2 sm:px-3 py-0.5 rounded-full border-[1.5px] border-[#0D0D0D] font-pixel text-[7.5px] sm:text-[9px] font-black shadow-[1px_1px_0px_#0D0D0D] ${spIdx === 0 ? 'bg-[#FFE500] text-[#0D0D0D]' : 'bg-[#00F5FF] text-[#0D0D0D]'}`}
+                      >
+                        {spIdx === 0 ? 'MAIN' : `SIDE ${spIdx}`}: ${sp.amount.toLocaleString()}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 5 Community Cards Stage (Round-by-Round Dealing) */}
                 <div className="flex gap-1 xs:gap-1.5 sm:gap-2.5 md:gap-3.5 items-center">
                   {[0, 1, 2, 3, 4].map(idx => {
                     const card = communityCards[idx]
+                    const SLOT_LABELS = ['FLOP 1', 'FLOP 2', 'FLOP 3', 'TURN', 'RIVER']
+
+                    if (!card) {
+                      return (
+                        <div
+                          key={`slot_${idx}`}
+                          className="w-9 h-13 xs:w-11 xs:h-16 sm:w-14 sm:h-21 md:w-19 md:h-28 rounded-lg sm:rounded-xl border-[2px] sm:border-[2.5px] border-dashed border-[#0D0D0D]/40 bg-black/15 flex flex-col items-center justify-center p-1 relative select-none transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]"
+                          title={`Undealt ${SLOT_LABELS[idx]}`}
+                        >
+                          <span className="font-pixel text-[6.5px] sm:text-[8px] font-bold text-white/50 text-center uppercase tracking-tighter">
+                            {SLOT_LABELS[idx]}
+                          </span>
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full border border-white/20 mt-1 opacity-40 flex items-center justify-center text-[6px] text-white font-pixel">
+                            +
+                          </div>
+                        </div>
+                      )
+                    }
+
                     const isHeroMatched = card && !isPlayerFolded && heroMatchedCardIds.has(card.id)
                     const isShowdownWinnerCard = card && stage === 'showdown' && showWinnerOverlay && winningMatchedCardIds.has(card.id)
                     const isHighlighted = isShowdownWinnerCard || isHeroMatched
@@ -2372,10 +2295,11 @@ export default function PokerDuelGame({
 
                     return (
                       <BrutalistCard
-                        key={idx}
+                        key={card.id || `card_${idx}`}
                         card={card}
-                        hidden={!card}
-                        delay={idx * 70}
+                        hidden={false}
+                        delay={idx < 3 ? idx * 100 : 0}
+                        animClass="animate-deal-community"
                         highlighted={isHighlighted}
                         isWinner={isWinner}
                         matchBadge={isHighlighted ? badge : null}
@@ -2432,44 +2356,66 @@ export default function PokerDuelGame({
           {/* ------------------------------------------------------ */}
 
           {/* SEAT 1: Mid/Top Left (Bot 0 - Cyber Samurai) */}
-          {renderBotSeat(activeBots[0], 0, 'top-1 sm:top-3 left-1 sm:left-6 md:left-8', 'top-[75px] sm:top-[96px] -right-6 sm:-right-12')}
+          {renderBotSeat(activeBots[0], 0, 'top-2 sm:top-4 left-2 sm:left-6 md:left-10', 'top-[64px] sm:top-[76px] left-14 sm:left-24')}
 
           {/* SEAT 2: Top Center (Bot 1 - Lucky Neko) */}
-          {renderBotSeat(activeBots[1], 1, 'top-0 sm:top-1 left-1/2 -translate-x-1/2', 'top-[95px] sm:top-[116px] left-1/2 -translate-x-1/2')}
+          {renderBotSeat(activeBots[1], 1, 'top-1 sm:top-2 left-1/2 -translate-x-1/2', 'top-[64px] sm:top-[74px] left-1/2 -translate-x-1/2')}
 
           {/* SEAT 3: Mid/Top Right (Bot 2 - Pixel Punk) */}
-          {renderBotSeat(activeBots[2], 2, 'top-1 sm:top-3 right-1 sm:right-6 md:right-8', 'top-[75px] sm:top-[96px] -left-6 sm:-left-12')}
+          {renderBotSeat(activeBots[2], 2, 'top-2 sm:top-4 right-2 sm:right-6 md:right-10', 'top-[64px] sm:top-[76px] right-14 sm:right-24')}
 
           {/* SEAT 4: Mid/Bottom Left (Bot 3 - High Roller) */}
-          {renderBotSeat(activeBots[3], 3, 'bottom-14 sm:bottom-22 md:bottom-28 left-0.5 sm:left-3 md:left-4', '-top-9 sm:-top-14 left-8 sm:left-14')}
+          {renderBotSeat(activeBots[3], 3, 'bottom-16 sm:bottom-20 md:bottom-24 left-1 sm:left-4 md:left-8', '-top-8 sm:-top-10 left-12 sm:left-18')}
 
           {/* SEAT 5: Mid/Bottom Right (Bot 4 - Neon Queen) */}
-          {renderBotSeat(activeBots[4], 4, 'bottom-14 sm:bottom-22 md:bottom-28 right-0.5 sm:right-3 md:right-4', '-top-9 sm:-top-14 right-8 sm:right-14')}
+          {renderBotSeat(activeBots[4], 4, 'bottom-16 sm:bottom-20 md:bottom-24 right-1 sm:right-4 md:right-8', '-top-8 sm:-top-10 right-12 sm:right-18')}
 
           {/* ------------------------------------------------------ */}
           {/* SEAT 0: BOTTOM CENTER (HERO / YOU - LARGE COCKPIT)     */}
           {/* ------------------------------------------------------ */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center max-w-[96vw]">
+          <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center max-w-[96vw]">
 
-            {/* Player's In-Pot Bet on Felt (3D ChipStack) */}
+            {/* Player's In-Pot Bet on Felt (Floating Dedicated Bet Pill) */}
             {playerRoundBet > 0 && (
-              <div className="mb-1 sm:mb-2">
-                <ChipStack
-                  amount={playerRoundBet}
-                  size="sm"
-                  animate={true}
-                  onClick={() => {
-                    SoundEngine.playChipClink({ brightness: 1.3 })
-                  }}
-                />
+              <div
+                onClick={() => {
+                  SoundEngine.playChipClink({ brightness: 1.3 })
+                }}
+                className="absolute -top-9 sm:-top-11 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-[#FFFFFF] border-[1.5px] sm:border-[2px] border-[#0D0D0D] px-2.5 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] animate-fadeIn cursor-pointer select-none whitespace-nowrap hover:scale-105 active:scale-95 transition-transform"
+                title="Your in-pot bet for this street"
+              >
+                <ChipStack amount={playerRoundBet} size="xs" />
+                <span className="font-pixel text-[7.5px] sm:text-[9px] font-black text-[#0D0D0D]">BET:</span>
+                <span className="font-display font-black text-[9.5px] sm:text-xs text-emerald-600">
+                  ${playerRoundBet.toLocaleString()}
+                </span>
               </div>
             )}
 
             <div className="relative flex items-center gap-2 sm:gap-4">
 
               {/* Player Avatar Plaque */}
-              <div className={`bg-[#FFFFFF] border-[2px] sm:border-[3px] border-[#0D0D0D] p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-[2.5px_2.5px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] flex flex-col items-center min-w-[85px] xs:min-w-[105px] sm:min-w-[140px] ${isHeroSittingOut ? 'opacity-85' : ''
+              <div className={`bg-[#FFFFFF] border-[2px] sm:border-[3px] border-[#0D0D0D] p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-[2.5px_2.5px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] flex flex-col items-center min-w-[85px] xs:min-w-[105px] sm:min-w-[140px] relative ${isHeroSittingOut ? 'opacity-85' : ''
                 }`}>
+                {/* Position Badges (D / SB / BB) */}
+                <div className="absolute -top-2.5 -left-2 flex items-center gap-1 z-40 pointer-events-none">
+                  {dealerButtonIndex === 0 && (
+                    <div className="w-5 h-5 rounded-full bg-[#FFFFFF] border-[2px] border-[#0D0D0D] font-pixel font-black text-[9px] text-[#0D0D0D] flex items-center justify-center shadow-[1.5px_1.5px_0px_#0D0D0D]" title="Dealer Button">
+                      D
+                    </div>
+                  )}
+                  {sbIndex === 0 && (
+                    <div className="px-1.5 py-0.5 rounded bg-[#00F5FF] border-[1.5px] border-[#0D0D0D] font-pixel font-bold text-[7.5px] text-[#0D0D0D] shadow-[1px_1px_0px_#0D0D0D]" title="Small Blind ($250)">
+                      SB
+                    </div>
+                  )}
+                  {bbIndex === 0 && (
+                    <div className="px-1.5 py-0.5 rounded bg-[#FFE500] border-[1.5px] border-[#0D0D0D] font-pixel font-bold text-[7.5px] text-[#0D0D0D] shadow-[1px_1px_0px_#0D0D0D]" title="Big Blind ($500)">
+                      BB
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center gap-1.5 sm:gap-2.5">
                   <div className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 rounded-full bg-white border-[2px] sm:border-[2.5px] border-[#0D0D0D] flex items-center justify-center p-0.5 sm:p-1 shadow-[1.5px_1.5px_0px_#0D0D0D] sm:shadow-[2px_2px_0px_#0D0D0D] overflow-hidden">
                     <PixelAvatar
@@ -2491,9 +2437,16 @@ export default function PokerDuelGame({
                 </div>
 
                 {/* Real-time Hand Strength / Sitting Out Pill */}
-                <div className={`mt-1 sm:mt-1.5 w-full border-[1.5px] sm:border-[2px] border-[#0D0D0D] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg font-display font-black text-[8px] xs:text-[9px] sm:text-xs text-center truncate shadow-[1px_1px_0px_#0D0D0D] ${isHeroSittingOut ? 'bg-[#FF3333] text-white' : isPlayerFolded ? 'bg-gray-300 text-gray-700' : isPlayerAllIn ? 'bg-[#FFE500] text-[#0D0D0D]' : 'bg-[#FF70A6] text-[#0D0D0D]'
-                  }`}>
-                  {isHeroSittingOut ? (heroQueuedToJoin ? '⏳ QUEUED' : '💀 OUT OF CHIPS') : isPlayerFolded ? '🏳️ FOLDED' : isPlayerAllIn ? `🚀 ALL-IN (${playerHandName || 'HIGH'})` : (playerHandName || 'CALCULATING...')}
+                <div
+                  onClick={() => {
+                    SoundEngine.playClick()
+                    setIsRankingsOpen(true)
+                  }}
+                  className={`mt-1 sm:mt-1.5 w-full border-[1.5px] sm:border-[2px] border-[#0D0D0D] px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg font-display font-black text-[8px] xs:text-[9px] sm:text-xs text-center truncate shadow-[1px_1px_0px_#0D0D0D] cursor-pointer hover:scale-105 transition-transform ${isHeroSittingOut ? 'bg-[#FF3333] text-white' : isPlayerFolded ? 'bg-gray-300 text-gray-700' : isPlayerAllIn ? 'bg-[#FFE500] text-[#0D0D0D]' : 'bg-[#FF70A6] text-[#0D0D0D]'
+                  }`}
+                  title="Click to view Hand Rankings & Tips"
+                >
+                  {isHeroSittingOut ? (heroQueuedToJoin ? 'QUEUED' : 'OUT OF CHIPS') : isPlayerFolded ? 'FOLDED' : isPlayerAllIn ? `ALL-IN (${playerHandName || 'HIGH'})` : (playerHandName || 'CALCULATING...')}
                 </div>
               </div>
 
@@ -2502,8 +2455,11 @@ export default function PokerDuelGame({
                 <div className={`flex -space-x-3 xs:-space-x-4 sm:-space-x-6 relative transition-all ${isPlayerFolded ? 'opacity-40 grayscale' : 'hover:space-x-1'}`}>
                   {playerCards[0] && (
                     <BrutalistCard
+                      key={playerCards[0].id || 'player_card_0'}
                       card={playerCards[0]}
                       large
+                      delay={0}
+                      animClass="animate-deal-player"
                       deckSkin={equippedDeck}
                       highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[0].id) || isPlayerAllIn)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[0].id)}
@@ -2512,8 +2468,11 @@ export default function PokerDuelGame({
                   )}
                   {playerCards[1] && (
                     <BrutalistCard
+                      key={playerCards[1].id || 'player_card_1'}
                       card={playerCards[1]}
                       large
+                      delay={140}
+                      animClass="animate-deal-player"
                       deckSkin={equippedDeck}
                       highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[1].id) || isPlayerAllIn)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[1].id)}
@@ -2522,15 +2481,15 @@ export default function PokerDuelGame({
                   )}
                   {isPlayerFolded && (
                     <div className="absolute inset-0 flex items-center justify-center z-30">
-                      <span className="font-display font-black text-[10px] sm:text-sm text-white bg-[#FF3333] px-1.5 sm:px-2 py-0.5 sm:py-1 border-[1.5px] sm:border-[2px] border-black rotate-12 shadow-[1.5px_1.5px_0px_#000]">
-                        FOLDED 🏳️
+                      <span className="font-display font-black text-[10px] sm:text-sm text-white bg-[#FF3333] px-2 sm:px-2.5 py-0.5 sm:py-1 border-[1.5px] sm:border-[2px] border-black rotate-12 shadow-[1.5px_1.5px_0px_#000]">
+                        FOLDED
                       </span>
                     </div>
                   )}
                   {isPlayerAllIn && !isPlayerFolded && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
                       <span className="font-display font-black text-[9px] sm:text-xs text-[#0D0D0D] bg-[#FFE500] px-2 py-0.5 border-[2px] border-black shadow-[2px_2px_0px_#000] animate-bounce">
-                        🚀 ALL-IN
+                        ALL-IN
                       </span>
                     </div>
                   )}
@@ -2542,11 +2501,11 @@ export default function PokerDuelGame({
                       onClick={handleHeroRebuy}
                       className="brutal-btn px-4 sm:px-6 py-2 sm:py-2.5 bg-[#FFE500] hover:bg-[#00F5FF] text-[#0D0D0D] border-[2.5px] sm:border-[3px] border-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] cursor-pointer animate-bounce flex items-center gap-1.5"
                     >
-                      <span>💰</span> REBUY $10K & RE-JOIN
+                      REBUY $10K & RE-JOIN
                     </button>
                   ) : (
-                    <div className="px-3 sm:px-5 py-1.5 sm:py-2 bg-[#00F5FF] border-[2px] sm:border-[2.5px] border-[#0D0D0D] rounded-lg sm:rounded-xl shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-[#0D0D0D] animate-pulse">
-                      ⏳ JOINING IN NEXT HAND...
+                    <div className="px-3 sm:px-5 py-1.5 sm:py-2 bg-[#00F5FF] border-[2px] sm:border-[2.5px] border-[#0D0D0D] rounded-lg sm:rounded-xl shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-[#0D0D0D]">
+                      JOINING IN NEXT HAND...
                     </div>
                   )}
                 </div>
@@ -2556,7 +2515,7 @@ export default function PokerDuelGame({
 
             {/* Active Turn Indicator */}
             {isMyTurn && !isPlayerFolded && !isPlayerAllIn && !isHeroSittingOut && (
-              <div className="mt-1 sm:mt-1.5 bg-[#00F5FF] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm animate-pulse text-center truncate max-w-[94vw]">
+              <div className="mt-1 sm:mt-1.5 bg-[#00F5FF] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-center truncate max-w-[94vw]">
                 YOUR TURN // {playerCallAmount > 0 ? `CALL $${playerCallAmount.toLocaleString()}` : 'CHECK OR RAISE'}
               </div>
             )}
@@ -2565,10 +2524,10 @@ export default function PokerDuelGame({
             {isMyTurn && !isPlayerFolded && !isPlayerAllIn && !isHeroSittingOut && (
               <div className="w-full max-w-[200px] xs:max-w-[240px] sm:max-w-[320px] mt-1 sm:mt-1.5 flex flex-col items-center animate-fadeIn">
                 <div className="w-full flex items-center justify-between px-1 mb-0.5">
-                  <span className="font-pixel text-[7.5px] sm:text-[9px] font-black text-[#0D0D0D] flex items-center gap-1">
-                    <span className={turnTimeRemaining <= 3 ? 'animate-ping inline-block text-red-600' : ''}>⏱️</span> TIME
+                  <span className="font-pixel text-[7.5px] sm:text-[9px] font-black text-[#0D0D0D]">
+                    TIME:
                   </span>
-                  <span className={`font-mono-nb text-[9.5px] sm:text-xs font-black ${turnTimeRemaining <= 3 ? 'text-[#FF3333] animate-pulse scale-110' : 'text-[#0D0D0D]'
+                  <span className={`font-mono-nb text-[9.5px] sm:text-xs font-black ${turnTimeRemaining <= 3 ? 'text-[#FF3333] scale-110' : 'text-[#0D0D0D]'
                     }`}>
                     {turnTimeRemaining.toFixed(1)}s / 10.0s
                   </span>
@@ -2578,8 +2537,7 @@ export default function PokerDuelGame({
                 <div className="w-full h-2.5 sm:h-3.5 bg-[#0D0D0D] border-[1.5px] sm:border-[2px] border-[#0D0D0D] rounded-full p-0.5 shadow-[1.5px_1.5px_0px_#0D0D0D] sm:shadow-[2px_2px_0px_#0D0D0D] relative overflow-hidden">
                   {/* HP Gauge Fill */}
                   <div
-                    className={`h-full rounded-full transition-all duration-100 ease-linear ${turnTimeRemaining <= 3 ? 'animate-pulse' : ''
-                      }`}
+                    className="h-full rounded-full transition-all duration-100 ease-linear"
                     style={{
                       width: `${Math.max(0, Math.min(100, (turnTimeRemaining / TURN_TIME_LIMIT) * 100))}%`,
                       backgroundColor: getTimerColor(turnTimeRemaining),
@@ -2598,14 +2556,14 @@ export default function PokerDuelGame({
             )}
 
             {isPlayerFolded && stage !== 'showdown' && (
-              <div className="mt-1 sm:mt-1.5 bg-[#FFE500] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm animate-pulse text-[#0D0D0D]">
-                🍿 SPECTATING BOTS ROUND...
+              <div className="mt-1 sm:mt-1.5 bg-[#FFE500] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-[#0D0D0D]">
+                SPECTATING BOTS ROUND...
               </div>
             )}
 
             {isPlayerAllIn && !isPlayerFolded && stage !== 'showdown' && (
-              <div className="mt-1 sm:mt-1.5 bg-[#FF70A6] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm animate-pulse text-[#0D0D0D]">
-                🚀 ALL-IN LIVE RUNOUT // WATCHING...
+              <div className="mt-1 sm:mt-1.5 bg-[#FF70A6] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-3 sm:px-4 py-0.5 sm:py-1 rounded-full shadow-[2px_2px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-[#0D0D0D]">
+                ALL-IN LIVE RUNOUT // WATCHING...
               </div>
             )}
 
@@ -2618,12 +2576,9 @@ export default function PokerDuelGame({
         {/* ------------------------------------------------------ */}
         {stage === 'table_paused' && (
           <div className="absolute inset-0 z-40 bg-[#0D0D0D]/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-fadeIn">
-            <span className="text-4xl sm:text-7xl animate-bounce">
-              {activeBots.every(b => b.isBusted) ? '👑' : '⏸️'}
-            </span>
             <div className="bg-[#00F5FF] border-[3px] sm:border-[4px] border-[#0D0D0D] px-4 sm:px-12 py-2 sm:py-3 shadow-[5px_5px_0px_#FFE500] sm:shadow-[8px_8px_0px_#FFE500] my-2 sm:my-3 -rotate-1">
               <h3 className="font-display text-lg sm:text-4xl font-black text-[#0D0D0D] uppercase">
-                {activeBots.every(b => b.isBusted) ? 'TABLE CONQUERED! ALL BOTS BUSTED 🏆' : 'TABLE PAUSED (WAITING FOR PLAYERS)'}
+                {activeBots.every(b => b.isBusted) ? 'TABLE CONQUERED! ALL BOTS BUSTED' : 'TABLE PAUSED (WAITING FOR PLAYERS)'}
               </h3>
             </div>
             <p className="font-mono-nb text-xs sm:text-base text-gray-200 mb-4 sm:mb-6 max-w-md">
@@ -2636,14 +2591,14 @@ export default function PokerDuelGame({
                 onClick={handleRebuyAllBots}
                 className="brutal-btn px-5 sm:px-8 py-2 sm:py-3 bg-[#FFE500] hover:bg-[#00F5FF] text-[#0D0D0D] font-display text-xs sm:text-base font-black uppercase shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] cursor-pointer"
               >
-                🤖 REBUY ALL BOTS ($10K EACH)
+                REBUY ALL BOTS ($10K EACH)
               </button>
               {isHeroSittingOut && (
                 <button
                   onClick={handleHeroRebuy}
                   className="brutal-btn px-5 sm:px-8 py-2 sm:py-3 bg-[#00F5FF] hover:bg-[#FFE500] text-[#0D0D0D] font-display text-xs sm:text-base font-black uppercase shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] cursor-pointer"
                 >
-                  💰 REBUY HERO ($10K)
+                  REBUY HERO ($10K)
                 </button>
               )}
             </div>
@@ -2655,10 +2610,9 @@ export default function PokerDuelGame({
         {/* ------------------------------------------------------ */}
         {stage === 'showdown' && !showWinnerOverlay && (
           <div className="absolute top-3 sm:top-5 left-1/2 -translate-x-1/2 z-40 bg-[#FFE500] border-[2px] sm:border-[3px] border-[#0D0D0D] px-3.5 sm:px-7 py-1 sm:py-2 rounded-full shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] font-display font-black text-[10px] sm:text-sm text-[#0D0D0D] animate-bounce flex items-center gap-2 whitespace-nowrap">
-            <span className="text-xs sm:text-base">🎴</span>
             <span>SHOWDOWN // REVEALING ALL HANDS...</span>
             <span className="font-mono-nb text-[9px] sm:text-xs bg-[#0D0D0D] text-[#FFE500] px-1.5 py-0.2 rounded font-black">
-              CHECKING CARDS ⏳
+              CHECKING CARDS
             </span>
           </div>
         )}
@@ -2670,7 +2624,6 @@ export default function PokerDuelGame({
           <div className="absolute inset-0 z-40 bg-[#0D0D0D]/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-6 text-center animate-fadeIn max-w-[96vw] mx-auto">
             {gameResult === 'win' ? (
               <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <span className="text-4xl sm:text-7xl animate-bounce">🏆</span>
                 <div className="bg-[#00F5FF] border-[3px] sm:border-[4px] border-[#0D0D0D] px-6 sm:px-10 py-2 sm:py-3 shadow-[5px_5px_0px_#FFE500] sm:shadow-[8px_8px_0px_#FFE500] -rotate-2">
                   <h3 className="font-display text-xl sm:text-5xl font-black text-[#0D0D0D] uppercase">
                     YOU WON THE POT!
@@ -2685,7 +2638,6 @@ export default function PokerDuelGame({
               </div>
             ) : gameResult === 'split' ? (
               <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <span className="text-4xl sm:text-7xl animate-bounce">🤝</span>
                 <div className="bg-[#FFE500] border-[3px] sm:border-[4px] border-[#0D0D0D] px-6 sm:px-10 py-2 sm:py-3 shadow-[5px_5px_0px_#00F5FF] sm:shadow-[8px_8px_0px_#00F5FF] -rotate-1">
                   <h3 className="font-display text-lg sm:text-4xl font-black text-[#0D0D0D] uppercase">
                     SPLIT POT!
@@ -2700,7 +2652,6 @@ export default function PokerDuelGame({
               </div>
             ) : gameResult === 'bot_win' ? (
               <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <span className="text-4xl sm:text-7xl animate-bounce">👑</span>
                 <div className="bg-[#FFE500] border-[3px] sm:border-[4px] border-[#0D0D0D] px-6 sm:px-10 py-2 sm:py-3 shadow-[5px_5px_0px_#00F5FF] sm:shadow-[8px_8px_0px_#00F5FF] -rotate-1">
                   <h3 className="font-display text-lg sm:text-4xl font-black text-[#0D0D0D] uppercase">
                     {winnerName} WINS!
@@ -2718,7 +2669,6 @@ export default function PokerDuelGame({
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 sm:gap-3">
-                <span className="text-4xl sm:text-6xl">💀</span>
                 <div className="bg-[#FF70A6] border-[3px] sm:border-[4px] border-[#0D0D0D] px-6 sm:px-10 py-2 sm:py-3 shadow-[5px_5px_0px_#0D0D0D] sm:shadow-[8px_8px_0px_#0D0D0D] rotate-2">
                   <h3 className="font-display text-lg sm:text-5xl font-black text-[#0D0D0D] uppercase">
                     {winnerName} WINS!
@@ -2730,6 +2680,21 @@ export default function PokerDuelGame({
               </div>
             )}
 
+            {/* Multi-Pot Breakdown Details */}
+            {showdownPotsSummary && showdownPotsSummary.length > 1 && (
+              <div className="mt-2 sm:mt-3 flex flex-col gap-1 max-w-sm w-full bg-[#FFFFFF] border-[2px] border-[#0D0D0D] p-2 rounded-xl shadow-[3px_3px_0px_#0D0D0D] text-[#0D0D0D]">
+                <div className="font-pixel text-[8px] sm:text-[9px] font-black uppercase text-center border-b border-black pb-1">
+                  POT DISTRIBUTION SUMMARY
+                </div>
+                {showdownPotsSummary.map((potInfo, pIdx) => (
+                  <div key={pIdx} className="flex justify-between items-center text-[8px] sm:text-[10px] font-mono-nb font-bold px-1">
+                    <span>{potInfo.isSidePot ? `Side Pot ${potInfo.potIndex}` : 'Main Pot'}: ${potInfo.amount.toLocaleString()}</span>
+                    <span className="text-emerald-700">→ {potInfo.winners.map(w => w.name).join(', ')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex flex-col items-center gap-1.5 sm:gap-2 mt-4 sm:mt-6">
               <button
                 onClick={startNewHand}
@@ -2738,7 +2703,7 @@ export default function PokerDuelGame({
                 DEAL NEXT HAND → {autoNextSeconds ? `(${autoNextSeconds}s)` : ''}
               </button>
               {autoNextSeconds && (
-                <span className="font-pixel text-[8px] sm:text-[9px] text-gray-300 animate-pulse">
+                <span className="font-pixel text-[8px] sm:text-[9px] text-gray-300">
                   Auto-dealing next hand in {autoNextSeconds} seconds...
                 </span>
               )}
@@ -2838,7 +2803,6 @@ export default function PokerDuelGame({
             isHeroSittingOut ? (
               <div className="flex items-center gap-1.5 sm:gap-3">
                 <div className="bg-[#FFE500] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-2.5 sm:px-5 py-1 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1 sm:gap-2 shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[2.5px_2.5px_0px_#0D0D0D]">
-                  <span className="text-sm sm:text-lg animate-bounce">🍿</span>
                   <span className="font-display font-black text-[10px] sm:text-sm text-[#0D0D0D] uppercase">
                     {heroQueuedToJoin ? 'WAITING FOR NEXT HAND...' : 'SITTING OUT'}
                   </span>
@@ -2848,7 +2812,7 @@ export default function PokerDuelGame({
                     onClick={handleHeroRebuy}
                     className="brutal-btn px-3 sm:px-7 py-1.5 sm:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase hover:bg-[#FFE500] cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   >
-                    💰 REBUY $10K & JOIN
+                    REBUY $10K & JOIN
                   </button>
                 ) : (
                   <button
@@ -2856,14 +2820,13 @@ export default function PokerDuelGame({
                     className="brutal-btn px-3 sm:px-6 py-1.5 sm:py-3 bg-[#FFE500] text-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase hover:bg-[#00F5FF] cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                     title="Fast forward to showdown"
                   >
-                    ⚡ SKIP TO SHOWDOWN
+                    SKIP TO SHOWDOWN
                   </button>
                 )}
               </div>
             ) : isPlayerFolded ? (
               <div className="flex items-center gap-1.5 sm:gap-3">
                 <div className="bg-[#F6F5FA] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-2.5 sm:px-5 py-1 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-[2px_2px_0px_#0D0D0D]">
-                  <span className="text-sm sm:text-lg animate-bounce">🍿</span>
                   <span className="font-display font-black text-[10px] sm:text-sm text-[#0D0D0D] uppercase">
                     SPECTATING BOTS DUEL...
                   </span>
@@ -2873,13 +2836,12 @@ export default function PokerDuelGame({
                   className="brutal-btn px-3 sm:px-6 py-1.5 sm:py-3 bg-[#FFE500] text-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase hover:bg-[#00F5FF] cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   title="Fast forward to showdown"
                 >
-                  ⚡ SKIP TO SHOWDOWN
+                  SKIP TO SHOWDOWN
                 </button>
               </div>
             ) : isPlayerAllIn ? (
               <div className="flex items-center gap-1.5 sm:gap-3">
                 <div className="bg-[#FFE500] border-[2px] sm:border-[2.5px] border-[#0D0D0D] px-2.5 sm:px-5 py-1 sm:py-2 rounded-lg sm:rounded-xl flex items-center gap-1.5 sm:gap-2 shadow-[2px_2px_0px_#0D0D0D]">
-                  <span className="text-sm sm:text-lg animate-bounce">🚀</span>
                   <span className="font-display font-black text-[10px] sm:text-sm text-[#0D0D0D] uppercase">
                     ALL-IN RUNOUT...
                   </span>
@@ -2889,7 +2851,7 @@ export default function PokerDuelGame({
                   className="brutal-btn px-3 sm:px-6 py-1.5 sm:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] sm:text-sm font-black uppercase hover:bg-[#FFE500] cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   title="Fast forward to showdown"
                 >
-                  ⚡ SKIP TO SHOWDOWN
+                  SKIP TO SHOWDOWN
                 </button>
               </div>
             ) : (
@@ -2899,7 +2861,7 @@ export default function PokerDuelGame({
                 {isMyTurn && (
                   <div className={`hidden md:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border-[2px] border-[#0D0D0D] shadow-[2px_2px_0px_#0D0D0D] transition-colors ${turnTimeRemaining <= 3 ? 'bg-[#FF3333] text-white animate-pulse' : 'bg-[#FFFFFF] text-[#0D0D0D]'
                     }`}>
-                    <span className="text-xs">⏱️</span>
+                    <span className="font-pixel text-[8px] font-bold">TIME:</span>
                     <span className="font-mono-nb font-black text-xs">
                       {turnTimeRemaining.toFixed(1)}s
                     </span>
@@ -2912,7 +2874,7 @@ export default function PokerDuelGame({
                   onClick={handlePlayerFold}
                   className="brutal-btn px-2.5 xs:px-3.5 sm:px-6 py-1.5 sm:py-2.5 md:py-3 bg-white text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#FF70A6] transition-colors disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
-                  🏳️ FOLD
+                  FOLD
                 </button>
 
                 {/* CHECK / CALL */}
@@ -2922,7 +2884,7 @@ export default function PokerDuelGame({
                     onClick={handlePlayerCheck}
                     className="brutal-btn px-3 xs:px-4 sm:px-8 py-1.5 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   >
-                    ✓ CHECK
+                    CHECK
                   </button>
                 ) : (
                   <button
@@ -2930,7 +2892,7 @@ export default function PokerDuelGame({
                     onClick={handlePlayerCall}
                     className="brutal-btn px-3 xs:px-4 sm:px-8 py-1.5 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   >
-                    ✓ CALL ${playerCallAmount.toLocaleString()}
+                    CALL ${playerCallAmount.toLocaleString()}
                   </button>
                 )}
 
@@ -2940,16 +2902,16 @@ export default function PokerDuelGame({
                   onClick={() => handlePlayerRaise(raiseAmount)}
                   className="brutal-btn px-3 xs:px-4 sm:px-7 py-1.5 sm:py-2.5 md:py-3 bg-[#FFE500] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#ebd300] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
-                  🔥 +${raiseAmount.toLocaleString()}
+                  +${raiseAmount.toLocaleString()}
                 </button>
 
                 {/* ALL-IN */}
                 <button
                   disabled={!isMyTurn}
                   onClick={handlePlayerAllIn}
-                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-1.5 sm:py-2.5 md:py-3 bg-[#FF70A6] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#ff5292] animate-pulse disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-1.5 sm:py-2.5 md:py-3 bg-[#FF70A6] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#ff5292] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
-                  🚀 ALL-IN
+                  ALL-IN
                 </button>
 
               </div>
@@ -2959,7 +2921,7 @@ export default function PokerDuelGame({
               onClick={handleRebuyAllBots}
               className="brutal-btn px-4 sm:px-8 py-2 sm:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-xs sm:text-base font-black uppercase hover:bg-[#FFE500] shadow-[3px_3px_0px_#0D0D0D] sm:shadow-[4px_4px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
             >
-              🤖 REBUY ALL BOTS
+              REBUY ALL BOTS
             </button>
           ) : (
             <button
@@ -2972,6 +2934,20 @@ export default function PokerDuelGame({
         </div>
 
       </footer>
+
+      {/* Table Felt & Arena Theme Selector Modal */}
+      <TableThemeModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+        activeThemeKey={tableThemeKey}
+        onSelectTheme={handleSelectTableTheme}
+      />
+
+      {/* Official Poker Hand Rankings & Tips Modal */}
+      <HandRankingsModal
+        isOpen={isRankingsOpen}
+        onClose={() => setIsRankingsOpen(false)}
+      />
 
     </div>
   )

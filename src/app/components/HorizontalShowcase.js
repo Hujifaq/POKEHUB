@@ -643,7 +643,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: 'BLACK CHROME FOIL',
     stats: { rarity: '0.1% DROP', chips: '$10,000 CHIP', finish: 'VAPOR DEPOSITED' },
     chipColor: 'bg-[#181824] text-[#b388ff] border-[#b388ff]',
-    decorTokens: ['♠', '★', '💎', '🪙'],
+    decorTokens: ['♠', '★', '♦', '♣'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -668,7 +668,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: '24K MIRROR FINISH',
     stats: { rarity: 'ROYAL TIED', chips: '$25,000 CHIP', finish: 'HAND-ENGRAVED' },
     chipColor: 'bg-[#ffd700] text-[#050505] border-true-black',
-    decorTokens: ['♥', '👑', '✨', '⚜️'],
+    decorTokens: ['♥', '★', '♠', '♦'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -693,7 +693,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: 'PRISM GLITCH FOIL',
     stats: { rarity: 'CYBER VAULT', chips: '$5,000 CHIP', finish: 'LASER DIFFRACTION' },
     chipColor: 'bg-[#00f0ff] text-[#050505] border-true-black',
-    decorTokens: ['♦', '⚡', '💾', '🎲'],
+    decorTokens: ['♦', '★', '⚡', '♠'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -718,7 +718,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: 'BAIZE FELT WEAVE',
     stats: { rarity: 'DEALER EXCLUSIVE', chips: '$50,000 CHIP', finish: 'WATERPROOF PVC' },
     chipColor: 'bg-[#2ecc71] text-[#050505] border-true-black',
-    decorTokens: ['♣', '🍀', '🎲', '🪙'],
+    decorTokens: ['♣', '★', '♥', '♦'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -743,7 +743,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: 'CHERRY FOIL EMBOSS',
     stats: { rarity: 'LIMITED 1/100', chips: '$1,000 CHIP', finish: 'VELVET SOFT-TOUCH' },
     chipColor: 'bg-[#ffa6c9] text-[#050505] border-true-black',
-    decorTokens: ['♥', '🌸', '✨', '🍒'],
+    decorTokens: ['♥', '★', '♣', '♦'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -768,7 +768,7 @@ const SHOWCASE_EDITIONS = [
     badgeText: 'CRT SCANLINE PHOSPHOR',
     stats: { rarity: 'SECRET UNLOCK', chips: '$100,000 CHIP', finish: 'CHIP TUNE AUDIO' },
     chipColor: 'bg-[#ff6b00] text-white border-true-black',
-    decorTokens: ['★', '🕹️', '🪙', '⭐'],
+    decorTokens: ['★', '♠', '♥', '♦'],
     frontBg: 'bg-[#FAF7F2]',
     frontBorder: 'border-true-black/30',
     rankColor: 'text-true-black',
@@ -1128,7 +1128,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
           }`}
           title={`Equip ${item.name} skin for 3D Duel`}
         >
-          <span>{isEquipped ? '✓' : '🎴'}</span>
+          <span>{isEquipped ? '✓' : ''}</span>
           <span>{isEquipped ? 'EQUIPPED' : 'EQUIP DECK'}</span>
         </button>
       </div>
@@ -1162,7 +1162,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
     }
     if (onSelectDeck) onSelectDeck(skinKey)
 
-    setEquipToast(`✨ EQUIPPED [${skinName}] FOR 3D DUEL!`)
+    setEquipToast(`EQUIPPED [${skinName}] FOR 3D DUEL!`)
     setTimeout(() => {
       setEquipToast(null)
     }, 2400)
@@ -1199,7 +1199,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
   }, [])
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} id="deck-skins" className="relative w-full">
       {/* Floating Equip Toast - Statically rendered with CSS transitions to prevent GSAP ScrollTrigger DOM mutations */}
       <div
         className={`fixed top-24 left-1/2 -translate-x-1/2 z-[1050] pointer-events-none transition-all duration-300 ${
@@ -1215,7 +1215,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
 
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen overflow-hidden select-none z-30 rounded-t-[36px] sm:rounded-t-[48px] md:rounded-t-[60px] border-t-[4px] border-true-black bg-transparent"
+        className="relative w-full h-screen overflow-hidden select-none z-20 bg-transparent flex items-center"
       >
         {/* Track */}
         <div
@@ -1226,7 +1226,6 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           <div className="w-[88vw] sm:w-[620px] lg:w-[680px] shrink-0 flex flex-col justify-center pr-4">
             {/* Top Pill Tag */}
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm w-max mb-6">
-              <span className="text-xs">🎴</span>
               <span className="font-pixel text-[10px] sm:text-xs font-black uppercase text-true-black">
                 POKERHUB VAULT
               </span>
@@ -1262,12 +1261,12 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
               <button
                 onClick={() => {
                   SoundEngine.playClick()
-                  if (onOpenDuel) onOpenDuel()
+                  const skin = equippedSkin || 'obsidian'
+                  window.location.href = `/game?skin=${skin}`
                 }}
                 className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-6 py-3 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
-                <span>⚔️</span>
-                <span>PLAY IN 3D ARENA</span>
+                <span>PLAY IN 3D ARENA →</span>
               </button>
 
               <div className="brutal-window px-4 py-2.5 bg-white flex items-center">
@@ -1294,7 +1293,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
               <span className="font-pixel text-[10px] font-black uppercase px-2 py-1 bg-white border-[2px] border-true-black brutal-shadow-sm text-true-black">
                 GAME READY
               </span>
-              <span className="text-3xl">🎰</span>
+              <span className="font-mono-nb font-black text-sm bg-black text-white px-2 py-1 border border-black shadow-[2px_2px_0px_#fff]">3D ARENA</span>
             </div>
 
             <div className="space-y-4">
@@ -1310,12 +1309,12 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
               <button
                 onClick={() => {
                   SoundEngine.playCardSwoosh()
-                  if (onOpenDuel) onOpenDuel()
+                  const skin = equippedSkin || 'obsidian'
+                  window.location.href = `/game?skin=${skin}`
                 }}
                 className="brutal-btn w-full py-4 bg-accent-yellow text-true-black font-display text-base font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>⚔️</span>
-                <span>START TEXAS HOLD'EM</span>
+                <span>ENTER 3D ARENA →</span>
               </button>
 
               <button
@@ -1326,7 +1325,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
                 className="brutal-btn w-full py-2.5 bg-white text-true-black font-pixel text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>▲</span>
-                <span>BACK TO 3D ARENA</span>
+                <span>BACK TO TOP</span>
               </button>
             </div>
           </div>
