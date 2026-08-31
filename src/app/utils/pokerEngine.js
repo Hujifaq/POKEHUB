@@ -524,14 +524,17 @@ export function startNewHand(prevState, customDeck = null) {
  * Executes a player action (CHECK, CALL, BET, RAISE, ALL_IN, FOLD)
  */
 export function executePlayerAction(state, playerIndex, actionType, amount = 0) {
-  if (state.currentTurnIndex !== playerIndex || state.phase === GamePhase.SHOWDOWN || state.phase === GamePhase.HAND_RESOLVED) {
-    console.warn(`Action ignored: Current turn is ${state.currentTurnIndex}, got ${playerIndex}`)
+  if (state.phase === GamePhase.SHOWDOWN || state.phase === GamePhase.HAND_RESOLVED) {
     return state
   }
 
   const player = state.players[playerIndex]
-  if (!player || player.folded || player.isAllIn) {
-    return state
+  if (!player || player.folded || player.isAllIn || player.bankroll <= 0) {
+    const nextTurnIndex = getNextActionablePlayerIndex(state.players, playerIndex)
+    if (isBettingRoundComplete(state)) {
+      return advanceStreet(state)
+    }
+    return { ...state, currentTurnIndex: nextTurnIndex }
   }
 
   let newRoundBet = player.roundBet
@@ -554,10 +557,12 @@ export function executePlayerAction(state, playerIndex, actionType, amount = 0) 
 
     case PlayerActionType.CHECK: {
       if (callNeeded > 0) {
-        console.warn(`Cannot check: Must call $${callNeeded}`)
-        return state
+        // Fallback: If cannot check due to facing a bet, fold
+        isFolded = true
+        lastAction = 'FOLD'
+      } else {
+        lastAction = 'CHECK'
       }
-      lastAction = 'CHECK'
       break
     }
 
