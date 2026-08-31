@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { gsap } from 'gsap'
 
 const DEFAULT_ITEMS = [
@@ -53,17 +53,19 @@ export default function BubbleMenu({
   useFixedPosition = false,
   items,
   animationEase = 'back.out(1.5)',
-  animationDuration = 0.5,
-  staggerDelay = 0.12
+  animationDuration = 0.45,
+  staggerDelay = 0.08
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [showOverlay, setShowOverlay] = useState(false)
 
   const overlayRef = useRef(null)
+  const backdropRef = useRef(null)
   const bubblesRef = useRef([])
   const labelRefs = useRef([])
 
   const menuItems = items?.length ? items : DEFAULT_ITEMS
+  const menuItemsRef = useRef(menuItems)
+  menuItemsRef.current = menuItems
 
   const containerClassName = [
     'bubble-menu',
@@ -79,71 +81,105 @@ export default function BubbleMenu({
     .filter(Boolean)
     .join(' ')
 
-  const handleToggle = () => {
-    const nextState = !isMenuOpen
-    if (nextState) setShowOverlay(true)
-    setIsMenuOpen(nextState)
-    onMenuClick?.(nextState)
-  }
+  const handleToggle = useCallback(() => {
+    setIsMenuOpen(prev => {
+      const next = !prev
+      onMenuClick?.(next)
+      return next
+    })
+  }, [onMenuClick])
+
+  const handleClose = useCallback(() => {
+    setIsMenuOpen(false)
+    onMenuClick?.(false)
+  }, [onMenuClick])
 
   useEffect(() => {
     const overlay = overlayRef.current
+    const backdrop = backdropRef.current
     const bubbles = bubblesRef.current.filter(Boolean)
     const labels = labelRefs.current.filter(Boolean)
-    if (!overlay || !bubbles.length) return
+    if (!overlay) return
+
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 900
+    const itemsList = menuItemsRef.current
 
     if (isMenuOpen) {
-      gsap.set(overlay, { display: 'flex' })
-      gsap.killTweensOf([...bubbles, ...labels])
-      gsap.set(bubbles, { scale: 0, transformOrigin: '50% 50%' })
-      gsap.set(labels, { y: 24, autoAlpha: 0 })
+      gsap.killTweensOf([overlay, backdrop, ...bubbles, ...labels])
+      overlay.style.display = 'flex'
+      overlay.style.pointerEvents = 'auto'
 
-      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 900
+      if (backdrop) {
+        gsap.fromTo(
+          backdrop,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.25, ease: 'power2.out' }
+        )
+      }
+
       bubbles.forEach((bubble, i) => {
-        const item = menuItems[i]
+        const item = itemsList[i]
         const targetRotation = isDesktop ? (item?.rotation ?? 0) : 0
-        const delay = i * staggerDelay + gsap.utils.random(-0.03, 0.03)
-        const tl = gsap.timeline({ delay })
-        tl.to(bubble, {
+        const delay = i * staggerDelay + 0.03
+
+        gsap.set(bubble, { scale: 0, rotation: 0, transformOrigin: '50% 50%' })
+        gsap.to(bubble, {
           scale: 1,
           rotation: targetRotation,
           duration: animationDuration,
-          ease: animationEase
+          ease: animationEase,
+          delay
         })
+
         if (labels[i]) {
-          tl.to(
-            labels[i],
-            {
-              y: 0,
-              autoAlpha: 1,
-              duration: animationDuration,
-              ease: 'power3.out'
-            },
-            '-=' + animationDuration * 0.9
-          )
+          gsap.set(labels[i], { y: 20, autoAlpha: 0 })
+          gsap.to(labels[i], {
+            y: 0,
+            autoAlpha: 1,
+            duration: animationDuration * 0.8,
+            ease: 'power3.out',
+            delay: delay + 0.04
+          })
         }
       })
     } else {
-      gsap.killTweensOf([...bubbles, ...labels])
-      gsap.to(labels, {
-        y: 24,
-        autoAlpha: 0,
-        duration: 0.2,
-        ease: 'power3.in'
-      })
-      gsap.to(bubbles, {
-        scale: 0,
-        duration: 0.2,
-        ease: 'power3.in',
-        onComplete: () => {
-          if (!isMenuOpen) {
-            setShowOverlay(false)
-            gsap.set(overlay, { display: 'none' })
+      gsap.killTweensOf([overlay, backdrop, ...bubbles, ...labels])
+
+      if (backdrop) {
+        gsap.to(backdrop, {
+          opacity: 0,
+          duration: 0.2,
+          ease: 'power2.in'
+        })
+      }
+
+      if (labels.length) {
+        gsap.to(labels, {
+          y: 20,
+          autoAlpha: 0,
+          duration: 0.15,
+          ease: 'power2.in'
+        })
+      }
+
+      if (bubbles.length) {
+        gsap.to(bubbles, {
+          scale: 0,
+          duration: 0.2,
+          ease: 'power2.in',
+          onComplete: () => {
+            if (overlayRef.current) {
+              overlayRef.current.style.display = 'none'
+              overlayRef.current.style.pointerEvents = 'none'
+            }
           }
-        }
-      })
+        })
+      } else {
+        overlay.style.display = 'none'
+        overlay.style.pointerEvents = 'none'
+      }
     }
-  }, [isMenuOpen, animationDuration, animationEase, staggerDelay, menuItems])
+  }, [isMenuOpen, animationDuration, animationEase, staggerDelay])
 
   useEffect(() => {
     const handleResize = () => {
@@ -151,7 +187,7 @@ export default function BubbleMenu({
         const bubbles = bubblesRef.current.filter(Boolean)
         const isDesktop = window.innerWidth >= 900
         bubbles.forEach((bubble, i) => {
-          const item = menuItems[i]
+          const item = menuItemsRef.current[i]
           if (bubble && item) {
             const rotation = isDesktop ? (item.rotation ?? 0) : 0
             gsap.set(bubble, { rotation })
@@ -161,7 +197,7 @@ export default function BubbleMenu({
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [isMenuOpen, menuItems])
+  }, [isMenuOpen])
 
   return (
     <>
@@ -183,9 +219,7 @@ export default function BubbleMenu({
           transform-origin: center;
         }
         .bubble-menu-items .pill-link {
-          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                      background 0.2s ease,
-                      color 0.2s ease;
+          transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
         }
         .bubble-menu-items .pill-list .pill-col:nth-child(4):nth-last-child(2) {
           margin-left: calc(100% / 6);
@@ -194,16 +228,12 @@ export default function BubbleMenu({
           margin-left: calc(100% / 3);
         }
         @media (min-width: 900px) {
-          .bubble-menu-items .pill-link {
-            transform: rotate(var(--item-rot));
-          }
           .bubble-menu-items .pill-link:hover {
-            transform: rotate(var(--item-rot)) scale(1.06);
             background: var(--hover-bg) !important;
             color: var(--hover-color) !important;
           }
           .bubble-menu-items .pill-link:active {
-            transform: rotate(var(--item-rot)) scale(.94);
+            box-shadow: 1px 1px 0px #050505 !important;
           }
         }
         @media (max-width: 899px) {
@@ -226,22 +256,17 @@ export default function BubbleMenu({
             overflow: visible;
           }
           .bubble-menu-items .pill-link {
-            transform: none !important;
-            --item-rot: 0deg !important;
             font-size: clamp(1.2rem, 5vw, 1.8rem) !important;
             padding: 0.85rem 0 !important;
             min-height: 56px !important;
-            height: auto !important;
             border-radius: 0px !important;
             box-shadow: 4px 4px 0px #050505 !important;
           }
           .bubble-menu-items .pill-link:hover {
-            transform: translateY(-2px) !important;
             background: var(--hover-bg) !important;
             color: var(--hover-color) !important;
           }
           .bubble-menu-items .pill-link:active {
-            transform: translate(2px, 2px) !important;
             box-shadow: 1px 1px 0px #050505 !important;
           }
         }
@@ -265,7 +290,7 @@ export default function BubbleMenu({
           </div>
         </div>
 
-        {/* Center: Action Buttons HUD (Centered in the middle of the screen on desktop) */}
+        {/* Center: Action Buttons HUD */}
         {actions && (
           <div className="pointer-events-auto flex items-center justify-center gap-1.5 sm:gap-2 md:gap-2.5 md:absolute md:left-1/2 md:-translate-x-1/2 z-20">
             {actions}
@@ -312,78 +337,78 @@ export default function BubbleMenu({
         </div>
       </nav>
 
-      {showOverlay && (
+      <div
+        ref={overlayRef}
+        className={[
+          'bubble-menu-items',
+          useFixedPosition ? 'fixed' : 'absolute',
+          'inset-0',
+          'flex items-center justify-center',
+          'z-[1000]',
+          !isMenuOpen ? 'pointer-events-none' : 'pointer-events-auto'
+        ].join(' ')}
+        style={{ display: 'none' }}
+        aria-hidden={!isMenuOpen}
+      >
+        {/* Glass Backdrop Blur Overlay */}
         <div
-          ref={overlayRef}
-          className={[
-            'bubble-menu-items',
-            useFixedPosition ? 'fixed' : 'absolute',
-            'inset-0',
-            'flex items-center justify-center',
-            'z-[1000]'
-          ].join(' ')}
-          aria-hidden={!isMenuOpen}
-        >
-          {/* Glass Backdrop Blur Overlay */}
-          <div
-            className="absolute inset-0 bg-true-black/60 backdrop-blur-md transition-opacity duration-300 pointer-events-auto"
-            onClick={handleToggle}
-          />
+          ref={backdropRef}
+          className="absolute inset-0 bg-true-black/60 backdrop-blur-md cursor-pointer pointer-events-auto"
+          onClick={handleClose}
+        />
 
-          <ul
-            className="pill-list list-none m-0 px-6 w-full max-w-[1600px] mx-auto flex flex-wrap gap-x-0 gap-y-1 pointer-events-auto relative z-10"
-            role="menu"
-            aria-label="Menu links"
-          >
-            {menuItems.map((item, idx) => (
-              <li
-                key={idx}
-                role="none"
-                className="pill-col flex justify-center items-stretch [flex:0_0_calc(100%/3)] box-border"
+        <ul
+          className="pill-list list-none m-0 px-6 w-full max-w-[1600px] mx-auto flex flex-wrap gap-x-0 gap-y-2 pointer-events-auto relative z-10"
+          role="menu"
+          aria-label="Menu links"
+        >
+          {menuItems.map((item, idx) => (
+            <li
+              key={idx}
+              role="none"
+              className="pill-col flex justify-center items-stretch [flex:0_0_calc(100%/3)] box-border"
+            >
+              <a
+                role="menuitem"
+                href={item.href || '#'}
+                onClick={(e) => {
+                  if (item.onClick) {
+                    e.preventDefault()
+                    item.onClick()
+                    handleClose()
+                  }
+                }}
+                aria-label={item.ariaLabel || item.label}
+                className="pill-link brutal-btn w-full no-underline bg-white text-inherit flex items-center justify-center relative box-border whitespace-nowrap overflow-hidden font-display uppercase tracking-tighter"
+                style={{
+                  '--item-rot': `${item.rotation ?? 0}deg`,
+                  '--pill-bg': '#ffffff',
+                  '--pill-color': 'var(--true-black)',
+                  '--hover-bg': item.hoverStyles?.bgColor || 'var(--accent-yellow)',
+                  '--hover-color': item.hoverStyles?.textColor || 'var(--true-black)',
+                  background: 'var(--pill-bg)',
+                  color: 'var(--pill-color)',
+                  minHeight: 'var(--pill-min-h, 140px)',
+                  padding: 'clamp(1.5rem, 3vw, 6rem) 0',
+                  fontSize: 'clamp(1.5rem, 4vw, 3.5rem)',
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  willChange: 'transform'
+                }}
+                ref={el => { bubblesRef.current[idx] = el }}
               >
-                <a
-                  role="menuitem"
-                  href={item.href || '#'}
-                  onClick={(e) => {
-                    if (item.onClick) {
-                      e.preventDefault()
-                      item.onClick()
-                      handleToggle()
-                    }
-                  }}
-                  aria-label={item.ariaLabel || item.label}
-                  className="pill-link brutal-btn w-full no-underline bg-white text-inherit flex items-center justify-center relative box-border whitespace-nowrap overflow-hidden font-display uppercase tracking-tighter"
-                  style={{
-                    '--item-rot': `${item.rotation ?? 0}deg`,
-                    '--pill-bg': '#ffffff',
-                    '--pill-color': 'var(--true-black)',
-                    '--hover-bg': item.hoverStyles?.bgColor || 'var(--accent-yellow)',
-                    '--hover-color': item.hoverStyles?.textColor || 'var(--true-black)',
-                    background: 'var(--pill-bg)',
-                    color: 'var(--pill-color)',
-                    minHeight: 'var(--pill-min-h, 160px)',
-                    padding: 'clamp(1.5rem, 3vw, 8rem) 0',
-                    fontSize: 'clamp(1.5rem, 4vw, 4rem)',
-                    fontWeight: 900,
-                    lineHeight: 0,
-                    willChange: 'transform',
-                    height: 10
-                  }}
-                  ref={el => { if (el) bubblesRef.current[idx] = el }}
+                <span
+                  className="pill-label inline-block"
+                  style={{ willChange: 'transform, opacity', height: '1.2em', lineHeight: 1.2 }}
+                  ref={el => { labelRefs.current[idx] = el }}
                 >
-                  <span
-                    className="pill-label inline-block"
-                    style={{ willChange: 'transform, opacity', height: '1.2em', lineHeight: 1.2 }}
-                    ref={el => { if (el) labelRefs.current[idx] = el }}
-                  >
-                    {item.label}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+                  {item.label}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
     </>
   )
 }
