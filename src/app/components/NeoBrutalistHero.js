@@ -12,8 +12,8 @@ if (typeof window !== 'undefined') {
 
 // Draws a high-definition pixel-art "Retro 8-Bit" playing card face onto a canvas → used as a texture map.
 function makeCardFaceTexture() {
-  const W = 512
-  const H = 768
+  const W = 1024
+  const H = 1536
   const c = document.createElement('canvas')
   c.width = W
   c.height = H
@@ -28,14 +28,14 @@ function makeCardFaceTexture() {
 
   // Faint Retro 8-bit Dither Grid Texture
   ctx.fillStyle = 'rgba(0, 0, 0, 0.025)'
-  for (let y = 0; y < H; y += 4) {
-    for (let x = (y % 8 === 0 ? 0 : 2); x < W; x += 4) {
-      ctx.fillRect(x, y, 2, 2)
+  for (let y = 0; y < H; y += 8) {
+    for (let x = (y % 16 === 0 ? 0 : 4); x < W; x += 8) {
+      ctx.fillRect(x, y, 4, 4)
     }
   }
 
   // 2. Chunky Pixel Brutalist Border (Multiple stepped pixel frames)
-  const P = 8 // Pixel grid unit size
+  const P = 16 // Pixel grid unit size (scaled for 1024x1536)
 
   // Helper for drawing integer pixel rectangles
   const drawPixelRect = (x, y, w, h, color) => {
@@ -121,44 +121,44 @@ function makeCardFaceTexture() {
     [1, 0, 0, 0, 0, 0, 1]
   ]
 
-  // 4. Draw Center Hero 777 Crown (Size multiplier 20px per cell with hard pixel shadow)
-  const motifSize = 20
+  // 4. Draw Center Hero 777 Crown (Size multiplier 40px per cell with hard pixel shadow)
+  const motifSize = 40
   const motifW = RETRO_CROWN_777_MATRIX[0].length * motifSize
   const motifH = RETRO_CROWN_777_MATRIX.length * motifSize
   const centerX = Math.floor((W - motifW) / 2)
   const centerY = Math.floor((H - motifH) / 2)
 
-  // Hard pixel offset drop-shadow (12px offset)
-  drawMatrix(centerX + 12, centerY + 12, RETRO_CROWN_777_MATRIX, motifSize, 'rgba(5,5,5,0.18)')
+  // Hard pixel offset drop-shadow (24px offset)
+  drawMatrix(centerX + 24, centerY + 24, RETRO_CROWN_777_MATRIX, motifSize, 'rgba(5,5,5,0.18)')
   // Center 777 Crown in true black
   drawMatrix(centerX, centerY, RETRO_CROWN_777_MATRIX, motifSize, '#050505')
 
   // 5. Draw Top-Left Corner Index (7 + ★)
-  drawMatrix(P * 7, P * 8, PIXEL_7, 8, '#050505')
-  drawMatrix(P * 6, P * 17, PIXEL_STAR, 6, '#050505')
+  drawMatrix(P * 7, P * 8, PIXEL_7, 16, '#050505')
+  drawMatrix(P * 6, P * 17, PIXEL_STAR, 12, '#050505')
 
   // 6. Draw Bottom-Right Corner Index (7 + ★, Inverted)
   ctx.save()
   ctx.translate(W, H)
   ctx.rotate(Math.PI)
-  drawMatrix(P * 7, P * 8, PIXEL_7, 8, '#050505')
-  drawMatrix(P * 6, P * 17, PIXEL_STAR, 6, '#050505')
+  drawMatrix(P * 7, P * 8, PIXEL_7, 16, '#050505')
+  drawMatrix(P * 6, P * 17, PIXEL_STAR, 12, '#050505')
   ctx.restore()
 
   // 7. Retro 8-bit Micro Badges
-  drawPixelRect(W / 2 - 64, P * 6, 128, 20, '#050505')
+  drawPixelRect(W / 2 - 128, P * 6, 256, 40, '#050505')
   ctx.fillStyle = '#FAF7F2'
-  ctx.font = "900 11px 'Space Mono', monospace"
+  ctx.font = "900 22px 'Space Mono', monospace"
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('POKERHUB • 8-BIT', W / 2, P * 6 + 10)
+  ctx.fillText('POKERHUB • 8-BIT', W / 2, P * 6 + 20)
 
-  drawPixelRect(W / 2 - 76, H - P * 6 - 20, 152, 20, '#050505')
+  drawPixelRect(W / 2 - 152, H - P * 6 - 40, 304, 40, '#050505')
   ctx.fillStyle = '#FAF7F2'
-  ctx.font = "900 10px 'Space Mono', monospace"
+  ctx.font = "900 20px 'Space Mono', monospace"
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('LIMITED EDITION 06/06', W / 2, H - P * 6 - 10)
+  ctx.fillText('LIMITED EDITION 06/06', W / 2, H - P * 6 - 20)
 
   return c
 }
@@ -203,8 +203,8 @@ const RETRO_GRAFFITI_MATRIX = [
 
 // Draws full-bleed outline pixel graffiti on an inky black canvas → used as card back texture.
 function makeCardBackTexture() {
-  const W = 512
-  const H = 768
+  const W = 1024
+  const H = 1536
   const c = document.createElement('canvas')
   c.width = W
   c.height = H
@@ -219,14 +219,14 @@ function makeCardBackTexture() {
 
   // 2. Symmetrical Pixel Dither Grid Background
   ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'
-  for (let y = 0; y < H; y += 8) {
-    for (let x = (y % 16 === 0 ? 0 : 4); x < W; x += 8) {
-      ctx.fillRect(x, y, 4, 4)
+  for (let y = 0; y < H; y += 16) {
+    for (let x = (y % 32 === 0 ? 0 : 8); x < W; x += 16) {
+      ctx.fillRect(x, y, 8, 8)
     }
   }
 
   // 3. Thick Outer Brutalist Border
-  const P = 8
+  const P = 16
   ctx.fillStyle = '#050505'
   ctx.fillRect(0, 0, W, P * 3)
   ctx.fillRect(0, H - P * 3, W, P * 3)
@@ -234,7 +234,7 @@ function makeCardBackTexture() {
   ctx.fillRect(W - P * 3, 0, P * 3, H)
 
   // 4. Draw Full-Bleed Outline Pixel Graffiti Art Piece (Vibrant Retro Orange)
-  const cellSize = 19
+  const cellSize = 38
   const matrixW = RETRO_GRAFFITI_MATRIX[0].length * cellSize
   const matrixH = RETRO_GRAFFITI_MATRIX.length * cellSize
   const startX = Math.floor((W - matrixW) / 2)
@@ -285,17 +285,20 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
     const container = containerRef.current
     if (!canvas || !pinWrapper || !container) return
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true,
-    })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     const initWidth = pinWrapper.clientWidth || window.innerWidth
     const initHeight = pinWrapper.clientHeight || window.innerHeight
     const isSmallMobile = initWidth < 480
     const isMobile = initWidth < 768
     const getTargetCardScale = (w) => (w < 480 ? 0.65 : (w < 768 ? 0.75 : 1.0))
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: 'high-performance'
+    })
+    renderer.setSize(initWidth, initHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
@@ -354,17 +357,23 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       }
     }
 
+    const maxAnisotropy = renderer.capabilities.getMaxAnisotropy?.() || 1
+
     const frontTexture = new THREE.CanvasTexture(makeCardFaceTexture())
     frontTexture.colorSpace = THREE.SRGBColorSpace
     frontTexture.magFilter = THREE.NearestFilter
     frontTexture.minFilter = THREE.NearestFilter
     frontTexture.generateMipmaps = false
+    frontTexture.anisotropy = maxAnisotropy
+    frontTexture.needsUpdate = true
 
     const backTexture = new THREE.CanvasTexture(makeCardBackTexture())
     backTexture.colorSpace = THREE.SRGBColorSpace
     backTexture.magFilter = THREE.NearestFilter
     backTexture.minFilter = THREE.NearestFilter
     backTexture.generateMipmaps = false
+    backTexture.anisotropy = maxAnisotropy
+    backTexture.needsUpdate = true
 
     // Front foil material with creamy white metallic iridescence sheen
     const frontFoilMaterial = new THREE.MeshPhysicalMaterial({
@@ -549,8 +558,9 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 2.6}`,
-          scrub: 1.2,
+          end: () => `+=${window.innerHeight * 1.0}`,
+          pinSpacing: false,
+          scrub: 0.8,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
@@ -561,8 +571,8 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
             const scrollVel = Math.abs(self.getVelocity() / 1000)
 
             // STAGE 1 & 2: As the 3D card rotates / turns through space
-            if (progress < 0.72) {
-              if (progress < 0.6) {
+            if (progress < 0.65) {
+              if (progress < 0.45) {
                 portalSoundPlayed = false
               }
 
@@ -582,7 +592,7 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
                 lastPlayTime = now
                 lastRotationY = currentRotY
               }
-            } else if (progress >= 0.74 && progress <= 0.95) {
+            } else if (progress >= 0.65 && progress <= 0.95) {
               // STAGE 4: Climax Zoom-Through Portal Warp
               if (!portalSoundPlayed && self.direction > 0 && (now - lastPlayTime > 180)) {
                 SoundEngine.playHeroCardPortalWarp()
@@ -595,12 +605,12 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       })
 
       // ==========================================
-      // STAGE 1: SEAMLESS ENTRY & FOCUS (0.0 -> 0.8s)
+      // STAGE 1: SEAMLESS ENTRY & FOCUS (0.0 -> 0.65s)
       // Card steps forward from depth to dead center with smooth 360 spin
       // ==========================================
       tl.to(
         cardGroup.position,
-        { x: 0, y: 0, z: 0, ease: 'power2.out', duration: 0.8 },
+        { x: 0, y: 0, z: 0, ease: 'power2.out', duration: 0.65 },
         0
       )
         .to(
@@ -610,13 +620,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
             y: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
             z: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
             ease: 'power2.out',
-            duration: 0.8
+            duration: 0.65
           },
           0
         )
         .to(
           cardGroup.rotation,
-          { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.out', duration: 0.8 },
+          { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.out', duration: 0.65 },
           0
         )
 
@@ -624,114 +634,109 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       if (textRef.current) {
         tl.to(
           textRef.current,
-          { autoAlpha: 0, y: -70, ease: 'power2.in', duration: 0.45 },
+          { autoAlpha: 0, y: -70, ease: 'power2.in', duration: 0.38 },
           0
         )
       }
 
       // ==========================================
-      // STAGE 2: SHOWCASE & FOIL HIGHLIGHT (0.8 -> 1.5s)
+      // STAGE 2: SHOWCASE & FOIL HIGHLIGHT (0.65 -> 1.15s)
       // ==========================================
       if (secondRevealRef.current) {
         tl.fromTo(
           secondRevealRef.current,
           { autoAlpha: 0, y: 60, scale: 0.88 },
-          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.5 },
-          0.8
+          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.42 },
+          0.65
         )
       }
 
       // Subtle metallic foil shine tilt
       tl.to(
         cardGroup.rotation,
-        { y: Math.PI * 2 + 0.12, x: 0.05, ease: 'power1.inOut', duration: 0.5 },
-        0.85
+        { y: Math.PI * 2 + 0.12, x: 0.05, ease: 'power1.inOut', duration: 0.42 },
+        0.70
       )
 
       // ==========================================
-      // STAGE 3: LOCK ON CENTER & CLEAR UI (1.5 -> 1.9s)
+      // STAGE 3: LOCK ON CENTER & CLEAR UI (1.15 -> 1.45s)
       // ==========================================
       // Straighten card perfectly facing camera
       tl.to(
         cardGroup.rotation,
-        { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.inOut', duration: 0.4 },
-        1.5
+        { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.inOut', duration: 0.30 },
+        1.15
       )
 
       // Secondary Reveal Banner drops down and disappears
       if (secondRevealRef.current) {
         tl.to(
           secondRevealRef.current,
-          { autoAlpha: 0, y: 50, scale: 0.85, ease: 'power2.in', duration: 0.35 },
-          1.5
+          { autoAlpha: 0, y: 50, scale: 0.85, ease: 'power2.in', duration: 0.28 },
+          1.15
         )
       }
 
       // ==========================================
-      // STAGE 4: CINEMATIC ZOOM-THROUGH (1.9s -> 2.7s)
+      // STAGE 4: CINEMATIC ZOOM-THROUGH (1.45s -> 2.05s)
       // Card expands into flying portal & dissolves
       // ==========================================
       tl.to(
         camera.position,
-        { z: 0.1, ease: 'power3.in', duration: 0.8 },
-        1.9
+        { z: 0.1, ease: 'power3.in', duration: 0.50 },
+        1.45
       )
         .to(
           cardGroup.scale,
-          { x: 48, y: 48, z: 48, ease: 'power3.in', duration: 0.8 },
-          1.9
+          { x: 50, y: 50, z: 50, ease: 'power3.in', duration: 0.50 },
+          1.45
         )
         .to(
           cardGroup.position,
-          { z: 2.0, ease: 'power2.in', duration: 0.8 },
-          1.9
+          { z: 2.2, ease: 'power2.in', duration: 0.50 },
+          1.45
         )
 
       // Fade out 3D black smoke on penetration
       tl.to(
         smokeMat,
-        { opacity: 0, duration: 0.5, ease: 'power2.in' },
-        1.9
+        { opacity: 0, duration: 0.35, ease: 'power2.in' },
+        1.45
       )
 
-      // Portal warp flare expands and dissolves
+      // Portal warp flare expands and dissolves smoothly without edge clipping (Zero-Cutoff Soft Radial Decay)
       if (portalOverlayRef.current) {
         tl.fromTo(
           portalOverlayRef.current,
           { autoAlpha: 0, scale: 0.4 },
-          { autoAlpha: 0.95, scale: 2.8, ease: 'power2.out', duration: 0.4 },
-          2.05
+          { autoAlpha: 1.0, scale: 1.35, ease: 'power2.out', duration: 0.25 },
+          1.45
         )
           .to(
             portalOverlayRef.current,
-            { autoAlpha: 0, scale: 5.0, ease: 'power2.in', duration: 0.35 },
-            2.45
+            { autoAlpha: 0, scale: 1.9, ease: 'power2.in', duration: 0.26 },
+            1.70
           )
       }
 
       // Materials dissolve smoothly as camera passes through
       tl.to(
         frontFoilMaterial,
-        { opacity: 0, duration: 0.3, ease: 'power2.out' },
-        2.4
+        { opacity: 0, duration: 0.30, ease: 'power2.out' },
+        1.70
       )
         .to(
           backFoilMaterial,
-          { opacity: 0, duration: 0.3, ease: 'power2.out' },
-          2.4
+          { opacity: 0, duration: 0.30, ease: 'power2.out' },
+          1.70
         )
         .to(
           edgeMaterial,
-          { opacity: 0, duration: 0.3, ease: 'power2.out' },
-          2.4
+          { opacity: 0, duration: 0.30, ease: 'power2.out' },
+          1.70
         )
 
     }, containerRef)
-
-    // Force ScrollTrigger to refresh and recalculate all down-page section start offsets
-    const refreshTimer = setTimeout(() => {
-      ScrollTrigger.refresh()
-    }, 250)
 
     const onResize = () => {
       if (!pinWrapper || !renderer || !camera) return
@@ -747,8 +752,15 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
       ScrollTrigger.refresh()
     }
+
+    // Force ScrollTrigger to refresh and recalculate all down-page section start offsets
+    const refreshTimer = setTimeout(() => {
+      onResize()
+      ScrollTrigger.refresh()
+    }, 250)
 
     window.addEventListener('resize', onResize)
 
@@ -798,12 +810,18 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
         ref={pinWrapperRef}
         className="relative w-full h-screen overflow-hidden select-none z-20 bg-transparent"
       >
-        {/* Portal Warp Flare on Zoom-Through */}
+        {/* Portal Warp Flare on Zoom-Through (Feather-Soft Radial Decay - Zero Box Edge Artifacts) */}
         <div
           ref={portalOverlayRef}
           className="pointer-events-none absolute inset-0 z-15 flex items-center justify-center opacity-0 will-change-transform"
         >
-          <div className="w-[180px] h-[180px] sm:w-[260px] sm:h-[260px] rounded-full bg-gradient-to-tr from-[#ff90e8] via-[#fffb00] to-[#00f0ff] blur-3xl opacity-90" />
+          <div
+            className="w-[min(85vw,520px)] h-[min(85vw,520px)] rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle, rgba(255,229,0,0.95) 0%, rgba(255,251,0,0.75) 25%, rgba(0,245,255,0.35) 48%, rgba(255,112,166,0.12) 62%, transparent 72%)',
+              filter: 'blur(28px)',
+            }}
+          />
         </div>
 
         {/* Three.js canvas overlaid behind the UI */}

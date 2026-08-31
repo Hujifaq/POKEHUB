@@ -6,6 +6,7 @@ import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import BubbleMenu from '../components/BubbleMenu'
+import Floating3DLogo from '../components/Floating3DLogo'
 import Preloader from '../components/Preloader'
 import ControlDock from '../components/ControlDock'
 import CardInspectorHUD from '../components/CardInspectorHUD'
@@ -352,14 +353,11 @@ export default function GamePage() {
       {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center justify-center cursor-pointer" onClick={() => window.location.href = '/'}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/PKH_Logo.jpg"
-              alt="POKERHUB Logo"
-              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
-            />
-          </div>
+          <Floating3DLogo
+            onClick={() => {
+              window.location.href = '/'
+            }}
+          />
         }
         actions={
           <>
@@ -386,21 +384,6 @@ export default function GamePage() {
                 title="Add +$5,000 High Roller Chips"
               >
                 +$5K
-              </button>
-            </div>
-
-            {/* Live Session URI & Copy Pill */}
-            <div className="brutal-window hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 bg-white text-true-black shadow-[2px_2px_0px_#000]">
-              <span className="font-pixel text-[8px] font-bold text-gray-600 uppercase">URI:</span>
-              <span className="font-mono-nb text-[9px] font-black text-purple-700 bg-purple-100/80 px-1.5 py-0.5 rounded border border-purple-300 truncate max-w-[110px]" title={`User: ${userId} | Game: ${gameId}`}>
-                {userId}
-              </span>
-              <button
-                onClick={handleCopyGameUri}
-                className="brutal-btn bg-[#FFE500] hover:bg-[#00FFA3] text-true-black text-[8px] font-black px-2 py-0.5 flex items-center gap-1 cursor-pointer"
-                title="Copy Game URL"
-              >
-                <span>COPY URI</span>
               </button>
             </div>
 

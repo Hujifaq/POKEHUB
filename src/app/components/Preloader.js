@@ -21,10 +21,14 @@ const anim = {
 
 const BRAND_LETTERS = "POKERHUB".split('')
 
+/**
+ * Clean & Fast Neo-Brutalist Preloader Component
+ * Featuring 20 columns of orange pixel blocks and kinetic typography.
+ */
 export default function Preloader({ onComplete }) {
-  const [isActive, setIsActive] = useState(true)
   const [columnsData, setColumnsData] = useState([])
   const [mounted, setMounted] = useState(false)
+  const [isActive, setIsActive] = useState(true)
 
   const counterRef = useRef(null)
   const containerRef = useRef(null)
@@ -65,27 +69,28 @@ export default function Preloader({ onComplete }) {
     return () => window.removeEventListener('resize', calculateBlocks)
   }, [shuffle])
 
-  // GSAP: Reveal POKERHUB letter by letter, 0-100 counting, and exit trigger
+  // GSAP Counter & Typography Animation
   useEffect(() => {
-    if (!mounted || columnsData.length === 0) return
+    if (!mounted) return
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline()
 
-      // 1. Letters of POKERHUB slide up with crisp energy
+      // 1. Text letters reveal smoothly from bottom (0.42s)
       tl.fromTo(
         '.brand-letter',
         { yPercent: 120, opacity: 0 },
         {
           yPercent: 0,
           opacity: 1,
-          duration: 0.52,
+          duration: 0.42,
           ease: 'power3.out',
-          stagger: 0.045
-        }
+          stagger: 0.03
+        },
+        0
       )
 
-      // 2. 0-100 count up in pixel font (Balanced & Snappy: 1.35s)
+      // 2. Fast 0-100% Progress Count (0.85s)
       const progressObj = { value: 0 }
       let lastTick = 0
 
@@ -93,7 +98,7 @@ export default function Preloader({ onComplete }) {
         progressObj,
         {
           value: 100,
-          duration: 1.35,
+          duration: 0.85,
           ease: 'power2.inOut',
           onUpdate: () => {
             const val = Math.round(progressObj.value)
@@ -106,33 +111,31 @@ export default function Preloader({ onComplete }) {
             }
           }
         },
-        '-=0.08'
+        0
       )
 
-      // 3. Slide letters and counter up and out after brief 100% pause (0.18s)
+      // 3. Exit Transition: Text slides up & curtain dissolves
       tl.to(
         ['.brand-letter', counterRef.current],
         {
-          yPercent: -120,
+          yPercent: -130,
           opacity: 0,
-          duration: 0.32,
-          ease: 'power3.inOut',
+          duration: 0.30,
+          ease: 'power3.in',
           onComplete: () => {
             if (isFinishedRef.current) return
             isFinishedRef.current = true
 
-            SoundEngine.playCardSwoosh()
             setIsActive(false)
 
-            // Balanced pixel curtain dissolve transition
             const maxBlocks = columnsData[0]?.length || 15
-            const totalDelay = maxBlocks * 0.02 + 0.4
+            const totalDelay = maxBlocks * 0.02 + 0.35
             setTimeout(() => {
               if (onComplete) onComplete()
             }, totalDelay * 1000)
           }
         },
-        '+=0.18'
+        '+=0.08'
       )
     }, containerRef)
 
@@ -146,7 +149,7 @@ export default function Preloader({ onComplete }) {
         isActive ? 'bg-[#ff6b00]' : 'bg-transparent pointer-events-none'
       }`}
     >
-      {/* 20 Columns of Orange Pixel Blocks (Olivier Larose Architecture) */}
+      {/* 20 Columns of Orange Pixel Blocks */}
       <div className="fixed inset-0 h-screen w-screen flex overflow-hidden z-10">
         {mounted &&
           columnsData.map((shuffledIndexes, colIndex) => (
@@ -166,24 +169,24 @@ export default function Preloader({ onComplete }) {
           ))}
       </div>
 
-      {/* Minimalist Centered POKERHUB Title & 0-100 Pixel Counter */}
-      <div className="fixed inset-0 z-20 flex flex-col items-center justify-center">
+      {/* Centered POKERHUB Title & 0-100 Pixel Counter Layer */}
+      <div className="fixed inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
         {/* POKERHUB letter-by-letter reveal container */}
         <div className="flex overflow-hidden">
           {BRAND_LETTERS.map((char, index) => (
             <span
               key={index}
-              className="brand-letter inline-block font-pixel text-4xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight"
+              className="brand-letter inline-block font-pixel text-4xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight drop-shadow-[2px_2px_0px_rgba(255,255,255,0.4)]"
             >
               {char}
             </span>
           ))}
         </div>
 
-        {/* 0-100% Download / Progress Counter */}
+        {/* 0-100% Progress Counter */}
         <div
           ref={counterRef}
-          className="mt-6 font-pixel text-sm sm:text-base text-true-black font-bold tracking-widest"
+          className="mt-6 font-pixel text-sm sm:text-base text-true-black font-bold tracking-widest drop-shadow-[1px_1px_0px_rgba(255,255,255,0.4)]"
         >
           0%
         </div>

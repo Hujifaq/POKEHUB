@@ -4,20 +4,22 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { SoundEngine } from './SoundEngine'
 import HandRankingsModal from './HandRankingsModal'
-import VIPClubModal from './VIPClubModal'
 
 export default function Footer({
   onOpenRankings,
-  onOpenVIP,
-  onOpenDuel,
   className = ""
 }) {
   const [toastMessage, setToastMessage] = useState(null)
   const [isMuted, setIsMuted] = useState(false)
-
-  // Internal modal states if parent didn't provide callbacks
   const [internalRankingsOpen, setInternalRankingsOpen] = useState(false)
-  const [internalVIPOpen, setInternalVIPOpen] = useState(false)
+
+  // Subscribe to SoundEngine mute state
+  React.useEffect(() => {
+    setIsMuted(SoundEngine.getMuted())
+    return SoundEngine.subscribe((muted) => {
+      setIsMuted(muted)
+    })
+  }, [])
 
   // Show temporary toast notification
   const triggerToast = (msg, duration = 3000) => {
@@ -30,12 +32,10 @@ export default function Footer({
   // Sound Mute Toggle
   const handleToggleSound = () => {
     const nextMute = SoundEngine.toggleMute()
-    setIsMuted(nextMute)
     if (!nextMute) {
-      SoundEngine.playClick()
-      triggerToast("🔊 SOUND EFFECTS: ENABLED")
+      triggerToast("SOUND EFFECTS: ENABLED")
     } else {
-      triggerToast("🔇 SOUND EFFECTS: MUTED")
+      triggerToast("SOUND EFFECTS: MUTED")
     }
   }
 
@@ -56,18 +56,6 @@ export default function Footer({
       onOpenRankings()
     } else {
       setInternalRankingsOpen(true)
-    }
-  }
-
-  // Open VIP Lounge
-  const handleOpenVIP = () => {
-    try {
-      SoundEngine.playClick()
-    } catch {}
-    if (onOpenVIP) {
-      onOpenVIP()
-    } else {
-      setInternalVIPOpen(true)
     }
   }
 
@@ -125,122 +113,96 @@ export default function Footer({
       {/* 2. MAIN CONTENT: BALANCED 2-COLUMN LAYOUT                */}
       {/* ======================================================== */}
       <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start pb-8 border-b border-white/10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center pb-8 border-b border-white/10">
           
           {/* COLUMN 1: Brand, Tagline & Socials */}
           <div className="flex flex-col gap-3.5">
-            <div className="flex items-center gap-3.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/PKH_Logo.jpg"
-                alt="POKERHUB Logo"
-                className="h-11 sm:h-12 w-auto rounded border-2 border-accent-yellow shadow-[3px_3px_0px_#FF70A6] cursor-pointer hover:-rotate-3 hover:scale-105 transition-all duration-200"
-                onClick={() => SoundEngine.playClick()}
-              />
-              <div
-                className="inline-flex items-center group cursor-pointer select-none transition-transform duration-200 hover:scale-[1.03] active:scale-95"
-                onClick={() => SoundEngine.playClick()}
-              >
-                <span className="font-display text-3xl sm:text-4xl font-black tracking-tight uppercase transition-all duration-300">
-                  <span className="text-[#FF70A6] drop-shadow-[3px_3px_0px_#000000] group-hover:drop-shadow-[0_0_16px_rgba(255,112,166,0.8)] transition-all">
-                    POKER
-                  </span>
-                  <span className="text-accent-yellow drop-shadow-[3px_3px_0px_#000000] group-hover:drop-shadow-[0_0_16px_rgba(255,251,0,0.9)] transition-all">
-                    HUB
-                  </span>
+            <div
+              className="inline-flex items-center group cursor-pointer select-none transition-transform duration-200 hover:scale-[1.02] active:scale-95 w-fit"
+              onClick={() => {
+                SoundEngine.playClick()
+                scrollToTop()
+              }}
+              title="Click to scroll to top"
+            >
+              <span className="font-display text-4xl sm:text-5xl md:text-6xl font-black tracking-tight uppercase transition-all duration-300">
+                <span className="text-[#FF70A6] drop-shadow-[3.5px_3.5px_0px_#000000] sm:drop-shadow-[5px_5px_0px_#000000] group-hover:drop-shadow-[0_0_20px_rgba(255,112,166,0.8)] transition-all">
+                  POKER
                 </span>
-              </div>
+                <span className="text-accent-yellow drop-shadow-[3.5px_3.5px_0px_#000000] sm:drop-shadow-[5px_5px_0px_#000000] group-hover:drop-shadow-[0_0_20px_rgba(255,251,0,0.9)] transition-all">
+                  HUB
+                </span>
+              </span>
             </div>
 
-            <p className="font-mono-nb text-xs text-gray-400 max-w-md leading-relaxed">
+            <p className="font-mono-nb text-xs sm:text-sm text-gray-400 max-w-md leading-relaxed">
               Next-Gen Neo-Brutalist 3D Texas Hold'em Arena with procedural card physics, custom shaders, and intelligent AI opponents.
             </p>
 
             {/* Social Badges & Audio Toggle */}
-            <div className="flex items-center gap-2 flex-wrap pt-1">
+            <div className="flex items-center gap-2.5 flex-wrap pt-1">
               <a
-                href="https://github.com"
+                href="https://github.com/Hujifaq/POKEHUB"
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => SoundEngine.playClick()}
-                className="brutal-btn px-3 py-1.5 bg-[#161620] hover:bg-[#FF70A6] text-white hover:text-true-black font-pixel text-[9px] font-bold uppercase shadow-[2px_2px_0px_#000] transition-all"
+                className="px-3.5 py-2 bg-[#FFE500] hover:bg-[#00F5FF] text-true-black border-[3px] border-true-black shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-pixel text-[9.5px] font-black uppercase tracking-wider transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
-                GITHUB
-              </a>
-              <a
-                href="https://discord.com"
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => SoundEngine.playClick()}
-                className="brutal-btn px-3 py-1.5 bg-[#161620] hover:bg-[#00F0FF] text-white hover:text-true-black font-pixel text-[9px] font-bold uppercase shadow-[2px_2px_0px_#000] transition-all"
-              >
-                DISCORD
+                <span>GITHUB</span>
               </a>
               <button
                 onClick={handleToggleSound}
-                className="brutal-btn px-3 py-1.5 bg-[#161620] hover:bg-[#00FFA3] text-white hover:text-true-black font-pixel text-[9px] font-bold uppercase shadow-[2px_2px_0px_#000] transition-all cursor-pointer"
+                className={`px-3.5 py-2 border-[3px] border-true-black shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-pixel text-[9.5px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  isMuted
+                    ? 'bg-[#FFFFFF] text-true-black hover:bg-[#FF70A6]'
+                    : 'bg-[#00FFA3] text-true-black hover:bg-[#00F5FF]'
+                }`}
               >
-                {isMuted ? "🔇 SFX OFF" : "🔊 SFX ON"}
+                <span>{isMuted ? "SFX: OFF" : "SFX: ON"}</span>
               </button>
             </div>
           </div>
 
-          {/* COLUMN 2: Quick Navigation & Rules */}
-          <div className="flex flex-col gap-2.5">
-            <div className="font-pixel text-[9px] text-[#00F0FF] font-bold uppercase tracking-wider mb-0.5">
-              // QUICK NAVIGATION
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* COLUMN 2: 4-Grid Navigation Links */}
+          <div className="w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
               <Link
-                href="/game"
+                href="/"
                 onClick={() => SoundEngine.playClick()}
-                className="p-2 rounded-lg bg-[#14141E] hover:bg-[#00FFA3] hover:text-true-black border border-white/10 hover:border-true-black font-mono-nb text-xs font-bold text-gray-300 transition-all flex items-center gap-2 group cursor-pointer shadow-[2px_2px_0px_#000]"
+                className="py-3.5 px-4 bg-[#FFFFFF] hover:bg-[#FFE500] text-true-black border-[3px] border-true-black shadow-[4px_4px_0px_#000] hover:shadow-[5px_5px_0px_#000] hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none font-display font-black text-xs sm:text-sm uppercase tracking-wide transition-all text-center flex items-center justify-center cursor-pointer"
               >
-                <span className="text-[#00FFA3] group-hover:text-true-black font-display text-sm">♠</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">Play 3D Arena</span>
+                <span>Home</span>
               </Link>
 
               <Link
-                href="/leaderboard"
+                href="/game"
                 onClick={() => SoundEngine.playClick()}
-                className="p-2 rounded-lg bg-[#14141E] hover:bg-ui-pink hover:text-true-black border border-white/10 hover:border-true-black font-mono-nb text-xs font-bold text-gray-300 transition-all flex items-center gap-2 group cursor-pointer shadow-[2px_2px_0px_#000]"
+                className="py-3.5 px-4 bg-[#FFFFFF] hover:bg-[#00F5FF] text-true-black border-[3px] border-true-black shadow-[4px_4px_0px_#000] hover:shadow-[5px_5px_0px_#000] hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none font-display font-black text-xs sm:text-sm uppercase tracking-wide transition-all text-center flex items-center justify-center cursor-pointer"
               >
-                <span className="text-ui-pink group-hover:text-true-black font-display text-sm">♥</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">Leaderboard</span>
+                <span>Play Poker</span>
               </Link>
 
               <Link
                 href="/about"
                 onClick={() => SoundEngine.playClick()}
-                className="p-2 rounded-lg bg-[#14141E] hover:bg-accent-yellow hover:text-true-black border border-white/10 hover:border-true-black font-mono-nb text-xs font-bold text-gray-300 transition-all flex items-center gap-2 group cursor-pointer shadow-[2px_2px_0px_#000]"
+                className="py-3.5 px-4 bg-[#FFFFFF] hover:bg-[#FF70A6] text-true-black border-[3px] border-true-black shadow-[4px_4px_0px_#000] hover:shadow-[5px_5px_0px_#000] hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none font-display font-black text-xs sm:text-sm uppercase tracking-wide transition-all text-center flex items-center justify-center cursor-pointer"
               >
-                <span className="text-accent-yellow group-hover:text-true-black font-display text-sm">♦</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">Project Specs</span>
+                <span>About Us</span>
               </Link>
 
               <button
                 onClick={handleOpenRankings}
-                className="p-2 rounded-lg bg-[#14141E] hover:bg-[#00F0FF] hover:text-true-black border border-white/10 hover:border-true-black font-mono-nb text-xs font-bold text-gray-300 transition-all flex items-center gap-2 group text-left cursor-pointer shadow-[2px_2px_0px_#000]"
+                className="py-3.5 px-4 bg-[#FFFFFF] hover:bg-[#00FFA3] text-true-black border-[3px] border-true-black shadow-[4px_4px_0px_#000] hover:shadow-[5px_5px_0px_#000] hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none font-display font-black text-xs sm:text-sm uppercase tracking-wide transition-all text-center flex items-center justify-center cursor-pointer"
               >
-                <span className="text-[#00F0FF] group-hover:text-true-black font-display text-sm">♣</span>
-                <span className="group-hover:translate-x-0.5 transition-transform">Hand Rules</span>
+                <span>Hand Rankings</span>
               </button>
             </div>
-
-            <button
-              onClick={handleOpenVIP}
-              className="p-2 rounded-lg bg-[#14141E] hover:bg-[#FFDE59] hover:text-true-black border border-white/10 hover:border-true-black font-mono-nb text-xs font-bold text-gray-300 transition-all flex items-center justify-center gap-2 group text-center cursor-pointer shadow-[2px_2px_0px_#000] mt-0.5"
-            >
-              <span className="text-[#FFDE59] group-hover:text-true-black font-display text-sm">👑</span>
-              <span className="group-hover:translate-x-0.5 transition-transform">VIP High Roller Lounge</span>
-            </button>
           </div>
 
         </div>
 
         {/* ======================================================== */}
-        {/* 3. CLEAN BOTTOM BAR (WITHOUT CREATOR NAMES)              */}
+        {/* 3. CLEAN BOTTOM BAR                                      */}
         {/* ======================================================== */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left font-mono-nb text-xs text-gray-400">
           <div>
@@ -250,7 +212,7 @@ export default function Footer({
           <div className="flex items-center gap-4">
             <button
               onClick={scrollToTop}
-              className="brutal-btn px-3.5 py-1.5 bg-[#FFFB00] hover:bg-[#00FFA3] text-true-black font-display text-[11px] font-black uppercase shadow-[2px_2px_0px_#000000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-4 py-2 bg-[#FFE500] hover:bg-[#00FFA3] text-true-black border-[3px] border-true-black shadow-[3px_3px_0px_#000] hover:shadow-[4px_4px_0px_#000] hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none font-display text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span>BACK TO TOP</span>
               <span className="text-sm font-bold">↑</span>
@@ -264,7 +226,6 @@ export default function Footer({
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-[2000] animate-scaleUp">
           <div className="brutal-window px-4 py-2.5 bg-[#FFFB00] text-true-black border-[3px] border-true-black shadow-[4px_4px_0px_#000] flex items-center gap-2.5">
-            <span className="text-lg">✨</span>
             <span className="font-pixel text-[10px] font-black uppercase tracking-wider">
               {toastMessage}
             </span>
@@ -276,12 +237,6 @@ export default function Footer({
       <HandRankingsModal
         isOpen={internalRankingsOpen}
         onClose={() => setInternalRankingsOpen(false)}
-      />
-
-      {/* Internal VIP Club Modal */}
-      <VIPClubModal
-        isOpen={internalVIPOpen}
-        onClose={() => setInternalVIPOpen(false)}
       />
 
     </footer>

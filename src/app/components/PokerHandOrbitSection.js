@@ -623,12 +623,12 @@ export default function PokerHandOrbitSection() {
   const [activePhaseIndex, setActivePhaseIndex] = useState(0)
   const [isZoomingToNext, setIsZoomingToNext] = useState(false)
 
-  // Sound feedback on street change
+  // Sound feedback on street change (Gentle ASMR message flip)
   const prevPhaseRef = useRef(0)
   useEffect(() => {
     if (prevPhaseRef.current !== activePhaseIndex) {
       prevPhaseRef.current = activePhaseIndex
-      SoundEngine.playCardFlip()
+      SoundEngine.playMessageFlip(0.85)
     }
   }, [activePhaseIndex])
 
@@ -956,6 +956,22 @@ export default function PokerHandOrbitSection() {
     // ------------------------------------------------------------------
     // 7. GSAP SCROLLTRIGGER TIMELINE (DIVE THROUGH TABLE -> 6 DECKS CUE)
     // ------------------------------------------------------------------
+    const audioState = {
+      playerChips: false,
+      flop1: false,
+      flop2: false,
+      flop3: false,
+      flopBetChips: false,
+      turnCard: false,
+      riverCard: false,
+      riverCallChips: false,
+      playerBetChips: false,
+      opponentRaiseChips: false,
+      showdownHoleCards: false,
+      potChipsWin: false,
+      tableDive: false,
+    }
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -969,6 +985,7 @@ export default function PokerHandOrbitSection() {
           invalidateOnRefresh: true,
           onUpdate: (self) => {
             const p = self.progress
+            const isForward = self.direction > 0
 
             if (p < 0.20) {
               setActivePhaseIndex(0)
@@ -986,6 +1003,140 @@ export default function PokerHandOrbitSection() {
               // Diving through table: hide street HUD to reveal clean empty screen and bridge cue
               setActivePhaseIndex(3)
               setIsZoomingToNext(true)
+            }
+
+            // ============================================================
+            // 3D POKER TABLE AUDIO ENGINE TRIGGERS (CARDS & 14G CERAMIC CHIPS)
+            // ============================================================
+            // 1. Initial Bankroll slide-in & Blinds Toss (p >= 0.012)
+            if (p >= 0.012) {
+              if (!audioState.playerChips) {
+                SoundEngine.playChipToss()
+                audioState.playerChips = true
+              }
+            } else if (p < 0.006) {
+              audioState.playerChips = false
+            }
+
+            // 2. Flop Card 1 Deal (Q♠, p >= 0.045)
+            if (p >= 0.045) {
+              if (!audioState.flop1) {
+                SoundEngine.playCardDeal(1.1)
+                audioState.flop1 = true
+              }
+            } else if (p < 0.030) {
+              audioState.flop1 = false
+            }
+
+            // 3. Flop Card 2 Deal (J♠, p >= 0.068)
+            if (p >= 0.068) {
+              if (!audioState.flop2) {
+                SoundEngine.playCardDeal(1.1)
+                audioState.flop2 = true
+              }
+            } else if (p < 0.052) {
+              audioState.flop2 = false
+            }
+
+            // 4. Flop Card 3 Deal (10♦, p >= 0.092)
+            if (p >= 0.092) {
+              if (!audioState.flop3) {
+                SoundEngine.playCardFlip(1.15)
+                audioState.flop3 = true
+              }
+            } else if (p < 0.076) {
+              audioState.flop3 = false
+            }
+
+            // 5. Flop Continuation Bet Chips (Chips 4..7 toss into Pot, p >= 0.120)
+            if (p >= 0.120) {
+              if (!audioState.flopBetChips) {
+                SoundEngine.playChipsStack(3)
+                audioState.flopBetChips = true
+              }
+            } else if (p < 0.100) {
+              audioState.flopBetChips = false
+            }
+
+            // 6. Turn Card Deal (4♥, p >= 0.210)
+            if (p >= 0.210) {
+              if (!audioState.turnCard) {
+                SoundEngine.playCardFlip(1.2)
+                audioState.turnCard = true
+              }
+            } else if (p < 0.180) {
+              audioState.turnCard = false
+            }
+
+            // 7. River Card Deal (10♠, p >= 0.272)
+            if (p >= 0.272) {
+              if (!audioState.riverCard) {
+                SoundEngine.playCardFlip(1.2)
+                audioState.riverCard = true
+              }
+            } else if (p < 0.240) {
+              audioState.riverCard = false
+            }
+
+            // 8. Turn & River Pot Call Chips (Chips 8..10 toss into Pot, p >= 0.295)
+            if (p >= 0.295) {
+              if (!audioState.riverCallChips) {
+                SoundEngine.playChipToss()
+                audioState.riverCallChips = true
+              }
+            } else if (p < 0.275) {
+              audioState.riverCallChips = false
+            }
+
+            // 9. Player Bet Action: Push 3 chips forward (p >= 0.385)
+            if (p >= 0.385) {
+              if (!audioState.playerBetChips) {
+                SoundEngine.playChipClink({ pitch: 1.08, volume: 0.52, isFelt: true })
+                audioState.playerBetChips = true
+              }
+            } else if (p < 0.355) {
+              audioState.playerBetChips = false
+            }
+
+            // 10. Opponent Match / Raise Chips (Chips 11..13 into Pot, p >= 0.425)
+            if (p >= 0.425) {
+              if (!audioState.opponentRaiseChips) {
+                SoundEngine.playChipsStack(3)
+                audioState.opponentRaiseChips = true
+              }
+            } else if (p < 0.395) {
+              audioState.opponentRaiseChips = false
+            }
+
+            // 11. Showdown: Player Hole Cards Flip to reveal winning straight (p >= 0.540)
+            if (p >= 0.540) {
+              if (!audioState.showdownHoleCards) {
+                SoundEngine.playCardFlip(1.25)
+                audioState.showdownHoleCards = true
+              }
+            } else if (p < 0.510) {
+              audioState.showdownHoleCards = false
+            }
+
+            // 12. Pot Sweep to Winner + Jackpot Chime (p >= 0.600)
+            if (p >= 0.600) {
+              if (!audioState.potChipsWin) {
+                SoundEngine.playChipsRiffle()
+                SoundEngine.playJackpot()
+                audioState.potChipsWin = true
+              }
+            } else if (p < 0.565) {
+              audioState.potChipsWin = false
+            }
+
+            // 13. Camera Table Dive Warp (p >= 0.690)
+            if (p >= 0.690) {
+              if (!audioState.tableDive) {
+                SoundEngine.playHeroCardPortalWarp()
+                audioState.tableDive = true
+              }
+            } else if (p < 0.650) {
+              audioState.tableDive = false
             }
           }
         },
@@ -1435,7 +1586,7 @@ export default function PokerHandOrbitSection() {
 
   // Jump to specific street
   const handleJumpToPhase = useCallback((phaseIdx) => {
-    SoundEngine.playCardFlip()
+    SoundEngine.playMessageFlip(0.9)
     if (!timelineRef.current?.scrollTrigger) {
       setActivePhaseIndex(phaseIdx)
       return

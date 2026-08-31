@@ -475,14 +475,15 @@ export default function RiffleShuffleSection({ containerRefProp }) {
   const containerRef = containerRefProp || localContainerRef
   const pinWrapperRef = useRef(null)
   const canvasRef = useRef(null)
+  const hudTextRef = useRef(null)
   const [activeSceneIndex, setActiveSceneIndex] = useState(0)
 
-  // Sound feedback on scene change
+  // Sound feedback on scene change (Gentle ASMR message flip)
   const prevSceneRef = useRef(0)
   useEffect(() => {
     if (prevSceneRef.current !== activeSceneIndex) {
       prevSceneRef.current = activeSceneIndex
-      SoundEngine.playCardFlip()
+      SoundEngine.playMessageFlip(0.85)
     }
   }, [activeSceneIndex])
 
@@ -617,6 +618,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     let lastCardIndex = -1
     let lastFlutterTime = 0
     let squareUpPlayed = false
+    let cutSoundPlayed = false
 
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -633,15 +635,25 @@ export default function RiffleShuffleSection({ containerRefProp }) {
             const p = self.progress
             const scrollVel = Math.abs(self.getVelocity() / 1000)
 
-            if (p < 0.28) setActiveSceneIndex(0)
-            else if (p < 0.58) setActiveSceneIndex(1)
+            if (p < 0.13) setActiveSceneIndex(0)
+            else if (p < 0.60) setActiveSceneIndex(1)
             else setActiveSceneIndex(2)
 
-            // STEP 1: Riffle Interlock (Cards interleaving and weaving into mesh, p in [0.28, 0.58])
-            if (p >= 0.28 && p < 0.58) {
+            // STAGE 1: Cut & Split Sound (Deck lifts and cuts in half, p in [0.04, 0.13])
+            if (p >= 0.04 && p < 0.13) {
+              if (!cutSoundPlayed && self.direction > 0) {
+                SoundEngine.playCardSlide()
+                cutSoundPlayed = true
+              }
+            } else if (p < 0.03) {
+              cutSoundPlayed = false
+            }
+
+            // STEP 1: Riffle Interlock (Cards interleaving and weaving into mesh, p in [0.13, 0.58])
+            if (p >= 0.13 && p < 0.58) {
               squareUpPlayed = false
-              const weaveProgress = (p - 0.28) / (0.58 - 0.28)
-              const currentCardIdx = Math.min(27, Math.max(0, Math.floor(weaveProgress * 28)))
+              const weaveProgress = Math.max(0, Math.min(1, (p - 0.13) / (0.58 - 0.13)))
+              const currentCardIdx = Math.min(51, Math.max(0, Math.floor(weaveProgress * 52)))
 
               if (currentCardIdx !== lastCardIndex) {
                 const side = currentCardIdx % 2 === 0 ? 'left' : 'right'
@@ -655,22 +667,22 @@ export default function RiffleShuffleSection({ containerRefProp }) {
                 lastCardIndex = currentCardIdx
               }
             }
-            // STEP 2: Bridge Waterfall Cascade (Fluttering money count sound, p in [0.68, 0.90])
-            else if (p >= 0.68 && p <= 0.90) {
+            // STEP 2: Bridge Waterfall Cascade (Fluttering money count sound, p in [0.67, 0.94])
+            else if (p >= 0.67 && p <= 0.94) {
               squareUpPlayed = false
               const now = performance.now()
-              if (now - lastFlutterTime > 85) {
+              if (now - lastFlutterTime > 80) {
                 SoundEngine.playWaterfallFlutter(Math.min(2.0, Math.max(0.6, scrollVel || 1.0)))
                 lastFlutterTime = now
               }
             }
-            // Final Square-up (p > 0.91)
-            else if (p > 0.91) {
+            // Final Square-up (p > 0.94)
+            else if (p > 0.94) {
               if (!squareUpPlayed && self.direction > 0) {
                 SoundEngine.playRiffleDeckSquare(Math.min(2.0, Math.max(0.5, scrollVel || 1.0)))
                 squareUpPlayed = true
               }
-            } else if (p < 0.25) {
+            } else if (p < 0.10) {
               lastCardIndex = -1
               squareUpPlayed = false
             }
@@ -681,21 +693,46 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         }
       })
 
-      // STAGE 0: GENTLE DECK EMERGENCE FROM HERO PORTAL (0.0 -> 0.45s)
-      tl.fromTo(
-        deckRootGroup.position,
-        { y: -0.6 },
-        { y: 0, duration: 0.45, ease: 'power2.out' },
-        0
-      )
+      // STAGE 0: SYNCHRONIZED EMERGENCE OF 3D DECK & MESSAGE BOX (0.10s -> 0.60s)
       tl.fromTo(
         canvasRef.current,
-        { opacity: 0.3 },
-        { opacity: 1, duration: 0.45, ease: 'power2.out' },
-        0
+        { opacity: 0 },
+        { opacity: 1, duration: 0.50, ease: 'power2.out' },
+        0.10
+      )
+      tl.fromTo(
+        deckRootGroup.position,
+        { y: -0.5 },
+        { y: 0, duration: 0.50, ease: 'power2.out' },
+        0.10
+      )
+      tl.fromTo(
+        deckRootGroup.scale,
+        {
+          x: initialDeckScale * 0.8,
+          y: initialDeckScale * 0.8,
+          z: initialDeckScale * 0.8
+        },
+        {
+          x: initialDeckScale,
+          y: initialDeckScale,
+          z: initialDeckScale,
+          duration: 0.50,
+          ease: 'power2.out'
+        },
+        0.10
       )
 
-      // STAGE 1: CUT & SPLIT (0.45 -> 1.4s)
+      if (hudTextRef.current) {
+        tl.fromTo(
+          hudTextRef.current,
+          { autoAlpha: 0, y: 70, scale: 0.88 },
+          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.50 },
+          0.10
+        )
+      }
+
+      // STAGE 1: CUT & SPLIT (0.60 -> 1.50s)
       cards.forEach((c) => {
         const targetX = c.isLeft ? -2.75 : 2.75
         const targetY = 0.15 + c.stackIndex * STACK_GAP
@@ -710,10 +747,10 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               posY: targetY,
               rotZ: targetRotZ,
               rotY: targetRotY,
-              duration: 0.95,
+              duration: 0.90,
               ease: 'power2.inOut'
             },
-            0.45
+            0.60
           )
         } else {
           tl.to(
@@ -723,7 +760,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               duration: 0.45,
               ease: 'power2.out'
             },
-            0.45
+            0.60
           ).to(
             c,
             {
@@ -731,20 +768,20 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               posY: targetY,
               rotZ: targetRotZ,
               rotY: targetRotY,
-              duration: 0.50,
-              ease: 'power2.inOut'
+              duration: 0.45,
+              ease: 'power2.in'
             },
-            0.90
+            1.05
           )
         }
       })
 
       // ==================================================================
-      // STEP 1: THE RIFFLE INTERLOCK (1.4 -> 4.2s)
+      // STEP 1: THE RIFFLE INTERLOCK (1.50 -> 4.30s)
       // Hands hold remaining cards high above the growing center stack.
       // Hand stacks rise continuously so the pile never penetrates the held cards!
       // ==================================================================
-      const weaveStart = 1.4
+      const weaveStart = 1.50
       const weaveStepInterval = 0.09
       const weaveDropDuration = 0.12
 
@@ -1004,13 +1041,16 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         ref={pinWrapperRef}
         className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex flex-col justify-end items-center sm:flex-row sm:items-center sm:justify-start px-4 sm:px-12 lg:px-20 pb-16 sm:pb-0"
       >
-        {/* Pure Clean Flat 3D Canvas (100% CENTERED on Seamless Global Grid) */}
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10" />
+        {/* Pure Clean Flat 3D Canvas */}
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10 opacity-0 will-change-transform" />
 
         {/* ------------------------------------------------------------- */}
         {/* 3D CARD-FLIP KINETIC HERO TYPOGRAPHY                          */}
         {/* ------------------------------------------------------------- */}
-        <div className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-12 sm:mb-0">
+        <div
+          ref={hudTextRef}
+          className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-12 sm:mb-0 opacity-0 will-change-transform"
+        >
           <div
             key={currentScene.id}
             className="animate-card-flip-3d"

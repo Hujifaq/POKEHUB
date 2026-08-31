@@ -5,6 +5,7 @@ import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import BubbleMenu from './components/BubbleMenu'
+import Floating3DLogo from './components/Floating3DLogo'
 import Preloader from './components/Preloader'
 import HandRankingsModal from './components/HandRankingsModal'
 import VIPClubModal from './components/VIPClubModal'
@@ -66,36 +67,54 @@ export default function Home() {
         history.scrollRestoration = 'manual'
       }
 
-      if (!window.location.hash) {
-        window.scrollTo(0, 0)
-        requestAnimationFrame(() => {
-          window.scrollTo(0, 0)
-        })
+      // Clear any hash so page refresh always resets to Hero
+      if (window.location.hash) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname)
+        } catch {}
       }
+
+      const resetToTop = () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+        document.documentElement.scrollTop = 0
+        document.body.scrollTop = 0
+      }
+
+      resetToTop()
+      requestAnimationFrame(resetToTop)
+      const t1 = setTimeout(resetToTop, 50)
+      const t2 = setTimeout(resetToTop, 200)
 
       const saved = localStorage.getItem('pokehub_bankroll')
       if (saved) {
         setBankroll(Number(saved))
       }
+
+      return () => {
+        clearTimeout(t1)
+        clearTimeout(t2)
+      }
     }
   }, [])
 
-  // Handle beforeunload and pageshow to always ensure top position on refresh
+  // Handle beforeunload, pagehide and pageshow to always ensure top position on refresh
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (!window.location.hash) {
-        window.scrollTo(0, 0)
-      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
     }
     const handlePageShow = () => {
-      if (!window.location.hash) {
-        window.scrollTo(0, 0)
-      }
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('pagehide', handleBeforeUnload)
     window.addEventListener('pageshow', handlePageShow)
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pagehide', handleBeforeUnload)
       window.removeEventListener('pageshow', handlePageShow)
     }
   }, [])
@@ -111,15 +130,18 @@ export default function Home() {
     })
   }
 
+  // Subscribe to SoundEngine mute state and sync with local state
+  useEffect(() => {
+    setIsMuted(SoundEngine.getMuted())
+    return SoundEngine.subscribe((muted) => {
+      setIsMuted(muted)
+    })
+  }, [])
+
   // Sound Effects Mute Toggle handler
   const handleToggleMute = useCallback(() => {
-    const nextMuted = !isMuted
-    setIsMuted(nextMuted)
-    SoundEngine.setMuted(nextMuted)
-    if (!nextMuted) {
-      SoundEngine.playClick()
-    }
-  }, [isMuted])
+    SoundEngine.toggleMute()
+  }, [])
 
   // Refill Bankroll
   const handleRefillBankroll = () => {
@@ -240,20 +262,12 @@ export default function Home() {
               sessionStorage.setItem('pokehub_intro_seen', 'true')
             } catch {}
             setShowPreloader(false)
-            ScrollTrigger.refresh()
             if (typeof window !== 'undefined') {
-              if (window.location.hash === '#how-to-play') {
-                setTimeout(() => {
-                  scrollToHowToPlay()
-                }, 150)
-              } else if (window.location.hash === '#deck-skins' || window.location.hash === '#deck-skin') {
-                setTimeout(() => {
-                  scrollToDeckSkins()
-                }, 150)
-              } else {
-                window.scrollTo(0, 0)
-              }
+              window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+              document.documentElement.scrollTop = 0
+              document.body.scrollTop = 0
             }
+            ScrollTrigger.refresh()
           }}
         />
       )}
@@ -261,19 +275,11 @@ export default function Home() {
       {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div
-            className="flex items-center justify-center cursor-pointer"
+          <Floating3DLogo
             onClick={() => {
               window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
             }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/PKH_Logo.jpg"
-              alt="POKERHUB Logo"
-              className="h-9 sm:h-11 md:h-12 w-auto object-contain mix-blend-multiply bg-transparent select-none pointer-events-none"
-            />
-          </div>
+          />
         }
         actions={
           <>
