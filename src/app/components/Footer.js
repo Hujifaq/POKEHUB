@@ -124,7 +124,7 @@ export default function Footer({
       {/* ======================================================== */}
       {/* 2. MAIN CONTENT: BALANCED 2-COLUMN LAYOUT                */}
       {/* ======================================================== */}
-      <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-10 pb-8 relative z-10">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-10 pb-8 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start pb-8 border-b border-white/10">
           
           {/* COLUMN 1: Brand, Tagline & Socials */}
