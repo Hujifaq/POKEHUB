@@ -18,6 +18,9 @@ import { generateGameUrl } from './utils/gameUrl'
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual'
+  }
 }
 
 export default function Home() {
@@ -25,6 +28,25 @@ export default function Home() {
   const [mounted, setMounted] = useState(false)
   const neoSectionRef = useRef(null)
   const gallerySectionRef = useRef(null)
+  const howToPlaySectionRef = useRef(null)
+
+  const scrollToHowToPlay = useCallback(() => {
+    if (howToPlaySectionRef.current) {
+      howToPlaySectionRef.current.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      const el = document.getElementById('how-to-play')
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
+
+  const scrollToDeckSkins = useCallback(() => {
+    if (gallerySectionRef.current) {
+      gallerySectionRef.current.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      const el = document.getElementById('deck-skins')
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
 
   // Financial & Audio states
   const [bankroll, setBankroll] = useState(10000)
@@ -35,14 +57,45 @@ export default function Home() {
   const [isVIPOpen, setIsVIPOpen] = useState(false)
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false)
 
-  // Load bankroll from localStorage
+  // Force scroll to top on refresh or initial visit and load bankroll
   useEffect(() => {
     setMounted(true)
     if (typeof window !== 'undefined') {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual'
+      }
+
+      if (!window.location.hash) {
+        window.scrollTo(0, 0)
+        requestAnimationFrame(() => {
+          window.scrollTo(0, 0)
+        })
+      }
+
       const saved = localStorage.getItem('pokehub_bankroll')
       if (saved) {
         setBankroll(Number(saved))
       }
+    }
+  }, [])
+
+  // Handle beforeunload and pageshow to always ensure top position on refresh
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!window.location.hash) {
+        window.scrollTo(0, 0)
+      }
+    }
+    const handlePageShow = () => {
+      if (!window.location.hash) {
+        window.scrollTo(0, 0)
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('pageshow', handlePageShow)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pageshow', handlePageShow)
     }
   }, [])
 
@@ -101,7 +154,27 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Hamburger Menu Items: Home, 3D Arena, Leaderboard, Rankings, VIP Club
+  // Handle hash navigation to #how-to-play or #deck-skins
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkHash = () => {
+        if (window.location.hash === '#how-to-play') {
+          setTimeout(() => {
+            scrollToHowToPlay()
+          }, 350)
+        } else if (window.location.hash === '#deck-skins' || window.location.hash === '#deck-skin') {
+          setTimeout(() => {
+            scrollToDeckSkins()
+          }, 350)
+        }
+      }
+      checkHash()
+      window.addEventListener('hashchange', checkHash)
+      return () => window.removeEventListener('hashchange', checkHash)
+    }
+  }, [scrollToHowToPlay, scrollToDeckSkins])
+
+  // Hamburger Menu Items: Home, 3D Arena, Deck Skin, Rankings, How to Play
   const bubbleMenuItems = [
     {
       label: 'home',
@@ -122,12 +195,12 @@ export default function Home() {
       }
     },
     {
-      label: 'leaderboard',
-      ariaLabel: 'High Roller Leaderboard',
+      label: 'deck skin',
+      ariaLabel: '6 Freaking Elite Decks Showcase',
       rotation: -6,
       hoverStyles: { bgColor: '#FF90E8', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/leaderboard'
+        scrollToDeckSkins()
       }
     },
     {
@@ -138,11 +211,13 @@ export default function Home() {
       onClick: () => setIsRankingsOpen(true)
     },
     {
-      label: 'vip club',
-      ariaLabel: 'VIP High Roller Suite',
+      label: 'how to play',
+      ariaLabel: 'How to Play Texas Hold\'em Rules & Flow',
       rotation: -8,
-      hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' },
-      onClick: () => setIsVIPOpen(true)
+      hoverStyles: { bgColor: '#FFE500', textColor: '#000000' },
+      onClick: () => {
+        scrollToHowToPlay()
+      }
     }
   ]
 
@@ -152,12 +227,40 @@ export default function Home() {
       <div className="fixed-graph-grid" />
 
       {/* Intro Preloader */}
-      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
+      {showPreloader && (
+        <Preloader
+          onComplete={() => {
+            try {
+              sessionStorage.setItem('pokehub_intro_seen', 'true')
+            } catch {}
+            setShowPreloader(false)
+            ScrollTrigger.refresh()
+            if (typeof window !== 'undefined') {
+              if (window.location.hash === '#how-to-play') {
+                setTimeout(() => {
+                  scrollToHowToPlay()
+                }, 150)
+              } else if (window.location.hash === '#deck-skins' || window.location.hash === '#deck-skin') {
+                setTimeout(() => {
+                  scrollToDeckSkins()
+                }, 150)
+              } else {
+                window.scrollTo(0, 0)
+              }
+            }
+          }}
+        />
+      )}
 
       {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
         logo={
-          <div className="flex items-center justify-center cursor-pointer" onClick={() => setIsVIPOpen(true)}>
+          <div
+            className="flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+            }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/PKH_Logo.jpg"
@@ -171,17 +274,15 @@ export default function Home() {
             {/* Play 3D Arena Button (Navigates to /game) - shown on md+ */}
             <Link
               href="/game"
-              className="brutal-btn bg-[#00FFA3] text-true-black hidden md:flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-[11px] sm:text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] -rotate-1 cursor-pointer shrink-0"
+              className="brutal-btn bg-[#00FFA3] text-true-black hidden md:flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 font-display text-[11px] sm:text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] -rotate-1 cursor-pointer shrink-0"
               title="Open Standalone 3D Poker Arena"
             >
-              <span className="text-xs sm:text-sm">🎮</span>
-              <span className="hidden lg:inline">3D ARENA</span>
+              <span>3D ARENA</span>
             </Link>
 
             {/* Bankroll Faux Window */}
-            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0">
-              <span className="text-xs sm:text-sm">💰</span>
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden lg:inline">
+            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0">
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
                 BANKROLL:
               </span>
               <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
@@ -199,34 +300,32 @@ export default function Home() {
             {/* Sound Effects Mute / Unmute Toggle Button */}
             <button
               onClick={handleToggleMute}
-              className={`brutal-btn flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
+              className={`brutal-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
                 !isMuted
                   ? 'bg-accent-cyan text-true-black'
                   : 'bg-white text-gray-500'
               }`}
               title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
             >
-              <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-              <span className="hidden lg:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
+              <span>{isMuted ? 'MUTED' : 'SFX: ON'}</span>
             </button>
 
             {/* Leaderboard Link Button - shown on sm+ */}
             <Link
               href="/leaderboard"
-              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0"
+              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0"
               title="Open Leaderboard"
             >
-              <span>🏆</span>
-              <span className="hidden lg:inline">RANKS</span>
+              <span>RANKS</span>
             </Link>
 
             {/* Fullscreen Button - shown on xl+ */}
             <button
               onClick={handleToggleFullscreen}
-              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-bold font-pixel shrink-0 shadow-[2px_2px_0px_#000000]"
+              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-black font-pixel shrink-0 shadow-[2px_2px_0px_#000000]"
               title="Toggle Fullscreen"
             >
-              <span className="text-[10px]">🗖</span>
+              <span className="text-[9px] tracking-tighter">FS</span>
             </button>
           </>
         }
@@ -256,7 +355,17 @@ export default function Home() {
       />
 
       {/* ======================================================== */}
-      {/* SECTION 2: GSAP HORIZONTAL SCROLL SHOWCASE (6 DECKS)   */}
+      {/* SECTION 2: 3D CARD RIFFLE SHUFFLE (HOW TO PLAY PART 1)   */}
+      {/* ======================================================== */}
+      <RiffleShuffleSection containerRefProp={howToPlaySectionRef} />
+
+      {/* ======================================================== */}
+      {/* SECTION 3: 3D POV POKER TABLE (HOW TO PLAY PART 2)       */}
+      {/* ======================================================== */}
+      <PokerHandOrbitSection />
+
+      {/* ======================================================== */}
+      {/* SECTION 4: GSAP HORIZONTAL SCROLL SHOWCASE (6 DECKS)   */}
       {/* ======================================================== */}
       <HorizontalShowcase
         containerRefProp={gallerySectionRef}
@@ -269,16 +378,6 @@ export default function Home() {
           setIsSetupModalOpen(true)
         }}
       />
-
-      {/* ======================================================== */}
-      {/* SECTION 3: 3D CARD RIFFLE SHUFFLE (SCROLLTRIGGER)       */}
-      {/* ======================================================== */}
-      <RiffleShuffleSection />
-
-      {/* ======================================================== */}
-      {/* SECTION 4: 3D POKER HAND SHOWCASE & ORBIT (SCROLLTRIGGER)*/}
-      {/* ======================================================== */}
-      <PokerHandOrbitSection onOpenDuel={() => setIsSetupModalOpen(true)} />
 
       {/* ======================================================== */}
       {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER                  */}
@@ -316,19 +415,19 @@ export default function Home() {
                 href="/game"
                 className="brutal-btn px-5 py-3 bg-[#00FFA3] text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#00e693] cursor-pointer"
               >
-                🎮 PLAY 3D ARENA →
+                PLAY 3D ARENA →
               </Link>
               <Link
                 href="/leaderboard"
                 className="brutal-btn px-5 py-3 bg-ui-pink text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#ff8cb8]"
               >
-                🏆 LEADERBOARD
+                LEADERBOARD
               </Link>
               <button
                 onClick={() => setIsRankingsOpen(true)}
                 className="brutal-btn px-4 py-3 bg-white text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-accent-yellow"
               >
-                📜 HAND RULES
+                HAND RULES
               </button>
             </div>
           </div>

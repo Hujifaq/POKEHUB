@@ -159,7 +159,7 @@ export default function GamePage() {
       const fullUrl = window.location.href
       navigator.clipboard.writeText(fullUrl).then(() => {
         SoundEngine.playClick()
-        setToastNotification('GAME URI COPIED TO CLIPBOARD! 📋')
+        setToastNotification('GAME URI COPIED TO CLIPBOARD!')
         setTimeout(() => setToastNotification(null), 2500)
       }).catch(() => {})
     }
@@ -265,12 +265,12 @@ export default function GamePage() {
       }
     },
     {
-      label: 'leaderboard',
-      ariaLabel: 'High Roller Leaderboard',
+      label: 'deck skin',
+      ariaLabel: '6 Freaking Elite Decks Showcase',
       rotation: -6,
       hoverStyles: { bgColor: '#FF90E8', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/leaderboard'
+        window.location.href = '/#deck-skins'
       }
     },
     {
@@ -281,11 +281,13 @@ export default function GamePage() {
       onClick: () => setIsRankingsOpen(true)
     },
     {
-      label: 'vip club',
-      ariaLabel: 'VIP High Roller Suite',
+      label: 'how to play',
+      ariaLabel: 'How to Play Texas Hold\'em Rules & Flow',
       rotation: -8,
-      hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' },
-      onClick: () => setIsVIPOpen(true)
+      hoverStyles: { bgColor: '#FFE500', textColor: '#000000' },
+      onClick: () => {
+        window.location.href = '/#how-to-play'
+      }
     }
   ]
 
@@ -295,7 +297,16 @@ export default function GamePage() {
       <div className="fixed-graph-grid" />
 
       {/* Intro Preloader */}
-      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
+      {showPreloader && (
+        <Preloader
+          onComplete={() => {
+            try {
+              sessionStorage.setItem('pokehub_intro_seen', 'true')
+            } catch {}
+            setShowPreloader(false)
+          }}
+        />
+      )}
 
       {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
@@ -314,17 +325,15 @@ export default function GamePage() {
             {/* Back to Home Button - shown on md+ */}
             <Link
               href="/"
-              className="brutal-btn bg-white text-true-black hidden md:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-accent-yellow transition-colors shrink-0 shadow-[2px_2px_0px_#000]"
+              className="brutal-btn bg-white text-true-black hidden md:flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-accent-yellow transition-colors shrink-0 shadow-[2px_2px_0px_#000]"
               title="Back to Home"
             >
-              <span>🏠</span>
-              <span className="hidden lg:inline">HOME</span>
+              <span>HOME</span>
             </Link>
 
             {/* Bankroll Faux Window */}
-            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 shrink-0 shadow-[2px_2px_0px_#000]">
-              <span className="text-xs sm:text-sm">💰</span>
-              <span className="text-[9px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden lg:inline">
+            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shrink-0 shadow-[2px_2px_0px_#000]">
+              <span className="text-[9px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
                 BANKROLL:
               </span>
               <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
@@ -332,7 +341,7 @@ export default function GamePage() {
               </span>
               <button
                 onClick={handleRefillBankroll}
-                className="brutal-btn bg-accent-yellow text-true-black text-[8px] sm:text-[10px] font-black px-1.5 py-0.5"
+                className="brutal-btn bg-accent-yellow text-true-black text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
                 title="Add +$5,000 High Roller Chips"
               >
                 +$5K
@@ -347,10 +356,9 @@ export default function GamePage() {
               </span>
               <button
                 onClick={handleCopyGameUri}
-                className="brutal-btn bg-[#FFE500] hover:bg-[#00FFA3] text-true-black text-[8px] font-black px-1.5 py-0.5 flex items-center gap-1 cursor-pointer"
+                className="brutal-btn bg-[#FFE500] hover:bg-[#00FFA3] text-true-black text-[8px] font-black px-2 py-0.5 flex items-center gap-1 cursor-pointer"
                 title="Copy Game URL"
               >
-                <span>📋</span>
                 <span>COPY URI</span>
               </button>
             </div>
@@ -365,27 +373,25 @@ export default function GamePage() {
               }`}
               title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
             >
-              <span className="text-xs">{isMuted ? '🔇' : '🔊'}</span>
-              <span className="hidden lg:inline">{isMuted ? 'MUTED' : 'SFX ON'}</span>
+              <span>{isMuted ? 'MUTED' : 'SFX: ON'}</span>
             </button>
 
             {/* Leaderboard Link Button - shown on sm+ */}
             <Link
               href="/leaderboard"
-              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] shrink-0"
+              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] shrink-0"
               title="Open Leaderboard"
             >
-              <span>🏆</span>
-              <span className="hidden lg:inline">RANKS</span>
+              <span>RANKS</span>
             </Link>
 
             {/* Fullscreen Button - shown on xl+ */}
             <button
               onClick={handleToggleFullscreen}
-              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-bold font-pixel shrink-0 shadow-[2px_2px_0px_#000]"
+              className="brutal-btn w-8 h-8 sm:w-9 sm:h-9 bg-accent-yellow text-true-black hidden xl:flex items-center justify-center font-black font-pixel shrink-0 shadow-[2px_2px_0px_#000]"
               title="Toggle Fullscreen"
             >
-              <span className="text-[10px]">🗖</span>
+              <span className="text-[9px] tracking-tighter">FS</span>
             </button>
           </>
         }
@@ -476,7 +482,6 @@ export default function GamePage() {
             className="brutal-btn group flex items-center justify-center gap-2.5 sm:gap-3 w-full sm:w-auto px-6 sm:px-10 py-3 sm:py-4 bg-[#FFDE59] text-true-black font-display text-base sm:text-2xl font-black uppercase tracking-wider shadow-[4px_4px_0px_#000000] sm:shadow-[6px_6px_0px_#000000] hover:bg-[#00FFA3] hover:scale-105 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all cursor-pointer -rotate-1 hover:rotate-0"
             title="Setup & Launch Texas Hold'em 3D Duel"
           >
-            <span className="text-xl sm:text-3xl animate-bounce">⚔️</span>
             <span>PLAY NOW</span>
             <span className="font-pixel text-[8px] sm:text-xs bg-true-black text-white px-2 py-0.5 sm:py-1 rounded shadow-[1.5px_1.5px_0px_#000000]">
               3D DUEL

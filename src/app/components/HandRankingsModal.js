@@ -10,7 +10,7 @@ const HAND_RANKINGS = [
     cards: ['10♥', 'J♥', 'Q♥', 'K♥', 'A♥'],
     odds: '0.000154% (1 in 649,740)',
     payout: '1,000 : 1',
-    badge: '👑 SUPREME'
+    badge: 'SUPREME'
   },
   {
     rank: 2,
@@ -19,7 +19,7 @@ const HAND_RANKINGS = [
     cards: ['5♠', '6♠', '7♠', '8♠', '9♠'],
     odds: '0.00139% (1 in 72,192)',
     payout: '200 : 1',
-    badge: '🔥 ULTRA RARE'
+    badge: 'ULTRA RARE'
   },
   {
     rank: 3,
@@ -28,7 +28,7 @@ const HAND_RANKINGS = [
     cards: ['A♠', 'A♥', 'A♦', 'A♣', 'K♦'],
     odds: '0.0240% (1 in 4,165)',
     payout: '50 : 1',
-    badge: '⚡ EPIC'
+    badge: 'EPIC'
   },
   {
     rank: 4,
@@ -37,7 +37,7 @@ const HAND_RANKINGS = [
     cards: ['K♠', 'K♥', 'K♦', '10♣', '10♥'],
     odds: '0.1441% (1 in 694)',
     payout: '20 : 1',
-    badge: '💎 HIGH ROLLER'
+    badge: 'HIGH ROLLER'
   },
   {
     rank: 5,
@@ -46,7 +46,7 @@ const HAND_RANKINGS = [
     cards: ['2♦', '6♦', '9♦', 'J♦', 'A♦'],
     odds: '0.1965% (1 in 508)',
     payout: '10 : 1',
-    badge: '✨ RARE'
+    badge: 'RARE'
   },
   {
     rank: 6,
@@ -55,7 +55,7 @@ const HAND_RANKINGS = [
     cards: ['4♠', '5♥', '6♦', '7♣', '8♠'],
     odds: '0.3925% (1 in 254)',
     payout: '5 : 1',
-    badge: '🎯 STRONG'
+    badge: 'STRONG'
   },
   {
     rank: 7,

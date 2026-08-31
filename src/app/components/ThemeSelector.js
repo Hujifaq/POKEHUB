@@ -11,7 +11,7 @@ export const THEMES = [
     surface: '#e8e2d6',
     text: '#14161c',
     primary: '#d4af37',
-    icon: '👑',
+    icon: '♠',
     gradient: 'from-[#2b2010] via-[#17120a] to-[#0d0905]'
   },
   {
@@ -21,7 +21,7 @@ export const THEMES = [
     surface: '#1c0e12',
     text: '#ffffff',
     primary: '#ff4d6d',
-    icon: '🍷',
+    icon: '♥',
     gradient: 'from-[#380e16] via-[#1c080b] to-[#080203]'
   },
   {
@@ -31,7 +31,7 @@ export const THEMES = [
     surface: '#0d1124',
     text: '#00f0ff',
     primary: '#00f0ff',
-    icon: '⚡',
+    icon: '♦',
     gradient: 'from-[#0d1b3e] via-[#080d1e] to-[#03050c]'
   },
   {
@@ -41,7 +41,7 @@ export const THEMES = [
     surface: '#0d2817',
     text: '#f1c40f',
     primary: '#2ecc71',
-    icon: '🌲',
+    icon: '♣',
     gradient: 'from-[#0e3d23] via-[#092214] to-[#030c07]'
   }
 ]
@@ -56,7 +56,6 @@ export default function ThemeSelector({ activeTheme, onThemeChange, isOpen, onCl
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏛️</span>
             <div>
               <h2 className="text-xl font-black text-white tracking-wide">CASINO ATMOSPHERE & FELT</h2>
               <p className="text-xs text-gray-400">Change 3D lighting, table felt & ambience</p>

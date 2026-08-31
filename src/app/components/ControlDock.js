@@ -26,12 +26,12 @@ export default function ControlDock({
   ]
 
   const skins = [
-    { key: 'obsidian', label: 'Obsidian', icon: '🔮' },
-    { key: 'gold', label: 'Ivory Gold', icon: '👑' },
-    { key: 'cyber', label: 'Cyberpunk', icon: '⚡' },
-    { key: 'emerald', label: 'Emerald', icon: '💎' },
-    { key: 'sakura', label: 'Sakura', icon: '🌸' },
-    { key: 'retro', label: 'Retro 8-Bit', icon: '🎴' }
+    { key: 'obsidian', label: 'Obsidian' },
+    { key: 'gold', label: 'Ivory Gold' },
+    { key: 'cyber', label: 'Cyberpunk' },
+    { key: 'emerald', label: 'Emerald' },
+    { key: 'sakura', label: 'Sakura' },
+    { key: 'retro', label: 'Retro 8-Bit' }
   ]
 
   const toggleExpand = () => {
@@ -107,8 +107,7 @@ export default function ControlDock({
               }`}
               title="Toggle 5-Card Royal Flush Fan"
             >
-              <span className="text-sm sm:text-base">🎴</span>
-              <span className="hidden xs:inline sm:inline">{isFanMode ? '1-Card' : 'Fan Out'}</span>
+              <span>{isFanMode ? '1-CARD' : 'FAN OUT'}</span>
             </button>
 
             {/* Flip Card Button */}
@@ -119,8 +118,7 @@ export default function ControlDock({
               }`}
               title="Flip Card (Spacebar)"
             >
-              <span className="text-sm sm:text-base">🔄</span>
-              <span className="hidden xs:inline sm:inline">Flip</span>
+              <span>FLIP</span>
             </button>
 
             {/* Toss 3D Chip Button */}
@@ -129,8 +127,7 @@ export default function ControlDock({
               className="brutal-btn flex items-center gap-1 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-accent-yellow text-true-black font-display text-[11px] sm:text-xs md:text-sm uppercase font-bold cursor-pointer shrink-0 shadow-[2px_2px_0px_#000]"
               title="Toss 3D Casino Chip (C)"
             >
-              <span className="text-sm sm:text-base">🪙</span>
-              <span className="hidden xs:inline sm:inline">Toss</span>
+              <span>TOSS CHIP</span>
             </button>
 
             {/* Deck Skin Switcher */}
@@ -139,8 +136,7 @@ export default function ControlDock({
               className="brutal-btn flex items-center gap-1.5 px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-white hover:bg-[#FFE500] text-true-black font-display text-[11px] sm:text-xs md:text-sm uppercase font-bold cursor-pointer shrink-0 shadow-[2px_2px_0px_#000] transition-colors"
               title="Cycle Deck Skin"
             >
-              <span className="text-sm sm:text-base">{activeSkinObj.icon}</span>
-              <span className="hidden xs:inline sm:inline">{activeSkinObj.label}</span>
+              <span>SKIN: {activeSkinObj.label}</span>
             </button>
 
             {/* Suit Selector Mini-Pills */}
@@ -171,8 +167,7 @@ export default function ControlDock({
               className="brutal-btn flex items-center gap-1.5 px-3 sm:px-5 py-1.5 sm:py-2 bg-ui-pink text-true-black font-display text-[11px] sm:text-xs md:text-sm uppercase font-black cursor-pointer shrink-0 shadow-[2px_2px_0px_#000]"
               title="Play 3D Poker Duel"
             >
-              <span className="text-sm sm:text-base">⚔️</span>
-              <span>DUEL</span>
+              <span>PLAY DUEL</span>
             </button>
 
           </div>

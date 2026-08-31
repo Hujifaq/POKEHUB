@@ -278,7 +278,6 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
   const cardGroupRef = useRef(null)
   const secondRevealRef = useRef(null)
   const portalOverlayRef = useRef(null)
-  const vaultCueRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -533,7 +532,11 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
     }
     animate()
 
-    // Scrollytelling Timeline: Complete Zoom-Through -> Spacious Dedicated Buffer -> Section 3 Handoff
+    // Scrollytelling Timeline: Complete Zoom-Through -> Seamless Transition into How To Play (Riffle Deck)
+    let lastPlayTime = 0
+    let lastRotationY = -0.22
+    let portalSoundPlayed = false
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -541,10 +544,48 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 4.6}`, // Generous 460vh scroll track
+          end: () => `+=${window.innerHeight * 2.6}`,
           scrub: 1.2,
           anticipatePin: 1,
           invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const now = performance.now()
+            const progress = self.progress
+            const currentRotY = cardGroup.rotation.y
+            const rotDelta = Math.abs(currentRotY - lastRotationY)
+            const scrollVel = Math.abs(self.getVelocity() / 1000)
+
+            // STAGE 1 & 2: As the 3D card rotates / turns through space
+            if (progress < 0.72) {
+              if (progress < 0.6) {
+                portalSoundPlayed = false
+              }
+
+              // Trigger on rotation delta with responsive throttling
+              if (rotDelta > 0.32 && (now - lastPlayTime > 80)) {
+                const direction = currentRotY >= lastRotationY ? 1 : -1
+                const normVel = Math.min(2.5, Math.max(0.35, scrollVel || rotDelta * 2.2))
+                const isMicro = normVel < 0.65 && rotDelta < 0.55
+
+                SoundEngine.playHeroCardRotate({
+                  velocity: normVel,
+                  direction,
+                  intensity: isMicro ? 0.75 : 1.0,
+                  mode: isMicro ? 'micro' : 'rotate'
+                })
+
+                lastPlayTime = now
+                lastRotationY = currentRotY
+              }
+            } else if (progress >= 0.74 && progress <= 0.95) {
+              // STAGE 4: Climax Zoom-Through Portal Warp
+              if (!portalSoundPlayed && self.direction > 0 && (now - lastPlayTime > 180)) {
+                SoundEngine.playHeroCardPortalWarp()
+                portalSoundPlayed = true
+                lastPlayTime = now
+              }
+            }
+          }
         },
       })
 
@@ -617,15 +658,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
       // ==========================================
       // STAGE 4: CINEMATIC ZOOM-THROUGH (1.9s -> 2.7s)
-      // (Card is 100% penetrated & vanished by 2.7s!)
+      // Card expands into flying portal & dissolves
       // ==========================================
-      // Camera plunges directly into center 8-bit motif
       tl.to(
         camera.position,
         { z: 0.1, ease: 'power3.in', duration: 0.8 },
         1.9
       )
-        // Card expands exponentially into a giant flying portal
         .to(
           cardGroup.scale,
           { x: 48, y: 48, z: 48, ease: 'power3.in', duration: 0.8 },
@@ -676,33 +715,6 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           2.4
         )
 
-      // ==========================================
-      // STAGE 5: DEDICATED POST-ZOOM BUFFER (2.7s -> 3.7s)
-      // (Card is 100% GONE; spacious, comfortable transition bridge!)
-      // ==========================================
-      if (vaultCueRef.current) {
-        // Vault title cue emerges smoothly from the penetrated portal
-        tl.fromTo(
-          vaultCueRef.current,
-          { autoAlpha: 0, scale: 0.88, y: 40 },
-          { autoAlpha: 1, scale: 1, y: 0, ease: 'power2.out', duration: 0.4 },
-          2.7
-        )
-          // User comfortably reads / scrolls through the generous buffer
-          .to({}, { duration: 0.6 }, 3.1)
-          // Bridge cue lifts gracefully as Section 3 approaches top of view
-          .to(
-            vaultCueRef.current,
-            { autoAlpha: 0, y: -60, scale: 1.05, ease: 'power2.in', duration: 0.35 },
-            3.7
-          )
-      }
-
-      // ==========================================
-      // STAGE 6: FINAL UNPIN BUFFER (3.85s -> 4.0s)
-      // ==========================================
-      tl.to({}, { duration: 0.15 }, 3.85)
-
     }, containerRef)
 
     // Force ScrollTrigger to refresh and recalculate all down-page section start offsets
@@ -743,8 +755,12 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
   // Interactive draw card handler
   const handleDrawCard = () => {
-    SoundEngine.playCardSwoosh()
-    SoundEngine.playCardFlip()
+    SoundEngine.playHeroCardRotate({
+      velocity: 1.5,
+      direction: 1,
+      intensity: 1.2,
+      mode: 'rotate'
+    })
     if (cardGroupRef.current) {
       gsap.to(cardGroupRef.current.rotation, {
         y: '+=6.283', // Full 360 spin
@@ -892,25 +908,6 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
               ⚔️ CHALLENGE IN 3D DUEL
             </button>
           </div>
-        </div>
-
-        {/* Seamless Transition Bridge to Section 3 (Appears AFTER card is completely traversed!) */}
-        <div
-          ref={vaultCueRef}
-          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center text-center opacity-0 will-change-transform px-4 select-none"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm mb-4">
-            <span className="text-xs">🎴</span>
-            <span className="font-pixel text-[10px] sm:text-xs font-black uppercase text-true-black">
-              ENTERING POKERHUB VAULT
-            </span>
-          </div>
-          <h2 className="font-display text-3xl sm:text-5xl md:text-6xl font-black text-true-black uppercase tracking-tight drop-shadow-[4px_4px_0px_#ffa6c9] leading-tight max-w-3xl">
-            ACCESSING 6 ELITE DECKS
-          </h2>
-          <p className="font-mono-nb text-xs sm:text-sm font-bold text-gray-700 mt-4 max-w-lg">
-            (COLLECTIBLE HIGH-ROLLER ARCHIVES &amp; HOLOGRAPHIC FOIL EDITIONS)
-          </p>
         </div>
       </section>
     </div>

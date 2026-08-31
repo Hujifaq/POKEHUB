@@ -11,7 +11,7 @@ if (typeof window !== 'undefined') {
 }
 
 // ----------------------------------------------------------------------
-// SCRIPT DATA (BIG BOLD CONTENT)
+// SCRIPT DATA: 2-STEP CASINO RIFFLE & BRIDGE WATERFALL
 // ----------------------------------------------------------------------
 const SCENES = [
   {
@@ -23,16 +23,16 @@ const SCENES = [
   },
   {
     id: 1,
-    tag: 'THE BLINDS',
-    headline: '01 / POST THE BLINDS',
-    description: 'Place forced bets to kick off the pot before cards are dealt.',
+    tag: 'STEP 01: THE RIFFLE',
+    headline: '01 / RIFFLE INTERLOCK',
+    description: 'Split the deck and interleave cards edge-to-edge into a woven mesh.',
     accentColor: '#00F5FF'
   },
   {
     id: 2,
-    tag: 'PRE-FLOP',
-    headline: '02 / GET HOLE CARDS',
-    description: 'Receive your 2 private cards and plan your opening strategy.',
+    tag: 'STEP 02: THE BRIDGE',
+    headline: '02 / BRIDGE WATERFALL',
+    description: 'Squeeze the arch and cascade the cards with that iconic money-counting flutter.',
     accentColor: '#FF70A6'
   }
 ]
@@ -201,14 +201,14 @@ function createCardBackCanvas() {
 }
 
 // ----------------------------------------------------------------------
-// MAIN REACT COMPONENT: 3D 52-CARD RIFFLE
+// MAIN REACT COMPONENT: 2-STEP RIFFLE & BRIDGE (3/4 SIDEWAYS PERSPECTIVE)
 // ----------------------------------------------------------------------
 
-export default function RiffleShuffleSection() {
-  const containerRef = useRef(null)
+export default function RiffleShuffleSection({ containerRefProp }) {
+  const localContainerRef = useRef(null)
+  const containerRef = containerRefProp || localContainerRef
   const pinWrapperRef = useRef(null)
   const canvasRef = useRef(null)
-  const soundThrottleRef = useRef(0)
   const [activeSceneIndex, setActiveSceneIndex] = useState(0)
 
   // Sound feedback on scene change
@@ -226,14 +226,14 @@ export default function RiffleShuffleSection() {
     const canvas = canvasRef.current
     if (!container || !pinWrapper || !canvas) return
 
-    // 1. Scene & Camera Setup (100% CENTERED ON SCREEN)
+    // 1. Scene & Camera Setup (3/4 SIDEWAYS ANGLE FOR ZERO-OCCLUSION 3D VIEW)
     const scene = new THREE.Scene()
     const width = pinWrapper.clientWidth || window.innerWidth
     const height = pinWrapper.clientHeight || window.innerHeight
 
-    const camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 1000)
-    camera.position.set(0, 7.5, 11.2)
-    camera.lookAt(0, 0.4, 0)
+    const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000)
+    camera.position.set(0, 6.8, 10.8)
+    camera.lookAt(0, 0.35, 0)
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -244,15 +244,16 @@ export default function RiffleShuffleSection() {
     renderer.setSize(width, height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-    // 2. Physical Parameters for Full 52 Cards
+    // ------------------------------------------------------------------
+    // 2. Physical Parameters for Full 52 Cards (Dynamic 3/4 Sideways Angle)
+    // ------------------------------------------------------------------
     const CARD_W = 2.2
     const CARD_H = 3.2
-    const CARD_THICKNESS = 0.004
-    const STACK_GAP = 0.016
+    const STACK_GAP = 0.026 // Clear vertical separation between card layers
     const TOTAL_CARDS = 52
     const HALF_COUNT = 26
 
-    const cardGeometry = new THREE.PlaneGeometry(CARD_W, CARD_H, 36, 14)
+    const cardGeometry = new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1)
 
     const SUITS = ['♠', '♥', '♦', '♣']
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
@@ -263,6 +264,11 @@ export default function RiffleShuffleSection() {
         FULL_DECK_DATA.push({ rank, suit })
       })
     })
+
+    // Sideways 3/4 angled deck group (Turned sideways from original orientation)
+    const deckRootGroup = new THREE.Group()
+    deckRootGroup.rotation.set(0.18, 0.38, -0.06) // 3/4 perspective angle
+    scene.add(deckRootGroup)
 
     const cards = []
 
@@ -304,12 +310,10 @@ export default function RiffleShuffleSection() {
       cardGroup.position.set(0, initY, 0)
       cardGroup.rotation.set(-Math.PI / 2, 0, 0)
 
-      scene.add(cardGroup)
+      deckRootGroup.add(cardGroup)
 
       cards.push({
         group: cardGroup,
-        frontMesh,
-        backMesh,
         isLeft,
         order: i,
         stackIndex,
@@ -318,57 +322,78 @@ export default function RiffleShuffleSection() {
         posZ: 0,
         rotX: -Math.PI / 2,
         rotY: 0,
-        rotZ: 0,
-        bend: 0
+        rotZ: 0
       })
     }
 
-    // 3. Curvature Calculation
-    const computeCurvatureZ = (x, bend, isLeft) => {
-      const normX = x / CARD_W + 0.5
-      if (isLeft) {
-        const t = Math.max(0, (normX - 0.25) / 0.75)
-        return (t * t) * bend
-      } else {
-        const t = Math.max(0, (0.75 - normX) / 0.75)
-        return (t * t) * bend
+    // ------------------------------------------------------------------
+    // 3. 3D RETRO 8-BIT DARK SMOKE AURA (SUBTLE, CLEAN & DISCREET)
+    // ------------------------------------------------------------------
+    const smokeCount = 30
+    const smokeGeo = new THREE.PlaneGeometry(0.16, 0.16)
+    const smokeMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      side: THREE.DoubleSide
+    })
+    const smokeMesh = new THREE.InstancedMesh(smokeGeo, smokeMat, smokeCount)
+    smokeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+
+    const smokeColors = [
+      new THREE.Color(0x050508),
+      new THREE.Color(0x0a0b10),
+      new THREE.Color(0x12141c),
+      new THREE.Color(0x1b1d28),
+      new THREE.Color(0x282b3a)
+    ]
+
+    const smokeDummy = new THREE.Object3D()
+    const smokeParticles = Array.from({ length: smokeCount }, (_, i) => {
+      const isLeft = i < smokeCount / 2
+      const baseCenterX = isLeft ? -2.6 : 2.6
+      const x = baseCenterX + (Math.random() - 0.5) * 1.6
+      const y = (Math.random() * 0.8)
+      const z = (Math.random() - 0.5) * 2.4
+
+      const color = smokeColors[Math.floor(Math.random() * smokeColors.length)]
+      smokeMesh.setColorAt(i, color)
+
+      return {
+        x,
+        y,
+        z,
+        vx: (Math.random() - 0.5) * 0.003,
+        vy: 0.006 + Math.random() * 0.008,
+        rot: Math.floor(Math.random() * 4) * (Math.PI / 2),
+        scale: 0.35 + Math.random() * 0.35,
+        life: Math.random() * 60,
+        maxLife: 60 + Math.random() * 40,
+        isLeft
       }
-    }
+    })
+    if (smokeMesh.instanceColor) smokeMesh.instanceColor.needsUpdate = true
+    deckRootGroup.add(smokeMesh)
 
-    const applyCurvatureToCard = (card) => {
-      const { frontMesh, backMesh, bend, isLeft } = card
-      const basePos = cardGeometry.attributes.position
-      const halfThick = CARD_THICKNESS / 2
-
-      const frontPos = frontMesh.geometry.attributes.position
-      for (let j = 0; j < frontPos.count; j++) {
-        const x = basePos.getX(j)
-        const y = basePos.getY(j)
-        const curveZ = computeCurvatureZ(x, bend, isLeft)
-        frontPos.setXYZ(j, x, y, curveZ + halfThick)
-      }
-      frontPos.needsUpdate = true
-
-      const backPos = backMesh.geometry.attributes.position
-      for (let j = 0; j < backPos.count; j++) {
-        const localX = basePos.getX(j)
-        const y = basePos.getY(j)
-        const worldX = -localX
-        const curveZ = computeCurvatureZ(worldX, bend, isLeft)
-        backPos.setXYZ(j, localX, y, -(curveZ - halfThick))
-      }
-      backPos.needsUpdate = true
-    }
-
+    // ------------------------------------------------------------------
+    // 4. Rigid-Body Card Sync (100% Flat & Non-Intersecting Layers)
+    // ------------------------------------------------------------------
     const syncAllCards = () => {
       cards.forEach((c) => {
         c.group.position.set(c.posX, c.posY, c.posZ)
         c.group.rotation.set(c.rotX, c.rotY, c.rotZ)
-        applyCurvatureToCard(c)
       })
     }
 
-    // 4. GSAP ScrollTrigger Timeline
+    // ------------------------------------------------------------------
+    // 5. GSAP SCROLLTRIGGER TIMELINE: 2-STEP RIFFLE & BRIDGE WATERFALL
+    // ------------------------------------------------------------------
+    let lastCardIndex = -1
+    let lastFlutterTime = 0
+    let squareUpPlayed = false
+
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -376,22 +401,54 @@ export default function RiffleShuffleSection() {
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 5.0}`,
-          scrub: 1.2,
+          end: () => `+=${window.innerHeight * 5.2}`,
+          scrub: 1.0,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
             const p = self.progress
-            if (p < 0.33) setActiveSceneIndex(0)
-            else if (p < 0.68) setActiveSceneIndex(1)
+            const scrollVel = Math.abs(self.getVelocity() / 1000)
+
+            if (p < 0.28) setActiveSceneIndex(0)
+            else if (p < 0.58) setActiveSceneIndex(1)
             else setActiveSceneIndex(2)
 
-            if (p >= 0.28 && p <= 0.85) {
-              const now = Date.now()
-              if (now - soundThrottleRef.current > 55) {
-                soundThrottleRef.current = now
-                SoundEngine.playCardSwoosh()
+            // STEP 1: Riffle Interlock (Cards interleaving and weaving into mesh, p in [0.28, 0.58])
+            if (p >= 0.28 && p < 0.58) {
+              squareUpPlayed = false
+              const weaveProgress = (p - 0.28) / (0.58 - 0.28)
+              const currentCardIdx = Math.min(27, Math.max(0, Math.floor(weaveProgress * 28)))
+
+              if (currentCardIdx !== lastCardIndex) {
+                const side = currentCardIdx % 2 === 0 ? 'left' : 'right'
+                const normVel = Math.min(2.5, Math.max(0.4, scrollVel || 1.0))
+                SoundEngine.playRiffleCardSnap({
+                  cardIndex: currentCardIdx,
+                  side,
+                  velocity: normVel,
+                  intensity: 1.0
+                })
+                lastCardIndex = currentCardIdx
               }
+            }
+            // STEP 2: Bridge Waterfall Cascade (Fluttering money count sound, p in [0.68, 0.90])
+            else if (p >= 0.68 && p <= 0.90) {
+              squareUpPlayed = false
+              const now = performance.now()
+              if (now - lastFlutterTime > 85) {
+                SoundEngine.playWaterfallFlutter(Math.min(2.0, Math.max(0.6, scrollVel || 1.0)))
+                lastFlutterTime = now
+              }
+            }
+            // Final Square-up (p > 0.91)
+            else if (p > 0.91) {
+              if (!squareUpPlayed && self.direction > 0) {
+                SoundEngine.playRiffleDeckSquare(Math.min(2.0, Math.max(0.5, scrollVel || 1.0)))
+                squareUpPlayed = true
+              }
+            } else if (p < 0.25) {
+              lastCardIndex = -1
+              squareUpPlayed = false
             }
           }
         },
@@ -400,11 +457,25 @@ export default function RiffleShuffleSection() {
         }
       })
 
-      // STAGE 1: CUT & SPLIT (0.0 -> 1.2s)
+      // STAGE 0: GENTLE DECK EMERGENCE FROM HERO PORTAL (0.0 -> 0.45s)
+      tl.fromTo(
+        deckRootGroup.position,
+        { y: -0.6 },
+        { y: 0, duration: 0.45, ease: 'power2.out' },
+        0
+      )
+      tl.fromTo(
+        canvasRef.current,
+        { opacity: 0.3 },
+        { opacity: 1, duration: 0.45, ease: 'power2.out' },
+        0
+      )
+
+      // STAGE 1: CUT & SPLIT (0.45 -> 1.4s)
       cards.forEach((c) => {
-        const targetX = c.isLeft ? -2.6 : 2.6
+        const targetX = c.isLeft ? -2.75 : 2.75
         const targetY = 0.15 + c.stackIndex * STACK_GAP
-        const targetRotZ = c.isLeft ? 0.10 : -0.10
+        const targetRotZ = c.isLeft ? 0.06 : -0.06
         const targetRotY = c.isLeft ? -0.04 : 0.04
 
         if (c.isLeft) {
@@ -415,20 +486,20 @@ export default function RiffleShuffleSection() {
               posY: targetY,
               rotZ: targetRotZ,
               rotY: targetRotY,
-              duration: 1.2,
+              duration: 0.95,
               ease: 'power2.inOut'
             },
-            0
+            0.45
           )
         } else {
           tl.to(
             c,
             {
-              posY: c.posY + 0.7,
-              duration: 0.55,
+              posY: c.posY + 1.25, // Higher, majestic cut lift
+              duration: 0.45,
               ease: 'power2.out'
             },
-            0
+            0.45
           ).to(
             c,
             {
@@ -436,88 +507,202 @@ export default function RiffleShuffleSection() {
               posY: targetY,
               rotZ: targetRotZ,
               rotY: targetRotY,
-              duration: 0.65,
+              duration: 0.50,
               ease: 'power2.inOut'
             },
-            0.55
+            0.90
           )
         }
       })
 
-      // STAGE 2: THUMB BEND IN HANDS (1.2 -> 2.2s)
-      cards.forEach((c) => {
-        const handX = c.isLeft ? -2.6 : 2.6
-        const stackElevation = (c.stackIndex / HALF_COUNT)
-        const targetBend = 0.65 + stackElevation * 0.25
-        const archLiftY = 0.15 + c.stackIndex * STACK_GAP + stackElevation * 0.3 + 0.15
-
-        tl.to(
-          c,
-          {
-            posX: handX,
-            posY: archLiftY,
-            bend: targetBend,
-            rotZ: c.isLeft ? 0.06 : -0.06,
-            rotY: 0,
-            duration: 1.0,
-            ease: 'power1.inOut'
-          },
-          1.2
-        )
-      })
-
-      // STAGE 3: SEQUENTIAL ONE-BY-ONE DROP (2.2 -> 6.5s)
-      const cascadeStart = 2.2
-      const dropDuration = 0.075
-      const stepInterval = 0.085
+      // ==================================================================
+      // STEP 1: THE RIFFLE INTERLOCK (1.4 -> 4.2s)
+      // Hands hold remaining cards high above the growing center stack.
+      // Hand stacks rise continuously so the pile never penetrates the held cards!
+      // ==================================================================
+      const weaveStart = 1.4
+      const weaveStepInterval = 0.09
+      const weaveDropDuration = 0.12
 
       for (let p = 0; p < HALF_COUNT; p++) {
         const leftCard = cards[p]
-        const leftStartTime = cascadeStart + (p * 2) * stepInterval
-        const leftSettledY = (p * 2) * STACK_GAP
+        const leftStartTime = weaveStart + (p * 2) * weaveStepInterval
+        const leftWeaveY = 0.10 + (p * 2) * STACK_GAP
+        const leftHandHoldY = 0.35 + (p * 2) * STACK_GAP + 0.28 // Always elevated above center stack!
 
+        // Lift held card smoothly in hand prior to its drop
+        if (leftStartTime > weaveStart) {
+          tl.to(
+            leftCard,
+            {
+              posX: -2.10,
+              posY: leftHandHoldY,
+              rotZ: 0.09,
+              rotY: -0.03,
+              rotX: -Math.PI / 2 + 0.08,
+              duration: leftStartTime - weaveStart,
+              ease: 'none'
+            },
+            weaveStart
+          )
+        }
+
+        // Card drops down from elevated hand into center weave
         tl.to(
           leftCard,
           {
-            posX: 0,
-            posY: leftSettledY,
+            posX: -0.90,
+            posY: leftWeaveY,
             posZ: 0,
             rotX: -Math.PI / 2,
-            rotY: 0,
-            rotZ: 0,
-            bend: 0,
-            duration: dropDuration,
-            ease: 'power2.inOut'
+            rotY: -0.02,
+            rotZ: 0.04,
+            duration: weaveDropDuration,
+            ease: 'power2.out'
           },
           leftStartTime
         )
 
         const rightCard = cards[HALF_COUNT + p]
-        const rightStartTime = cascadeStart + (p * 2 + 1) * stepInterval
-        const rightSettledY = (p * 2 + 1) * STACK_GAP
+        const rightStartTime = weaveStart + (p * 2 + 1) * weaveStepInterval
+        const rightWeaveY = 0.10 + (p * 2 + 1) * STACK_GAP
+        const rightHandHoldY = leftHandHoldY + STACK_GAP
 
+        // Lift held card smoothly in hand prior to its drop
+        if (rightStartTime > weaveStart) {
+          tl.to(
+            rightCard,
+            {
+              posX: 2.10,
+              posY: rightHandHoldY,
+              rotZ: -0.09,
+              rotY: 0.03,
+              rotX: -Math.PI / 2 + 0.08,
+              duration: rightStartTime - weaveStart,
+              ease: 'none'
+            },
+            weaveStart
+          )
+        }
+
+        // Card drops down from elevated hand into center weave
         tl.to(
           rightCard,
           {
-            posX: 0,
-            posY: rightSettledY,
+            posX: 0.90,
+            posY: rightWeaveY,
             posZ: 0,
             rotX: -Math.PI / 2,
-            rotY: 0,
-            rotZ: 0,
-            bend: 0,
-            duration: dropDuration,
-            ease: 'power2.inOut'
+            rotY: 0.02,
+            rotZ: -0.04,
+            duration: weaveDropDuration,
+            ease: 'power2.out'
           },
           rightStartTime
         )
       }
 
-      // STAGE 4: CLEAN FINAL SQUARE-UP (6.5 -> 7.2s)
-      const finalizeStart = cascadeStart + TOTAL_CARDS * stepInterval + 0.15
+      // ==================================================================
+      // STEP 2A: THE BRIDGE ARCH DOME (4.2 -> 5.2s)
+      // Cards arch higher into the air (baseArch lifted up to 2.1+ units)
+      // ==================================================================
+      const bridgeStart = weaveStart + TOTAL_CARDS * weaveStepInterval + 0.15
+
+      for (let p = 0; p < HALF_COUNT; p++) {
+        const tNorm = p / (HALF_COUNT - 1)
+        const baseArch = 0.52 + Math.sin(tNorm * Math.PI * 0.85 + 0.15) * 1.55 // Higher arch dome!
+
+        const leftCard = cards[p]
+        const leftArchY = baseArch + (p * 2) * STACK_GAP
+
+        tl.to(
+          leftCard,
+          {
+            posX: -0.68,
+            posY: leftArchY,
+            rotZ: 0.22,
+            rotX: -Math.PI / 2 + 0.14,
+            rotY: 0,
+            duration: 0.85,
+            ease: 'power2.inOut'
+          },
+          bridgeStart
+        )
+
+        const rightCard = cards[HALF_COUNT + p]
+        const rightArchY = baseArch + (p * 2 + 1) * STACK_GAP + 0.015 // Strictly offset above left!
+
+        tl.to(
+          rightCard,
+          {
+            posX: 0.68,
+            posY: rightArchY,
+            rotZ: -0.22,
+            rotX: -Math.PI / 2 + 0.14,
+            rotY: 0,
+            duration: 0.85,
+            ease: 'power2.inOut'
+          },
+          bridgeStart
+        )
+      }
+
+      // ==================================================================
+      // STEP 2B: THE WATERFALL CASCADE / MONEY COUNT FLUTTER (5.2 -> 6.8s)
+      // Cards release from the dome and slide into the central stack with money-count flutter!
+      // ==================================================================
+      const waterfallStart = bridgeStart + 0.95
+      const waterfallStep = 0.055
+      const slideDuration = 0.14
+
+      for (let p = 0; p < HALF_COUNT; p++) {
+        const leftCard = cards[p]
+        const leftFinalY = (p * 2) * STACK_GAP
+        const leftDropTime = waterfallStart + (p * 2) * waterfallStep
+
+        tl.to(
+          leftCard,
+          {
+            posX: 0,
+            posY: leftFinalY,
+            posZ: 0,
+            rotX: -Math.PI / 2,
+            rotY: 0,
+            rotZ: 0,
+            duration: slideDuration,
+            ease: 'power2.in'
+          },
+          leftDropTime
+        )
+
+        const rightCard = cards[HALF_COUNT + p]
+        const rightFinalY = (p * 2 + 1) * STACK_GAP
+        const rightDropTime = waterfallStart + (p * 2 + 1) * waterfallStep
+
+        tl.to(
+          rightCard,
+          {
+            posX: 0,
+            posY: rightFinalY,
+            posZ: 0,
+            rotX: -Math.PI / 2,
+            rotY: 0,
+            rotZ: 0,
+            duration: slideDuration,
+            ease: 'power2.in'
+          },
+          rightDropTime
+        )
+      }
+
+      // ==================================================================
+      // STAGE 5: FINAL CLEAN SQUARE-UP (6.8 -> 7.4s)
+      // Final solid tap & flush alignment of the 52-card deck
+      // ==================================================================
+      const finalizeStart = waterfallStart + TOTAL_CARDS * waterfallStep + 0.12
 
       cards.forEach((c) => {
-        const finalY = (c.isLeft ? (c.stackIndex * 2) : (c.stackIndex * 2 + 1)) * (STACK_GAP * 0.85)
+        const finalY = (c.isLeft ? (c.stackIndex * 2) : (c.stackIndex * 2 + 1)) * STACK_GAP
 
         tl.to(
           c,
@@ -528,8 +713,7 @@ export default function RiffleShuffleSection() {
             rotX: -Math.PI / 2,
             rotY: 0,
             rotZ: 0,
-            bend: 0,
-            duration: 0.65,
+            duration: 0.55,
             ease: 'bounce.out'
           },
           finalizeStart
@@ -537,14 +721,46 @@ export default function RiffleShuffleSection() {
       })
     }, container)
 
-    // 5. Render Loop
+    // 6. Render Loop (Fixed Camera, 3/4 Angled Deck, Subtle Dark Smoke)
     let animationFrameId
-    const clock = new THREE.Clock()
+    const start = performance.now()
 
     const render = () => {
-      const elapsed = clock.getElapsedTime()
-      camera.position.x = Math.sin(elapsed * 0.35) * 0.06
-      camera.lookAt(0, 0.4, 0)
+      const t = (performance.now() - start) / 1000
+
+      // Update discreet 3D dark smoke particles
+      const leftWingX = cards[0] ? cards[0].posX : -2.6
+      const leftWingY = cards[0] ? cards[0].posY : 0.2
+      const rightWingX = cards[26] ? cards[26].posX : 2.6
+      const rightWingY = cards[26] ? cards[26].posY : 0.2
+
+      for (let i = 0; i < smokeCount; i++) {
+        const p = smokeParticles[i]
+        p.life++
+        p.y += p.vy
+        p.x += p.vx + Math.sin(t * 2 + i) * 0.002
+        p.scale += 0.002
+
+        const baseCenterX = p.isLeft ? leftWingX : rightWingX
+        const baseCenterY = p.isLeft ? leftWingY : rightWingY
+
+        if (p.life >= p.maxLife || p.y > baseCenterY + 1.8) {
+          p.x = baseCenterX + (Math.random() - 0.5) * 1.6
+          p.z = (Math.random() - 0.5) * 2.4
+          p.y = baseCenterY + (Math.random() - 0.2) * 0.2
+          p.vy = 0.005 + Math.random() * 0.008
+          p.scale = 0.30 + Math.random() * 0.25
+          p.life = 0
+          p.maxLife = 50 + Math.random() * 40
+        }
+
+        smokeDummy.position.set(p.x, p.y, p.z)
+        smokeDummy.rotation.set(0, 0, p.rot)
+        smokeDummy.scale.set(p.scale, p.scale, 1)
+        smokeDummy.updateMatrix()
+        smokeMesh.setMatrixAt(i, smokeDummy.matrix)
+      }
+      smokeMesh.instanceMatrix.needsUpdate = true
 
       syncAllCards()
       renderer.render(scene, camera)
@@ -552,13 +768,13 @@ export default function RiffleShuffleSection() {
     }
     render()
 
-    // 6. Resize Handler
+    // 7. Resize Handler
     const handleResize = () => {
       if (!pinWrapperRef.current) return
       const w = pinWrapperRef.current.clientWidth || window.innerWidth
       const h = pinWrapperRef.current.clientHeight || window.innerHeight
-      camera.position.set(0, 7.5, 11.2)
-      camera.lookAt(0, 0.4, 0)
+      camera.position.set(0, 6.8, 10.8)
+      camera.lookAt(0, 0.35, 0)
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -587,25 +803,13 @@ export default function RiffleShuffleSection() {
     <div ref={containerRef} className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen bg-[#F6F5FA] overflow-hidden border-t-[4px] border-b-[4px] border-true-black select-none z-30 flex items-center justify-start px-6 sm:px-12 lg:px-20"
+        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex items-center justify-start px-6 sm:px-12 lg:px-20"
       >
-        {/* 1. Seamless Fixed Graph Paper Grid */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-80"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }}
-        />
-
-        {/* 2. Pure Clean Flat 3D Canvas (100% CENTERED) */}
+        {/* Pure Clean Flat 3D Canvas (100% CENTERED on Seamless Global Grid) */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10" />
 
         {/* ------------------------------------------------------------- */}
-        {/* 3. 3D CARD-FLIP KINETIC HERO TYPOGRAPHY                       */}
+        {/* 3D CARD-FLIP KINETIC HERO TYPOGRAPHY                          */}
         {/* ------------------------------------------------------------- */}
         <div className="relative z-20 pointer-events-none max-w-lg lg:max-w-xl [perspective:1200px]">
           <div

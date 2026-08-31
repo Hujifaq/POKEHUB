@@ -11,7 +11,7 @@ const TABLE_MAPS = [
     location: 'Macau, SAR',
     stakes: '250-500',
     minBuyIn: 5000,
-    icon: '🏮',
+    icon: '♠',
     badgeColor: '#FFE500',
     feltTheme: 'Macau Emerald Noir',
     description: 'High-stakes VIP baccarat & poker salon with 14g ceramic chips.'
@@ -22,7 +22,7 @@ const TABLE_MAPS = [
     location: 'Las Vegas, NV',
     stakes: '100-200',
     minBuyIn: 2500,
-    icon: '🎰',
+    icon: '♥',
     badgeColor: '#00F5FF',
     feltTheme: 'Electric Amber Glow',
     description: 'Fast-paced action under the dazzling neon signs of the Strip.'
@@ -33,7 +33,7 @@ const TABLE_MAPS = [
     location: 'Shinjuku, Tokyo',
     stakes: '500-1000',
     minBuyIn: 10000,
-    icon: '⚡',
+    icon: '♦',
     badgeColor: '#FF70A6',
     feltTheme: 'Cyberpunk Synthwave',
     description: 'Underground high-tech poker duel on a neon-lit cyberpunk rooftop.'
@@ -43,8 +43,8 @@ const TABLE_MAPS = [
     name: 'MONACO ROYALE',
     location: 'Monte Carlo, MC',
     stakes: '1000-2000',
-    minBuyIn: 25000,
-    icon: '👑',
+    minBuyIn: 2500,
+    icon: '♣',
     badgeColor: '#00FFA3',
     feltTheme: 'Velvet Gold Luxury',
     description: 'Exclusive private salon overlooking the Mediterranean coastline.'
@@ -52,10 +52,10 @@ const TABLE_MAPS = [
 ]
 
 const BOT_COUNT_OPTIONS = [
-  { count: 1, label: '1 BOT', subtitle: 'Heads-Up Duel (1v1)', icon: '⚔️' },
-  { count: 2, label: '2 BOTS', subtitle: 'Standard 3-Max Table', icon: '👥' },
-  { count: 3, label: '3 BOTS', subtitle: 'Dynamic 4-Max Ring', icon: '🎴' },
-  { count: 4, label: '4 BOTS', subtitle: 'Full 5-Max Ring Arena', icon: '🔥' }
+  { count: 1, label: '1 BOT', subtitle: 'Heads-Up Duel (1v1)' },
+  { count: 2, label: '2 BOTS', subtitle: 'Standard 3-Max Table' },
+  { count: 3, label: '3 BOTS', subtitle: 'Dynamic 4-Max Ring' },
+  { count: 4, label: '4 BOTS', subtitle: 'Full 5-Max Ring Arena' }
 ]
 
 export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
@@ -175,7 +175,6 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="font-pixel text-[10px] sm:text-xs font-black uppercase flex items-center gap-1.5 text-[#0D0D0D]">
-                <span>📍</span>
                 <span>1. SELECT CASINO ARENA</span>
               </label>
               <span className="font-mono-nb text-[9px] sm:text-[10px] font-bold text-gray-600">
@@ -203,7 +202,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-base sm:text-lg">{table.icon}</span>
+                        <span className="text-base sm:text-lg font-mono-nb">{table.icon}</span>
                         <span className="font-display font-black text-xs sm:text-sm uppercase text-[#0D0D0D]">
                           {table.name}
                         </span>
@@ -225,7 +224,6 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="font-pixel text-[10px] sm:text-xs font-black uppercase flex items-center gap-1.5 text-[#0D0D0D]">
-                <span>🎴</span>
                 <span>2. EQUIP DECK SKIN</span>
               </label>
               <span className="font-mono-nb text-[9px] sm:text-[10px] font-bold text-gray-600">
@@ -253,8 +251,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
                     }`}
                     title={theme.name}
                   >
-                    <span className="text-xl">{theme.icon}</span>
-                    <span className="font-pixel text-[7.5px] uppercase truncate w-full text-center text-[#0D0D0D]">
+                    <span className="font-pixel text-[7.5px] uppercase truncate w-full text-center text-[#0D0D0D] font-black">
                       {skinKey}
                     </span>
                   </button>
@@ -266,7 +263,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
           {/* Section 3: Select Bot Opponents Count */}
           <div>
             <label className="block font-pixel text-[10px] sm:text-xs font-black uppercase mb-2 text-[#0D0D0D]">
-              👥 3. TABLE SEATS & BOT OPPONENTS
+              3. TABLE SEATS & BOT OPPONENTS
             </label>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -288,7 +285,6 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
                     }`}
                   >
                     <div className="flex items-center gap-1 font-display font-black text-xs sm:text-sm">
-                      <span>{opt.icon}</span>
                       <span>{opt.label}</span>
                     </div>
                     <span className={`font-mono-nb text-[8px] sm:text-[9px] mt-0.5 ${isSelected ? 'text-white/90' : 'text-gray-600'}`}>
@@ -306,10 +302,10 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-pixel text-[9px] sm:text-[10px] font-black uppercase text-[#0D0D0D]">
                   {findingStep === 1
-                    ? '⚡ [1/3] ALLOCATING CASINO TABLE...'
+                    ? '[1/3] ALLOCATING CASINO TABLE...'
                     : findingStep === 2
-                      ? '🎲 [2/3] SHUFFLING 8-BIT DECK & SEATING BOTS...'
-                      : '🚀 [3/3] LAUNCHING DUEL ARENA...'}
+                      ? '[2/3] SHUFFLING 8-BIT DECK & SEATING BOTS...'
+                      : '[3/3] LAUNCHING DUEL ARENA...'}
                 </span>
                 <span className="font-mono-nb text-[10px] font-black text-[#0D0D0D]">
                   {findingStep * 33}%

@@ -42,7 +42,7 @@ export function generateGameUrl(params = {}) {
     skin = 'obsidian'
   }
   const mode = params.mode || 'texas_holdem'
-  const duel = params.duel !== undefined ? params.duel : 'open'
+  const duel = params.duel !== undefined ? params.duel : null
 
   const searchParams = new URLSearchParams()
   searchParams.set('userId', userId)
@@ -74,7 +74,7 @@ export function parseGameUrlParams(searchString) {
       stakes: '250-500',
       skin: 'obsidian',
       mode: 'texas_holdem',
-      duel: 'open',
+      duel: null,
       hand: '1'
     }
   }
@@ -89,7 +89,7 @@ export function parseGameUrlParams(searchString) {
   const rawSkin = params.get('skin') || 'obsidian'
   const skin = rawSkin === 'classic' ? 'gold' : rawSkin
   const mode = params.get('mode') || 'texas_holdem'
-  const duel = params.get('duel') || 'open'
+  const duel = params.get('duel') || null
   const hand = params.get('hand') || '1'
 
   return {

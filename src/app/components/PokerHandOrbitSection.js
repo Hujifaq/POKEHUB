@@ -67,49 +67,51 @@ function createTableFeltCanvas() {
   for (let y = 0; y < H; y += 24) ctx.fillRect(0, y, W, 1)
 
   ctx.beginPath()
-  ctx.ellipse(W / 2, H / 2, 420, 260, 0, 0, Math.PI * 2)
+  ctx.ellipse(W / 2, H / 2, 430, 270, 0, 0, Math.PI * 2)
   ctx.lineWidth = 6
   ctx.strokeStyle = '#050505'
   ctx.stroke()
 
   ctx.beginPath()
-  ctx.ellipse(W / 2, H / 2, 408, 248, 0, 0, Math.PI * 2)
+  ctx.ellipse(W / 2, H / 2, 418, 258, 0, 0, Math.PI * 2)
   ctx.lineWidth = 2
   ctx.strokeStyle = '#FFE500'
   ctx.stroke()
 
   ctx.fillStyle = '#050505'
-  ctx.font = 'bold 26px monospace'
+  ctx.font = 'bold 24px monospace'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('★ POKEHUB NO-LIMIT CASINO ★', W / 2, H / 2 - 130)
+  ctx.fillText('★ POKEHUB NO-LIMIT CASINO ★', W / 2, H / 2 - 180)
 
-  const slotW = 76
-  const slotH = 110
-  const slotY = H / 2 - 20
-  const startX = W / 2 - 180
+  // 5 Community Card Slots (Center Strip: Z = -0.10)
+  const slotW = 58
+  const slotH = 84
+  const slotY = H / 2 + 10
+  const startX = W / 2 - 152
 
   for (let i = 0; i < 5; i++) {
-    const slotX = startX + i * 90
+    const slotX = startX + i * 76
     ctx.fillStyle = 'rgba(0, 0, 0, 0.03)'
     ctx.fillRect(slotX - slotW / 2, slotY - slotH / 2, slotW, slotH)
     ctx.strokeStyle = '#050505'
     ctx.lineWidth = 2
     ctx.strokeRect(slotX - slotW / 2, slotY - slotH / 2, slotW, slotH)
 
-    ctx.fillStyle = '#666666'
-    ctx.font = 'bold 12px monospace'
-    ctx.fillText(i < 3 ? `FLOP ${i + 1}` : i === 3 ? 'TURN' : 'RIVER', slotX, slotY + slotH / 2 + 16)
+    ctx.fillStyle = '#777777'
+    ctx.font = 'bold 11px monospace'
+    ctx.fillText(i < 3 ? `FLOP ${i + 1}` : i === 3 ? 'TURN' : 'RIVER', slotX, slotY + slotH / 2 + 15)
   }
 
+  // Main Pot Zone (Far Top: Z = -1.90)
   ctx.fillStyle = '#FFE500'
-  ctx.fillRect(W / 2 - 80, H / 2 - 190, 160, 24)
+  ctx.fillRect(W / 2 - 80, H / 2 - 145, 160, 22)
   ctx.strokeStyle = '#050505'
   ctx.lineWidth = 3
-  ctx.strokeRect(W / 2 - 80, H / 2 - 190, 160, 24)
+  ctx.strokeRect(W / 2 - 80, H / 2 - 145, 160, 22)
   ctx.fillStyle = '#000000'
   ctx.font = 'bold 11px monospace'
-  ctx.fillText('MAIN POT ZONE', W / 2, H / 2 - 178)
+  ctx.fillText('MAIN POT ZONE', W / 2, H / 2 - 134)
 
   return canvas
 }
@@ -340,17 +342,18 @@ function createChipTexture(denom) {
 }
 
 // ----------------------------------------------------------------------
-// MAIN REACT COMPONENT: FIRST-PERSON POV POKER TABLE (BOTTOM-LEFT HUD)
+// MAIN REACT COMPONENT: FIRST-PERSON POV POKER TABLE (WITH TRANSITION CUE)
 // ----------------------------------------------------------------------
 
-export default function PokerHandOrbitSection({ onOpenDuel }) {
+export default function PokerHandOrbitSection() {
   const containerRef = useRef(null)
   const pinWrapperRef = useRef(null)
   const canvasRef = useRef(null)
+  const vaultCueRef = useRef(null)
   const timelineRef = useRef(null)
 
   const [activePhaseIndex, setActivePhaseIndex] = useState(0)
-  const [showFinalCTA, setShowFinalCTA] = useState(false)
+  const [isZoomingToNext, setIsZoomingToNext] = useState(false)
 
   // Sound feedback on street change
   const prevPhaseRef = useRef(0)
@@ -366,6 +369,7 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
   const playerChipsRef = useRef([])
   const potChipsRef = useRef([])
   const cameraRef = useRef(null)
+  const lookTargetRef = useRef({ x: 0, y: 0.15, z: 0.0 })
 
   useEffect(() => {
     const container = containerRef.current
@@ -439,14 +443,14 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     scene.add(tableGroup)
 
     // ------------------------------------------------------------------
-    // 3. CARD GEOMETRIES & MESH BUILDERS
+    // 3. CARD GEOMETRIES & MESH BUILDERS (ACCURATE CASINO SCALE)
     // ------------------------------------------------------------------
-    const BOARD_CARD_W = 1.15
-    const BOARD_CARD_H = 1.65
+    const BOARD_CARD_W = 0.92
+    const BOARD_CARD_H = 1.32
     const boardCardGeo = new THREE.PlaneGeometry(BOARD_CARD_W, BOARD_CARD_H)
 
-    const HOLE_CARD_W = 0.85
-    const HOLE_CARD_H = 1.22
+    const HOLE_CARD_W = 0.80
+    const HOLE_CARD_H = 1.15
     const holeCardGeo = new THREE.PlaneGeometry(HOLE_CARD_W, HOLE_CARD_H)
 
     const backTexture = new THREE.CanvasTexture(createCardBackCanvas())
@@ -477,37 +481,37 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     }
 
     // ------------------------------------------------------------------
-    // 4. PLAYER'S 2 HOLE CARDS (FOREGROUND POV: A♠ & K♠)
+    // 4. PLAYER'S 2 HOLE CARDS (ZONE 4: FOREGROUND POV: A♠ & K♠)
     // ------------------------------------------------------------------
     const holeCard1 = createSolidCardMesh('A', '♠', true)
-    holeCard1.position.set(-0.35, 0.65, 3.4)
+    holeCard1.position.set(-0.28, 0.55, 3.05)
     holeCard1.rotation.set(-1.05, 0.10, 0.12)
     scene.add(holeCard1)
 
     const holeCard2 = createSolidCardMesh('K', '♠', true)
-    holeCard2.position.set(0.35, 0.65, 3.35)
+    holeCard2.position.set(0.28, 0.55, 3.0)
     holeCard2.rotation.set(-1.05, -0.10, -0.10)
     scene.add(holeCard2)
 
     const holeCards = [
       {
         group: holeCard1,
-        basePos: [-0.35, 0.65, 3.4],
+        basePos: [-0.28, 0.55, 3.05],
         baseRot: [-1.05, 0.10, 0.12],
-        posX: -0.35,
-        posY: 0.65,
-        posZ: 3.4,
+        posX: -0.28,
+        posY: 0.55,
+        posZ: 3.05,
         rotX: -1.05,
         rotY: 0.10,
         rotZ: 0.12
       },
       {
         group: holeCard2,
-        basePos: [0.35, 0.65, 3.35],
+        basePos: [0.28, 0.55, 3.0],
         baseRot: [-1.05, -0.10, -0.10],
-        posX: 0.35,
-        posY: 0.65,
-        posZ: 3.35,
+        posX: 0.28,
+        posY: 0.55,
+        posZ: 3.0,
         rotX: -1.05,
         rotY: -0.10,
         rotZ: -0.10
@@ -516,20 +520,20 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     holeCardsRef.current = holeCards
 
     // ------------------------------------------------------------------
-    // 5. 5 COMMUNITY BOARD CARDS (DEDICATED ZONE: Z = -0.2)
+    // 5. 5 COMMUNITY BOARD CARDS (ZONE 1: STRICT CENTER STRIP Z = -0.10)
     // ------------------------------------------------------------------
     const BOARD_DATA = [
-      { rank: 'Q', suit: '♠', slotX: -1.8, slotZ: -0.2 },
-      { rank: 'J', suit: '♠', slotX: -0.9, slotZ: -0.2 },
-      { rank: '10', suit: '♦', slotX: 0.0, slotZ: -0.2 },
-      { rank: '4', suit: '♥', slotX: 0.9, slotZ: -0.2 },
-      { rank: '10', suit: '♠', slotX: 1.8, slotZ: -0.2 }
+      { rank: 'Q', suit: '♠', slotX: -1.90, slotZ: -0.10 },
+      { rank: 'J', suit: '♠', slotX: -0.95, slotZ: -0.10 },
+      { rank: '10', suit: '♦', slotX: 0.00, slotZ: -0.10 },
+      { rank: '4', suit: '♥', slotX: 0.95, slotZ: -0.10 },
+      { rank: '10', suit: '♠', slotX: 1.90, slotZ: -0.10 }
     ]
 
     const communityCards = []
     BOARD_DATA.forEach((b) => {
       const mesh = createSolidCardMesh(b.rank, b.suit, false)
-      mesh.position.set(0, 1.2, -2.8)
+      mesh.position.set(0, 1.3, -2.8)
       mesh.rotation.set(Math.PI / 2, 0, 0)
       mesh.visible = false
       scene.add(mesh)
@@ -539,7 +543,7 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         slotX: b.slotX,
         slotZ: b.slotZ,
         posX: 0,
-        posY: 1.2,
+        posY: 1.3,
         posZ: -2.8,
         rotX: Math.PI / 2,
         rotY: 0,
@@ -550,9 +554,9 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     communityCardsRef.current = communityCards
 
     // ------------------------------------------------------------------
-    // 6. 3D POKER CHIP STACKS (SEPARATED ZONES)
+    // 6. 3D POKER CHIP STACKS (ZONE 2 & ZONE 3: ZERO OVERLAP)
     // ------------------------------------------------------------------
-    const chipGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.08, 24)
+    const chipGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.06, 24)
     const chipTex100 = new THREE.CanvasTexture(createChipTexture(100))
     const chipTex500 = new THREE.CanvasTexture(createChipTexture(500))
     const chipTex1000 = new THREE.CanvasTexture(createChipTexture(1000))
@@ -568,19 +572,29 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     const chipMat1000 = new THREE.MeshBasicMaterial({ map: chipTex1000 })
     const chipMat5000 = new THREE.MeshBasicMaterial({ map: chipTex5000 })
 
+    // Player Bankroll (Right Flank: X = 2.85, Z = 1.50)
     const playerChips = []
     for (let i = 0; i < 8; i++) {
       const mat = i < 3 ? chipMat100 : i < 6 ? chipMat500 : chipMat1000
       const mesh = new THREE.Mesh(chipGeo, mat)
-      const restY = 0.04 + i * 0.085
-      mesh.position.set(1.9, restY, 1.8)
+      const restY = 0.03 + i * 0.065
+      const spawnX = 3.9 + i * 0.08
+      const spawnY = 0.8 + i * 0.08
+      const spawnZ = 2.4
+
+      mesh.position.set(spawnX, spawnY, spawnZ)
+      mesh.scale.set(0, 0, 0)
       scene.add(mesh)
 
       playerChips.push({
         mesh,
-        posX: 1.9,
-        posY: restY,
-        posZ: 1.8,
+        restX: 2.85,
+        restY,
+        restZ: 1.50,
+        posX: spawnX,
+        posY: spawnY,
+        posZ: spawnZ,
+        scale: 0,
         rotX: 0,
         rotY: i * 0.4,
         rotZ: 0
@@ -588,18 +602,23 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     }
     playerChipsRef.current = playerChips
 
+    // Main Pot Chips (Far Upper Zone: Z = -1.90)
     const potChips = []
     for (let i = 0; i < 14; i++) {
       const mat = i < 4 ? chipMat100 : i < 8 ? chipMat500 : i < 12 ? chipMat1000 : chipMat5000
       const mesh = new THREE.Mesh(chipGeo, mat)
       const col = i % 3
       const row = Math.floor(i / 3)
-      const restX = (col - 1) * 0.75
-      const restY = 0.04 + row * 0.085
-      const restZ = -1.35 + (col === 1 ? 0.18 : -0.08)
+      const restX = (col - 1) * 0.62
+      const restY = 0.03 + row * 0.065
+      const restZ = -1.90 + (col === 1 ? 0.12 : -0.06)
 
-      mesh.position.set(restX, restY, restZ)
-      mesh.visible = i < 4
+      const spawnX = (i % 2 === 0 ? -3.0 : 3.0) + (Math.random() - 0.5) * 0.4
+      const spawnY = 1.1 + (i % 3) * 0.15
+      const spawnZ = -1.0 + (Math.random() - 0.5) * 0.4
+
+      mesh.position.set(spawnX, spawnY, spawnZ)
+      mesh.scale.set(0, 0, 0)
       scene.add(mesh)
 
       potChips.push({
@@ -607,11 +626,16 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         baseX: restX,
         baseY: restY,
         baseZ: restZ,
-        posX: restX,
-        posY: restY,
-        posZ: restZ,
-        visible: i < 4,
-        streetThreshold: i < 4 ? 0 : i < 8 ? 1 : i < 11 ? 2 : 3
+        spawnX,
+        spawnY,
+        spawnZ,
+        posX: spawnX,
+        posY: spawnY,
+        posZ: spawnZ,
+        scale: 0,
+        rotX: 0,
+        rotY: i * 0.5,
+        rotZ: 0
       })
     }
     potChipsRef.current = potChips
@@ -631,16 +655,18 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       playerChips.forEach((pc) => {
         pc.mesh.position.set(pc.posX, pc.posY, pc.posZ)
         pc.mesh.rotation.set(pc.rotX, pc.rotY, pc.rotZ)
+        pc.mesh.scale.set(pc.scale, pc.scale, pc.scale)
       })
 
       potChips.forEach((pc) => {
-        pc.mesh.visible = pc.visible
         pc.mesh.position.set(pc.posX, pc.posY, pc.posZ)
+        pc.mesh.rotation.set(pc.rotX || 0, pc.rotY || 0, pc.rotZ || 0)
+        pc.mesh.scale.set(pc.scale, pc.scale, pc.scale)
       })
     }
 
     // ------------------------------------------------------------------
-    // 7. GSAP SCROLLTRIGGER TIMELINE
+    // 7. GSAP SCROLLTRIGGER TIMELINE (DIVE THROUGH TABLE -> 6 DECKS CUE)
     // ------------------------------------------------------------------
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
@@ -649,28 +675,29 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 6.0}`,
+          end: () => `+=${window.innerHeight * 7.5}`,
           scrub: 1.2,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
             const p = self.progress
 
-            if (p < 0.24) {
+            if (p < 0.20) {
               setActivePhaseIndex(0)
-              setShowFinalCTA(false)
-            } else if (p < 0.50) {
+              setIsZoomingToNext(false)
+            } else if (p < 0.42) {
               setActivePhaseIndex(1)
-              setShowFinalCTA(false)
-            } else if (p < 0.76) {
+              setIsZoomingToNext(false)
+            } else if (p < 0.64) {
               setActivePhaseIndex(2)
-              setShowFinalCTA(false)
-            } else if (p < 0.90) {
+              setIsZoomingToNext(false)
+            } else if (p < 0.78) {
               setActivePhaseIndex(3)
-              setShowFinalCTA(false)
+              setIsZoomingToNext(false)
             } else {
+              // Diving through table: hide street HUD to reveal clean empty screen and bridge cue
               setActivePhaseIndex(3)
-              setShowFinalCTA(true)
+              setIsZoomingToNext(true)
             }
           }
         },
@@ -694,15 +721,50 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         0.2
       )
 
-      // Deal Flop Card 1 (Q♠)
+      // 1. Initial Player Bankroll Slide-in from Lower Right
+      playerChips.forEach((pc, idx) => {
+        tl.fromTo(
+          pc,
+          { posX: 3.9 + idx * 0.08, posY: 0.8 + idx * 0.08, posZ: 2.4, scale: 0 },
+          {
+            posX: pc.restX,
+            posY: pc.restY,
+            posZ: pc.restZ,
+            scale: 1.0,
+            duration: 0.60,
+            ease: 'bounce.out'
+          },
+          0.05 + idx * 0.03
+        )
+      })
+
+      // 2. Pre-Flop Blinds Toss into the Pot (4 Chips with arc & bounce)
+      for (let i = 0; i < 4; i++) {
+        const pc = potChips[i]
+        tl.fromTo(
+          pc,
+          { posX: pc.spawnX, posY: pc.spawnY, posZ: pc.spawnZ, scale: 0 },
+          {
+            posX: pc.baseX,
+            posY: pc.baseY,
+            posZ: pc.baseZ,
+            scale: 1.0,
+            duration: 0.55,
+            ease: 'bounce.out'
+          },
+          0.12 + i * 0.06
+        )
+      }
+
+      // Deal Flop Card 1 (Q♠) -> Lands at X = -1.90, Z = -0.10
       tl.call(() => { communityCards[0].visible = true }, null, 0.2)
       tl.fromTo(
         communityCards[0],
-        { posX: 0, posY: 1.2, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
+        { posX: 0, posY: 1.3, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
         {
-          posX: -1.8,
-          posY: 1.05,
-          posZ: -0.2,
+          posX: -1.90,
+          posY: 0.95,
+          posZ: -0.10,
           rotX: -Math.PI / 2,
           rotY: 0,
           duration: 0.40,
@@ -719,15 +781,15 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         0.60
       )
 
-      // Deal Flop Card 2 (J♠)
+      // Deal Flop Card 2 (J♠) -> Lands at X = -0.95, Z = -0.10
       tl.call(() => { communityCards[1].visible = true }, null, 0.4)
       tl.fromTo(
         communityCards[1],
-        { posX: 0, posY: 1.2, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
+        { posX: 0, posY: 1.3, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
         {
-          posX: -0.9,
-          posY: 1.05,
-          posZ: -0.2,
+          posX: -0.95,
+          posY: 0.95,
+          posZ: -0.10,
           rotX: -Math.PI / 2,
           rotY: 0,
           duration: 0.40,
@@ -744,15 +806,15 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         0.80
       )
 
-      // Deal Flop Card 3 (10♦)
+      // Deal Flop Card 3 (10♦) -> Lands at X = 0.00, Z = -0.10
       tl.call(() => { communityCards[2].visible = true }, null, 0.6)
       tl.fromTo(
         communityCards[2],
-        { posX: 0, posY: 1.2, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
+        { posX: 0, posY: 1.3, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
         {
-          posX: 0.0,
-          posY: 1.05,
-          posZ: -0.2,
+          posX: 0.00,
+          posY: 0.95,
+          posZ: -0.10,
           rotX: -Math.PI / 2,
           rotY: 0,
           duration: 0.40,
@@ -769,24 +831,36 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         1.0
       )
 
-      // Pot chips build
-      tl.call(() => {
-        potChips.forEach((pc) => {
-          if (pc.streetThreshold <= 1) pc.visible = true
-        })
-      }, null, 1.2)
+      // 3. Flop Continuation Bets (Chips 4..7 Toss Smoothly into Pot)
+      for (let i = 4; i < 8; i++) {
+        const pc = potChips[i]
+        tl.fromTo(
+          pc,
+          { posX: pc.spawnX, posY: pc.spawnY, posZ: pc.spawnZ, scale: 0 },
+          {
+            posX: pc.baseX,
+            posY: pc.baseY,
+            posZ: pc.baseZ,
+            scale: 1.0,
+            duration: 0.50,
+            ease: 'bounce.out'
+          },
+          1.05 + (i - 4) * 0.07
+        )
+      }
 
       // ================================================================
       // SCENE 04: TURN & RIVER (1.8s -> 3.6s)
       // ================================================================
+      // Deal Turn Card (4♥) -> Lands at X = 0.95, Z = -0.10
       tl.call(() => { communityCards[3].visible = true }, null, 1.8)
       tl.fromTo(
         communityCards[3],
-        { posX: 0, posY: 1.2, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
+        { posX: 0, posY: 1.3, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
         {
-          posX: 0.9,
-          posY: 1.05,
-          posZ: -0.2,
+          posX: 0.95,
+          posY: 0.95,
+          posZ: -0.10,
           rotX: -Math.PI / 2,
           rotY: 0,
           duration: 0.40,
@@ -803,15 +877,15 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         2.2
       )
 
-      // Deal River Card (10♠)
+      // Deal River Card (10♠) -> Lands at X = 1.90, Z = -0.10
       tl.call(() => { communityCards[4].visible = true }, null, 2.4)
       tl.fromTo(
         communityCards[4],
-        { posX: 0, posY: 1.2, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
+        { posX: 0, posY: 1.3, posZ: -2.8, rotX: Math.PI / 2, rotY: 0 },
         {
-          posX: 1.8,
-          posY: 1.05,
-          posZ: -0.2,
+          posX: 1.90,
+          posY: 0.95,
+          posZ: -0.10,
           rotX: -Math.PI / 2,
           rotY: 0,
           duration: 0.40,
@@ -828,15 +902,34 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         2.8
       )
 
+      // 4. Turn & River Pot Call Chips (Chips 8..10 Toss in Arc into Pot)
+      for (let i = 8; i < 11; i++) {
+        const pc = potChips[i]
+        tl.fromTo(
+          pc,
+          { posX: pc.spawnX, posY: pc.spawnY, posZ: pc.spawnZ, scale: 0 },
+          {
+            posX: pc.baseX,
+            posY: pc.baseY,
+            posZ: pc.baseZ,
+            scale: 1.0,
+            duration: 0.50,
+            ease: 'bounce.out'
+          },
+          2.65 + (i - 8) * 0.08
+        )
+      }
+
       // ================================================================
       // SCENE 05: BETTING ACTION (3.6s -> 5.0s)
       // ================================================================
+      // Player pushes 3 chips forward as active bet
       tl.to(
         playerChips[0],
         {
-          posX: 1.6,
-          posZ: 0.6,
-          duration: 0.65,
+          posX: 2.85,
+          posZ: 0.10,
+          duration: 0.55,
           ease: 'power2.inOut'
         },
         3.6
@@ -844,9 +937,9 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       tl.to(
         playerChips[1],
         {
-          posX: 1.6,
-          posZ: 0.6,
-          duration: 0.65,
+          posX: 2.85,
+          posZ: 0.10,
+          duration: 0.55,
           ease: 'power2.inOut'
         },
         3.7
@@ -854,19 +947,31 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       tl.to(
         playerChips[2],
         {
-          posX: 1.6,
-          posZ: 0.6,
-          duration: 0.65,
+          posX: 2.85,
+          posZ: 0.10,
+          duration: 0.55,
           ease: 'power2.inOut'
         },
         3.8
       )
 
-      tl.call(() => {
-        potChips.forEach((pc) => {
-          if (pc.streetThreshold <= 2) pc.visible = true
-        })
-      }, null, 4.0)
+      // 5. Opponent Match / Raise Chips (Chips 11..13 Toss Smoothly into Pot)
+      for (let i = 11; i < 14; i++) {
+        const pc = potChips[i]
+        tl.fromTo(
+          pc,
+          { posX: pc.spawnX, posY: pc.spawnY, posZ: pc.spawnZ, scale: 0 },
+          {
+            posX: pc.baseX,
+            posY: pc.baseY,
+            posZ: pc.baseZ,
+            scale: 1.0,
+            duration: 0.50,
+            ease: 'bounce.out'
+          },
+          3.95 + (i - 11) * 0.08
+        )
+      }
 
       // ================================================================
       // SCENE 06: THE SHOWDOWN (5.0s -> 6.5s)
@@ -874,9 +979,9 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       tl.to(
         holeCards[0],
         {
-          posX: -0.55,
-          posY: 0.85,
-          posZ: 1.1,
+          posX: -0.45,
+          posY: 0.75,
+          posZ: 1.35,
           rotX: -Math.PI / 2,
           rotY: 0,
           rotZ: 0.06,
@@ -887,7 +992,7 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       ).to(
         holeCards[0],
         {
-          posY: 0.03,
+          posY: 0.02,
           duration: 0.30,
           ease: 'power2.inOut'
         },
@@ -897,9 +1002,9 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       tl.to(
         holeCards[1],
         {
-          posX: 0.55,
-          posY: 0.85,
-          posZ: 1.1,
+          posX: 0.45,
+          posY: 0.75,
+          posZ: 1.35,
           rotX: -Math.PI / 2,
           rotY: 0,
           rotZ: -0.06,
@@ -910,22 +1015,17 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       ).to(
         holeCards[1],
         {
-          posY: 0.03,
+          posY: 0.02,
           duration: 0.30,
           ease: 'power2.inOut'
         },
         5.45
       )
 
-      tl.call(() => {
-        potChips.forEach((pc) => {
-          pc.visible = true
-        })
-      }, null, 5.4)
-
+      // 6. Pot chips sweep smoothly into player's winning bankroll at Right Flank (X = 2.85, Z = 1.50)
       potChips.forEach((pc, idx) => {
-        const targetWinX = 1.7 + (idx % 3 - 1) * 0.35
-        const targetWinZ = 1.1 + Math.floor(idx / 3) * 0.25
+        const targetWinX = 2.85 + (idx % 3 - 1) * 0.24
+        const targetWinZ = 1.50 + Math.floor(idx / 3) * 0.18
 
         tl.to(
           pc,
@@ -938,6 +1038,63 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
           5.5 + (idx % 3) * 0.03
         )
       })
+
+      // ================================================================
+      // SCENE 07: CINEMATIC DIVE PENETRATING THROUGH TABLE (6.5s -> 7.8s)
+      // ================================================================
+      // 1. Camera dives straight down through the felt table into the void
+      tl.to(
+        camera.position,
+        {
+          x: 0,
+          y: -2.2,
+          z: -0.6,
+          duration: 1.3,
+          ease: 'power2.in'
+        },
+        6.5
+      )
+      tl.to(
+        lookTargetRef.current,
+        {
+          x: 0,
+          y: -4.0,
+          z: -1.5,
+          duration: 1.3,
+          ease: 'power2.in'
+        },
+        6.5
+      )
+
+      // 2. 3D WebGL Canvas dissolves smoothly to 0 opacity, leaving clean empty background
+      tl.to(
+        canvasRef.current,
+        {
+          opacity: 0,
+          duration: 0.9,
+          ease: 'power2.inOut'
+        },
+        7.1
+      )
+
+      // ================================================================
+      // SCENE 08: ACCESSING 6 ELITE DECKS TRANSITION BRIDGE (7.8s -> 9.6s)
+      // Emerges on clean screen AFTER table dive, then hands off to Horizontal Showcase!
+      // ================================================================
+      if (vaultCueRef.current) {
+        tl.fromTo(
+          vaultCueRef.current,
+          { autoAlpha: 0, scale: 0.88, y: 40 },
+          { autoAlpha: 1, scale: 1, y: 0, ease: 'power2.out', duration: 0.5 },
+          7.8
+        )
+          .to({}, { duration: 0.8 }, 8.3)
+          .to(
+            vaultCueRef.current,
+            { autoAlpha: 0, y: -60, scale: 1.05, ease: 'power2.in', duration: 0.45 },
+            9.1
+          )
+      }
     }, container)
 
     // 8. Render Loop
@@ -946,7 +1103,12 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
 
     const render = () => {
       const elapsed = clock.getElapsedTime()
-      camera.position.x = Math.sin(elapsed * 0.35) * 0.04
+      const breatheX = Math.sin(elapsed * 0.35) * 0.03
+      camera.lookAt(
+        lookTargetRef.current.x + breatheX * 0.2,
+        lookTargetRef.current.y,
+        lookTargetRef.current.z
+      )
 
       syncScene()
       renderer.render(scene, camera)
@@ -988,7 +1150,7 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
       setActivePhaseIndex(phaseIdx)
       return
     }
-    const targetProgress = phaseIdx === 0 ? 0.05 : phaseIdx === 1 ? 0.35 : phaseIdx === 2 ? 0.65 : 0.92
+    const targetProgress = phaseIdx === 0 ? 0.05 : phaseIdx === 1 ? 0.35 : phaseIdx === 2 ? 0.65 : 0.78
     const st = timelineRef.current.scrollTrigger
     const targetScroll = st.start + (st.end - st.start) * targetProgress
     window.scrollTo({ top: targetScroll, behavior: 'smooth' })
@@ -1000,27 +1162,21 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
     <div ref={containerRef} className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen bg-[#F6F5FA] overflow-hidden border-t-[4px] border-b-[4px] border-true-black select-none z-30 flex items-center justify-between"
+        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex items-center justify-between"
       >
-        {/* 1. Seamless Fixed Graph Paper Grid */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-80"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }}
-        />
-
-        {/* 2. Pure Clean WebGL 3D Canvas (POV View) */}
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10" />
+        {/* Pure Clean WebGL 3D Canvas (Dives & dissolves to opacity 0 on final shot) */}
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10 opacity-100" />
 
         {/* ------------------------------------------------------------- */}
         {/* 3. 3D CARD-FLIP KINETIC HERO HUD (BOTTOM-LEFT)                */}
         {/* ------------------------------------------------------------- */}
-        <div className="absolute bottom-6 sm:bottom-10 lg:bottom-12 left-6 sm:left-10 lg:left-14 z-20 pointer-events-none max-w-sm sm:max-w-md lg:max-w-lg [perspective:1200px]">
+        <div
+          className={`absolute bottom-6 sm:bottom-10 lg:bottom-12 left-6 sm:left-10 lg:left-14 z-20 pointer-events-none max-w-sm sm:max-w-md lg:max-w-lg [perspective:1200px] transition-all duration-500 ${
+            isZoomingToNext
+              ? 'opacity-0 -translate-y-6 scale-95 pointer-events-none'
+              : 'opacity-100 translate-y-0 scale-100'
+          }`}
+        >
           <div
             key={currentPhase.id}
             className="animate-card-flip-3d"
@@ -1054,39 +1210,15 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 4. FINAL CTA MODAL OVERLAY (READY TO PLAY?)                   */}
+        {/* 4. INTERACTIVE STREET SELECTOR (BOTTOM-RIGHT PILL BAR)        */}
         {/* ------------------------------------------------------------- */}
         <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 transition-all duration-500 max-w-sm w-[90%] pointer-events-auto ${
-            showFinalCTA
-              ? 'opacity-100 scale-100 pointer-events-auto'
-              : 'opacity-0 scale-90 pointer-events-none'
+          className={`absolute bottom-6 right-6 sm:right-10 z-20 pointer-events-auto flex items-center gap-2 flex-wrap justify-end transition-all duration-500 ${
+            isZoomingToNext ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
           }`}
         >
-          <div className="brutal-window p-6 sm:p-8 bg-white border-[4px] border-true-black shadow-[10px_10px_0px_#000] text-center">
-            <h3 className="font-display text-3xl sm:text-4xl font-black uppercase text-true-black tracking-tight leading-none mb-6">
-              READY TO PLAY?
-            </h3>
-
-            <button
-              onClick={() => {
-                SoundEngine.playJackpot()
-                if (onOpenDuel) onOpenDuel()
-              }}
-              className="brutal-btn w-full py-4 px-6 bg-[#00FFA3] hover:bg-[#33ffb5] text-true-black font-display text-lg sm:text-xl font-black uppercase tracking-wider border-[3px] border-black shadow-[5px_5px_0px_#000] transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>JOIN TABLE</span>
-              <span className="font-mono-nb text-2xl">→</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ------------------------------------------------------------- */}
-        {/* 5. INTERACTIVE STREET SELECTOR (BOTTOM-RIGHT PILL BAR)        */}
-        {/* ------------------------------------------------------------- */}
-        <div className="absolute bottom-6 right-6 sm:right-10 z-20 pointer-events-auto flex items-center gap-2 flex-wrap justify-end">
           {STREET_PHASES.map((p, idx) => {
-            const isActive = activePhaseIndex === idx
+            const isActive = activePhaseIndex === idx && !isZoomingToNext
             return (
               <button
                 key={p.id}
@@ -1105,6 +1237,27 @@ export default function PokerHandOrbitSection({ onOpenDuel }) {
               </button>
             )
           })}
+        </div>
+
+        {/* ------------------------------------------------------------- */}
+        {/* 5. SEAMLESS TRANSITION BRIDGE TO 6 ELITE DECKS               */}
+        {/* (Appears on clean screen AFTER table dive -> hands off to 6 Decks!) */}
+        {/* ------------------------------------------------------------- */}
+        <div
+          ref={vaultCueRef}
+          className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center text-center opacity-0 will-change-transform px-4 select-none"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm mb-4">
+            <span className="font-pixel text-[10px] sm:text-xs font-black uppercase text-true-black">
+              ENTERING POKERHUB VAULT
+            </span>
+          </div>
+          <h2 className="font-display text-4xl sm:text-6xl md:text-7xl font-black text-true-black uppercase tracking-tight drop-shadow-[4px_4px_0px_#ffa6c9] leading-tight max-w-3xl">
+            ACCESSING 6 ELITE DECKS
+          </h2>
+          <p className="font-mono-nb text-xs sm:text-sm font-bold text-gray-700 mt-4 max-w-lg">
+            (COLLECTIBLE HIGH-ROLLER ARCHIVES &amp; HOLOGRAPHIC FOIL EDITIONS)
+          </p>
         </div>
       </section>
     </div>

@@ -580,7 +580,7 @@ export const DECK_SKIN_THEMES = {
   obsidian: {
     id: 'obsidian',
     name: 'OBSIDIAN FOIL',
-    icon: '🔮',
+    icon: '♠',
     accentColor: '#b388ff',
     themeStyle: 'obsidian',
     frontBg: '#FAF7F2',
@@ -592,7 +592,7 @@ export const DECK_SKIN_THEMES = {
   gold: {
     id: 'gold',
     name: 'IVORY GOLD',
-    icon: '👑',
+    icon: '♥',
     accentColor: '#d4af37',
     themeStyle: 'gold',
     frontBg: '#FAF7F2',
@@ -604,7 +604,7 @@ export const DECK_SKIN_THEMES = {
   cyber: {
     id: 'cyber',
     name: 'CYBER NEON',
-    icon: '⚡',
+    icon: '♦',
     accentColor: '#00f0ff',
     themeStyle: 'cyber',
     frontBg: '#FAF7F2',
@@ -616,7 +616,7 @@ export const DECK_SKIN_THEMES = {
   emerald: {
     id: 'emerald',
     name: 'EMERALD SUITE',
-    icon: '💎',
+    icon: '♣',
     accentColor: '#2ecc71',
     themeStyle: 'emerald',
     frontBg: '#FAF7F2',
@@ -628,7 +628,7 @@ export const DECK_SKIN_THEMES = {
   sakura: {
     id: 'sakura',
     name: 'SAKURA RUBY',
-    icon: '🌸',
+    icon: '♥',
     accentColor: '#ff2a6d',
     themeStyle: 'sakura',
     frontBg: '#FAF7F2',
@@ -640,7 +640,7 @@ export const DECK_SKIN_THEMES = {
   retro: {
     id: 'retro',
     name: 'RETRO 8-BIT',
-    icon: '🎴',
+    icon: '★',
     accentColor: '#ff6b00',
     themeStyle: 'retro',
     frontBg: '#FAF7F2',
@@ -652,7 +652,7 @@ export const DECK_SKIN_THEMES = {
   default: {
     id: 'default',
     name: 'CLASSIC RETRO',
-    icon: '🎴',
+    icon: '♠',
     accentColor: '#B84A4A',
     themeStyle: 'default',
     frontBg: '#FAF7F2',
@@ -664,7 +664,7 @@ export const DECK_SKIN_THEMES = {
   classic: {
     id: 'gold',
     name: 'IVORY GOLD',
-    icon: '👑',
+    icon: '♥',
     accentColor: '#d4af37',
     themeStyle: 'gold',
     frontBg: '#FAF7F2',

@@ -11,11 +11,11 @@ const anim = {
   },
   open: (i) => ({
     opacity: 1,
-    transition: { duration: 0, delay: 0.05 * i }
+    transition: { duration: 0, delay: 0.02 * i }
   }),
   closed: (i) => ({
     opacity: 0,
-    transition: { duration: 0, delay: 0.05 * i }
+    transition: { duration: 0.25, delay: 0.015 * i }
   })
 }
 
@@ -79,9 +79,9 @@ export default function Preloader({ onComplete }) {
         {
           yPercent: 0,
           opacity: 1,
-          duration: 0.6,
+          duration: 0.45,
           ease: 'power3.out',
-          stagger: 0.05
+          stagger: 0.04
         }
       )
 
@@ -93,7 +93,7 @@ export default function Preloader({ onComplete }) {
         progressObj,
         {
           value: 100,
-          duration: 1.8,
+          duration: 1.1,
           ease: 'power2.inOut',
           onUpdate: () => {
             const val = Math.round(progressObj.value)
@@ -106,7 +106,7 @@ export default function Preloader({ onComplete }) {
             }
           }
         },
-        '-=0.1'
+        '-=0.05'
       )
 
       // 3. Slide letters and counter up and out
@@ -115,7 +115,7 @@ export default function Preloader({ onComplete }) {
         {
           yPercent: -120,
           opacity: 0,
-          duration: 0.3,
+          duration: 0.25,
           ease: 'power3.in',
           onComplete: () => {
             if (isFinishedRef.current) return
@@ -124,15 +124,15 @@ export default function Preloader({ onComplete }) {
             SoundEngine.playCardSwoosh()
             setIsActive(false)
 
-            // Wait for all pixel blocks to complete their randomized transition
+            // Snappy exit transition
             const maxBlocks = columnsData[0]?.length || 15
-            const totalDelay = maxBlocks * 0.08 + 0.3
+            const totalDelay = maxBlocks * 0.015 + 0.3
             setTimeout(() => {
               if (onComplete) onComplete()
             }, totalDelay * 1000)
           }
         },
-        '+=0.15'
+        '+=0.1'
       )
     }, containerRef)
 
@@ -142,7 +142,9 @@ export default function Preloader({ onComplete }) {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-none"
+      className={`fixed inset-0 z-[2000] overflow-hidden select-none pointer-events-auto transition-colors duration-300 ${
+        isActive ? 'bg-[#ff6b00]' : 'bg-transparent'
+      }`}
     >
       {/* 20 Columns of Orange Pixel Blocks (Olivier Larose Architecture) */}
       <div className="fixed inset-0 h-screen w-screen flex overflow-hidden z-10">

@@ -8,23 +8,24 @@ import HandRankingsModal from '../components/HandRankingsModal'
 import VIPClubModal from '../components/VIPClubModal'
 import { SoundEngine } from '../components/SoundEngine'
 import { generateGameUrl } from '../utils/gameUrl'
+import { PixelAvatar } from '../components/PixelAvatars'
 
 // Mock High Rollers Hall of Fame Data
 const INITIAL_LEADERBOARD = [
-  { id: '1', rank: 1, name: 'SATOSHI_NAKAMOTO', avatar: '⚡', chips: 1500000, tier: 'MYTHIC', winRate: '88%', streak: '14W', color: '#FFDE59' },
-  { id: '2', rank: 2, name: 'CYBER_ACE_99', avatar: '🤖', chips: 850000, tier: 'HIGH ROLLER', winRate: '76%', streak: '8W', color: '#00FFA3' },
-  { id: '3', rank: 3, name: 'VIP_SHARK_88', avatar: '🦈', chips: 520000, tier: 'SHARK', winRate: '71%', streak: '5W', color: '#FF3333' },
-  { id: '4', rank: 4, name: 'MACAU_WHALE', avatar: '🐋', chips: 340000, tier: 'WHALE', winRate: '65%', streak: '4W', color: '#00F0FF' },
-  { id: '5', rank: 5, name: 'BLUFF_KING_X', avatar: '🃏', chips: 210000, tier: 'PRO', winRate: '62%', streak: '3W', color: '#FF90E8' },
-  { id: '6', rank: 6, name: 'QUANT_BRAIN', avatar: '🧠', chips: 145000, tier: 'PRO', winRate: '59%', streak: '2W', color: '#FFDE59' },
-  { id: '7', rank: 7, name: 'NEO_GAMBLER', avatar: '🎲', chips: 95000, tier: 'ELITE', winRate: '54%', streak: '3W', color: '#FFFFFF' },
-  { id: '8', rank: 8, name: 'LAS_VEGAS_KID', avatar: '🤠', chips: 65000, tier: 'ELITE', winRate: '51%', streak: '1W', color: '#FFFFFF' },
-  { id: '9', rank: 9, name: 'LUCKY_SEVEN', avatar: '🎰', chips: 42000, tier: 'CONTENDER', winRate: '48%', streak: '2W', color: '#FFFFFF' },
-  { id: '10', rank: 10, name: 'CHIP_COLLECTOR', avatar: '💰', chips: 25000, tier: 'CONTENDER', winRate: '45%', streak: '1W', color: '#FFFFFF' },
+  { id: '1', rank: 1, name: 'SATOSHI_NAKAMOTO', avatarKey: 'roller', chips: 1500000, tier: 'MYTHIC', winRate: '88%', streak: '14W', color: '#FFDE59' },
+  { id: '2', rank: 2, name: 'CYBER_ACE_99', avatarKey: 'punk', chips: 850000, tier: 'HIGH ROLLER', winRate: '76%', streak: '8W', color: '#00FFA3' },
+  { id: '3', rank: 3, name: 'VIP_SHARK_88', avatarKey: 'samurai', chips: 520000, tier: 'SHARK', winRate: '71%', streak: '5W', color: '#FF3333' },
+  { id: '4', rank: 4, name: 'MACAU_WHALE', avatarKey: 'neko', chips: 340000, tier: 'WHALE', winRate: '65%', streak: '4W', color: '#00F0FF' },
+  { id: '5', rank: 5, name: 'BLUFF_KING_X', avatarKey: 'queen', chips: 210000, tier: 'PRO', winRate: '62%', streak: '3W', color: '#FF90E8' },
+  { id: '6', rank: 6, name: 'QUANT_BRAIN', avatarKey: 'punk', chips: 145000, tier: 'PRO', winRate: '59%', streak: '2W', color: '#FFDE59' },
+  { id: '7', rank: 7, name: 'NEO_GAMBLER', avatarKey: 'samurai', chips: 95000, tier: 'ELITE', winRate: '54%', streak: '3W', color: '#FFFFFF' },
+  { id: '8', rank: 8, name: 'LAS_VEGAS_KID', avatarKey: 'roller', chips: 65000, tier: 'ELITE', winRate: '51%', streak: '1W', color: '#FFFFFF' },
+  { id: '9', rank: 9, name: 'LUCKY_SEVEN', avatarKey: 'neko', chips: 42000, tier: 'CONTENDER', winRate: '48%', streak: '2W', color: '#FFFFFF' },
+  { id: '10', rank: 10, name: 'CHIP_COLLECTOR', avatarKey: 'queen', chips: 25000, tier: 'CONTENDER', winRate: '45%', streak: '1W', color: '#FFFFFF' },
 ]
 
 export default function LeaderboardPage() {
-  const [showPreloader, setShowPreloader] = useState(false)
+  const [showPreloader, setShowPreloader] = useState(true)
   const [activeTab, setActiveTab] = useState('all-time') // 'all-time', 'weekly', 'today'
   const [bankroll, setBankroll] = useState(10000)
   const [leaderboard, setLeaderboard] = useState(INITIAL_LEADERBOARD)
@@ -48,7 +49,7 @@ export default function LeaderboardPage() {
     const playerEntry = {
       id: 'player_you',
       name: 'YOU (HIGH ROLLER)',
-      avatar: '👑',
+      avatarKey: 'hero',
       chips: bankroll,
       tier: bankroll >= 500000 ? 'SHARK' : bankroll >= 100000 ? 'PRO' : bankroll >= 25000 ? 'ELITE' : 'CHALLENGER',
       winRate: '68%',
@@ -91,12 +92,12 @@ export default function LeaderboardPage() {
       }
     },
     {
-      label: 'leaderboard',
-      ariaLabel: 'High Roller Leaderboard',
+      label: 'deck skin',
+      ariaLabel: '6 Freaking Elite Decks Showcase',
       rotation: -6,
       hoverStyles: { bgColor: '#FF90E8', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/leaderboard'
+        window.location.href = '/#deck-skins'
       }
     },
     {
@@ -107,11 +108,13 @@ export default function LeaderboardPage() {
       onClick: () => setIsRankingsOpen(true)
     },
     {
-      label: 'vip club',
-      ariaLabel: 'VIP High Roller Suite',
+      label: 'how to play',
+      ariaLabel: 'How to Play Texas Hold\'em Rules & Flow',
       rotation: -8,
-      hoverStyles: { bgColor: '#14161c', textColor: '#e8e2d6' },
-      onClick: () => setIsVIPOpen(true)
+      hoverStyles: { bgColor: '#FFE500', textColor: '#000000' },
+      onClick: () => {
+        window.location.href = '/#how-to-play'
+      }
     }
   ]
 
@@ -119,6 +122,9 @@ export default function LeaderboardPage() {
     <main className="w-full relative min-h-screen text-true-black overflow-x-hidden bg-[#fdfaf7] py-20 px-4 sm:px-6">
       {/* Infinite Seamless Fixed Graph Grid */}
       <div className="fixed-graph-grid" />
+
+      {/* Intro Preloader */}
+      {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
 
       {/* Unified Responsive Bubble Navbar */}
       <BubbleMenu
@@ -136,20 +142,18 @@ export default function LeaderboardPage() {
           <>
             <Link
               href="/"
-              className="brutal-btn bg-white text-true-black flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-accent-yellow transition-colors shadow-[2px_2px_0px_#000]"
+              className="brutal-btn bg-white text-true-black flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-accent-yellow transition-colors shadow-[2px_2px_0px_#000]"
               title="Back to Home"
             >
-              <span>🏠</span>
-              <span className="hidden sm:inline">HOME</span>
+              <span>HOME</span>
             </Link>
 
             <Link
               href="/game?mode=3d_arena"
-              className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] -rotate-1"
+              className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] transition-all shadow-[2px_2px_0px_#000000] -rotate-1"
               title="Open 3D Arena"
             >
-              <span className="text-sm">🎮</span>
-              <span className="hidden xs:inline sm:inline">3D ARENA</span>
+              <span>3D ARENA</span>
             </Link>
           </>
         }
@@ -169,7 +173,6 @@ export default function LeaderboardPage() {
         {/* Header Title Section */}
         <div className="text-center flex flex-col items-center gap-2">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FFDE59] border-[3px] border-true-black shadow-[4px_4px_0px_#000000] -rotate-1">
-            <span className="text-lg">🏆</span>
             <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-true-black">
               HIGH ROLLER HALL OF FAME
             </span>
@@ -191,10 +194,12 @@ export default function LeaderboardPage() {
           {leaderboard[1] && (
             <div className="flex flex-col items-center bg-white border-[3px] border-true-black rounded-2xl p-3 sm:p-4 shadow-[5px_5px_0px_#000000] -rotate-1 relative">
               <span className="absolute -top-3 bg-gray-200 border-[2px] border-true-black font-pixel text-[8px] sm:text-[9px] px-2 py-0.5 font-black">
-                🥈 RANK #2
+                RANK #2
               </span>
-              <span className="text-3xl sm:text-4xl mt-2">{leaderboard[1].avatar}</span>
-              <h3 className="font-display font-black text-xs sm:text-sm text-true-black truncate max-w-full mt-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 mt-2 rounded-full border-[2px] border-black bg-white flex items-center justify-center p-1 shadow-[2px_2px_0px_#000]">
+                <PixelAvatar avatarKey={leaderboard[1].avatarKey || 'punk'} size={2.2} />
+              </div>
+              <h3 className="font-display font-black text-xs sm:text-sm text-true-black truncate max-w-full mt-1.5">
                 {leaderboard[1].name}
               </h3>
               <span className="font-mono-nb text-xs sm:text-sm font-black text-emerald-600">
@@ -207,10 +212,12 @@ export default function LeaderboardPage() {
           {leaderboard[0] && (
             <div className="flex flex-col items-center bg-[#FFDE59] border-[4px] border-true-black rounded-2xl p-4 sm:p-6 shadow-[8px_8px_0px_#000000] scale-105 z-20 relative">
               <span className="absolute -top-4 bg-[#FF3333] text-white border-[2px] border-true-black font-pixel text-[9px] sm:text-[10px] px-3 py-0.5 font-black animate-pulse shadow-[2px_2px_0px_#000000]">
-                👑 CHAMPION #1
+                CHAMPION #1
               </span>
-              <span className="text-4xl sm:text-5xl mt-2 animate-bounce">{leaderboard[0].avatar}</span>
-              <h3 className="font-display font-black text-sm sm:text-base text-true-black truncate max-w-full mt-1">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mt-2 rounded-full border-[2.5px] border-black bg-white flex items-center justify-center p-1 shadow-[3px_3px_0px_#000]">
+                <PixelAvatar avatarKey={leaderboard[0].avatarKey || 'roller'} size={2.6} />
+              </div>
+              <h3 className="font-display font-black text-sm sm:text-base text-true-black truncate max-w-full mt-1.5">
                 {leaderboard[0].name}
               </h3>
               <span className="font-display text-base sm:text-xl font-black text-true-black tracking-tight">
@@ -226,10 +233,12 @@ export default function LeaderboardPage() {
           {leaderboard[2] && (
             <div className="flex flex-col items-center bg-white border-[3px] border-true-black rounded-2xl p-3 sm:p-4 shadow-[5px_5px_0px_#000000] rotate-1 relative">
               <span className="absolute -top-3 bg-[#f59e0b] text-white border-[2px] border-true-black font-pixel text-[8px] sm:text-[9px] px-2 py-0.5 font-black">
-                🥉 RANK #3
+                RANK #3
               </span>
-              <span className="text-3xl sm:text-4xl mt-2">{leaderboard[2].avatar}</span>
-              <h3 className="font-display font-black text-xs sm:text-sm text-true-black truncate max-w-full mt-1">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 mt-2 rounded-full border-[2px] border-black bg-white flex items-center justify-center p-1 shadow-[2px_2px_0px_#000]">
+                <PixelAvatar avatarKey={leaderboard[2].avatarKey || 'samurai'} size={2.2} />
+              </div>
+              <h3 className="font-display font-black text-xs sm:text-sm text-true-black truncate max-w-full mt-1.5">
                 {leaderboard[2].name}
               </h3>
               <span className="font-mono-nb text-xs sm:text-sm font-black text-emerald-600">
@@ -244,8 +253,8 @@ export default function LeaderboardPage() {
         {/* ======================================================== */}
         <div className="bg-[#00FFA3] border-[3px] border-true-black rounded-xl p-3 sm:p-4 shadow-[5px_5px_0px_#000000] flex flex-wrap items-center justify-between gap-3 -rotate-0.5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white border-[2px] border-true-black flex items-center justify-center text-xl shadow-[2px_2px_0px_#000000]">
-              👑
+            <div className="w-10 h-10 rounded-xl bg-white border-[2px] border-true-black flex items-center justify-center p-1 shadow-[2px_2px_0px_#000000]">
+              <PixelAvatar avatarKey="hero" size={2.0} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -266,7 +275,7 @@ export default function LeaderboardPage() {
             href="/game?mode=texas_holdem&duel=open"
             className="brutal-btn ml-auto px-5 py-2.5 bg-true-black text-white font-display text-xs sm:text-sm font-black uppercase hover:bg-white hover:text-true-black transition-colors"
           >
-            🎮 PLAY IN 3D ARENA →
+            PLAY IN 3D ARENA →
           </Link>
         </div>
 
@@ -274,9 +283,9 @@ export default function LeaderboardPage() {
         <div className="flex items-center justify-between gap-2 border-b-[3px] border-true-black pb-2">
           <div className="flex items-center gap-1 sm:gap-2">
             {[
-              { key: 'all-time', label: '🏆 ALL-TIME' },
-              { key: 'weekly', label: '🔥 WEEKLY' },
-              { key: 'today', label: '⚡ TODAY' }
+              { key: 'all-time', label: 'ALL-TIME' },
+              { key: 'weekly', label: 'WEEKLY' },
+              { key: 'today', label: 'TODAY' }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -346,7 +355,9 @@ export default function LeaderboardPage() {
 
                 {/* Player Avatar & Name */}
                 <div className="col-span-6 sm:col-span-5 flex items-center gap-2 truncate">
-                  <span className="text-lg">{player.avatar}</span>
+                  <div className="w-7 h-7 rounded-full border-[1.5px] border-black bg-white flex items-center justify-center p-0.5 shrink-0 shadow-[1px_1px_0px_#000]">
+                    <PixelAvatar avatarKey={player.avatarKey || 'roller'} size={1.4} />
+                  </div>
                   <div className="truncate">
                     <span className={`font-display text-xs sm:text-sm truncate block ${
                       player.isPlayer ? 'font-black text-[#FF3333]' : 'font-bold text-true-black'
@@ -386,7 +397,7 @@ export default function LeaderboardPage() {
             href="/game?mode=texas_holdem&duel=open"
             className="brutal-btn px-8 py-3.5 bg-[#FFDE59] text-true-black font-display text-base font-black uppercase hover:bg-[#00FFA3] shadow-[5px_5px_0px_#000000] -rotate-1 hover:rotate-0 transition-all cursor-pointer"
           >
-            ⚔️ PLAY 3D ARENA &amp; CLIMB LEADERBOARD →
+            PLAY 3D ARENA &amp; CLIMB LEADERBOARD →
           </Link>
           <Link href="/" className="font-mono-nb text-xs font-bold text-gray-600 hover:text-black underline">
             ← Back to Home Showcase
