@@ -68,12 +68,36 @@ export default function GamePage() {
   const [bankroll, setBankroll] = useState(10000)
   const [isMuted, setIsMuted] = useState(false)
   const [tableTheme, setTableTheme] = useState('classic_pink')
+  const [isMobile, setIsMobile] = useState(false)
 
   // Modal Dialogs
   const [isDuelOpen, setIsDuelOpen] = useState(false)
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false)
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
+
+  // Mobile device detector
+  useEffect(() => {
+    const detectMobile = () => {
+      if (typeof window === 'undefined') return false
+      const width = window.innerWidth
+      const isTouch = 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0)
+      const isMobileAgent = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      return width < 768 || (isTouch && width < 1024) || isMobileAgent
+    }
+
+    const handleCheck = () => {
+      setIsMobile(detectMobile())
+    }
+
+    handleCheck()
+    window.addEventListener('resize', handleCheck)
+    window.addEventListener('orientationchange', handleCheck)
+    return () => {
+      window.removeEventListener('resize', handleCheck)
+      window.removeEventListener('orientationchange', handleCheck)
+    }
+  }, [])
 
   // Load URL slug, query URI params, and bankroll on mount
   useEffect(() => {
@@ -450,6 +474,7 @@ export default function GamePage() {
               theme="macau"
               tossSignal={tossSignal}
               isScrolled={false}
+              isMobile={isMobile}
             />
           )}
         </div>

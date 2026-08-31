@@ -52,6 +52,7 @@ function ScalableCardGroup({
   isFlipped = false,
   isHolo = true,
   isReady = true,
+  isVisible = true,
   onTelemetry
 }) {
   const groupRef = useRef()
@@ -59,6 +60,12 @@ function ScalableCardGroup({
 
   useEffect(() => {
     if (!groupRef.current) return
+
+    if (!isVisible) {
+      groupRef.current.scale.set(0, 0, 0)
+      groupRef.current.visible = false
+      return
+    }
 
     if (!hasMounted.current) {
       hasMounted.current = true
@@ -99,8 +106,9 @@ function ScalableCardGroup({
         overwrite: 'auto'
       })
     }
-  }, [isScrolled])
+  }, [isScrolled, isVisible])
 
+  if (!isVisible) return null
 
   return (
     <group ref={groupRef}>
@@ -150,6 +158,8 @@ export default function PokerScene({
   theme = 'macau',
   tossSignal = 0,
   isScrolled = false,
+  isMobile = false,
+  showCard = true,
   onTelemetry
 }) {
   // Theme color settings
@@ -201,15 +211,15 @@ export default function PokerScene({
       <ambientLight intensity={1.8} />
       <directionalLight position={[10, 12, 6]} intensity={3.0} color="#ffffff" castShadow />
       <directionalLight position={[-10, -5, -4]} intensity={2.0} color={themeConfig.rimLight} />
-      <MouseSpotlight color={themeConfig.spotlight} intensity={4.5} />
+      {!isMobile && <MouseSpotlight color={themeConfig.spotlight} intensity={4.5} />}
 
       {/* Floating Golden Particles */}
-      <GoldenParticles count={140} color={themeConfig.particleColor} />
+      <GoldenParticles count={isMobile ? 70 : 140} color={themeConfig.particleColor} />
 
       {/* 3D Casino Chips and Dealer Button */}
       <Chips3D tossSignal={tossSignal} isReady={isReady} />
 
-      {/* 3D Cards with Bouncy Spring Scale Down/Up */}
+      {/* 3D Cards with Bouncy Spring Scale Down/Up — Hidden on mobile devices */}
       <ScalableCardGroup
         isScrolled={isScrolled}
         isFanMode={isFanMode}
@@ -218,6 +228,7 @@ export default function PokerScene({
         isFlipped={isFlipped}
         isHolo={isHolo}
         isReady={isReady}
+        isVisible={!isMobile && showCard}
         onTelemetry={onTelemetry}
       />
     </Canvas>

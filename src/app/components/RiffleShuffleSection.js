@@ -496,10 +496,14 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     const scene = new THREE.Scene()
     const width = pinWrapper.clientWidth || window.innerWidth
     const height = pinWrapper.clientHeight || window.innerHeight
+    const isSmallMobile = width < 480
+    const isMobile = width < 768
+    const getDeckScale = (w) => (w < 480 ? 0.65 : (w < 768 ? 0.78 : 1.0))
+    const initialDeckScale = getDeckScale(width)
 
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000)
-    camera.position.set(0, 6.8, 10.8)
-    camera.lookAt(0, 0.35, 0)
+    camera.position.set(0, isSmallMobile ? 6.2 : (isMobile ? 6.4 : 6.8), isSmallMobile ? 12.0 : (isMobile ? 11.4 : 10.8))
+    camera.lookAt(0, isSmallMobile ? -0.85 : (isMobile ? -0.55 : 0.35), 0)
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -534,6 +538,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     // Sideways 3/4 angled deck group (Turned sideways from original orientation)
     const deckRootGroup = new THREE.Group()
     deckRootGroup.rotation.set(0.18, 0.38, -0.06) // 3/4 perspective angle
+    deckRootGroup.scale.set(initialDeckScale, initialDeckScale, initialDeckScale)
     scene.add(deckRootGroup)
 
     const cards = []
@@ -955,8 +960,20 @@ export default function RiffleShuffleSection({ containerRefProp }) {
       if (!pinWrapperRef.current) return
       const w = pinWrapperRef.current.clientWidth || window.innerWidth
       const h = pinWrapperRef.current.clientHeight || window.innerHeight
-      camera.position.set(0, 6.8, 10.8)
-      camera.lookAt(0, 0.35, 0)
+      const smMob = w < 480
+      const mob = w < 768
+      const scale = getDeckScale(w)
+      deckRootGroup.scale.set(scale, scale, scale)
+      if (smMob) {
+        camera.position.set(0, 6.2, 12.0)
+        camera.lookAt(0, -0.85, 0)
+      } else if (mob) {
+        camera.position.set(0, 6.4, 11.4)
+        camera.lookAt(0, -0.55, 0)
+      } else {
+        camera.position.set(0, 6.8, 10.8)
+        camera.lookAt(0, 0.35, 0)
+      }
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -985,7 +1002,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     <div ref={containerRef} id="how-to-play" className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex items-center justify-start px-6 sm:px-12 lg:px-20"
+        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex flex-col justify-end items-center sm:flex-row sm:items-center sm:justify-start px-4 sm:px-12 lg:px-20 pb-16 sm:pb-0"
       >
         {/* Pure Clean Flat 3D Canvas (100% CENTERED on Seamless Global Grid) */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10" />
@@ -993,15 +1010,15 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         {/* ------------------------------------------------------------- */}
         {/* 3D CARD-FLIP KINETIC HERO TYPOGRAPHY                          */}
         {/* ------------------------------------------------------------- */}
-        <div className="relative z-20 pointer-events-none max-w-lg lg:max-w-xl [perspective:1200px]">
+        <div className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-12 sm:mb-0">
           <div
             key={currentScene.id}
             className="animate-card-flip-3d"
           >
             {/* Tag Badge */}
-            <div className="mb-3 sm:mb-4">
+            <div className="mb-2 sm:mb-4">
               <span
-                className="font-pixel text-[11px] sm:text-xs font-black uppercase px-3.5 py-1.5 border-[3px] border-true-black shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
+                className="font-pixel text-[9px] sm:text-xs font-black uppercase px-2.5 sm:px-3.5 py-1 sm:py-1.5 border-[2.5px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
                 style={{ backgroundColor: currentScene.accentColor }}
               >
                 {currentScene.tag}
@@ -1009,17 +1026,17 @@ export default function RiffleShuffleSection({ containerRefProp }) {
             </div>
 
             {/* Giant Chunky Headline */}
-            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-4 sm:mb-5 drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
+            <h2 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-2 sm:mb-5 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
               {currentScene.headline}
             </h2>
 
             {/* Neo-Brutalist Description Card with Accent Line */}
-            <div className="brutal-window bg-white p-4 sm:p-5 border-[4px] border-true-black shadow-[8px_8px_0px_#000] max-w-md pointer-events-auto relative overflow-hidden">
+            <div className="brutal-window bg-white p-3 sm:p-5 border-[3px] sm:border-[4px] border-true-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
               <div
                 className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
                 style={{ backgroundColor: currentScene.accentColor }}
               />
-              <p className="font-mono-nb text-xs sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-1">
+              <p className="font-mono-nb text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
                 {currentScene.description}
               </p>
             </div>

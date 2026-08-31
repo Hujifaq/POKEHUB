@@ -291,16 +291,20 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       alpha: true,
     })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
-    renderer.setSize(pinWrapper.clientWidth || window.innerWidth, pinWrapper.clientHeight || window.innerHeight)
+    const initWidth = pinWrapper.clientWidth || window.innerWidth
+    const initHeight = pinWrapper.clientHeight || window.innerHeight
+    const isSmallMobile = initWidth < 480
+    const isMobile = initWidth < 768
+    const getTargetCardScale = (w) => (w < 480 ? 0.65 : (w < 768 ? 0.75 : 1.0))
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
       45,
-      (pinWrapper.clientWidth || window.innerWidth) / (pinWrapper.clientHeight || window.innerHeight),
+      initWidth / initHeight,
       0.05,
       100
     )
-    camera.position.set(0, 0, 8)
+    camera.position.set(0, 0, isSmallMobile ? 9.5 : (isMobile ? 8.8 : 8))
 
     // 1. Solid Black Extruded Card Body with rounded bevel
     const shape = roundedCardShape(2.6, 3.8, 0.28)
@@ -471,9 +475,10 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
     cardGroup.add(smokeMesh)
 
     // Start position: centered on load as the main Hero Section
+    const initialCardScale = getTargetCardScale(initWidth)
     cardGroup.position.set(0, 0, 0)
     cardGroup.rotation.set(-0.06, -0.22, 0.02)
-    cardGroup.scale.set(1, 1, 1)
+    cardGroup.scale.set(initialCardScale, initialCardScale, initialCardScale)
     scene.add(cardGroup)
     cardGroupRef.current = cardGroup
 
@@ -600,7 +605,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       )
         .to(
           cardGroup.scale,
-          { x: 1, y: 1, z: 1, ease: 'power2.out', duration: 0.8 },
+          {
+            x: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
+            y: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
+            z: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
+            ease: 'power2.out',
+            duration: 0.8
+          },
           0
         )
         .to(
@@ -726,6 +737,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       if (!pinWrapper || !renderer || !camera) return
       const width = pinWrapper.clientWidth || window.innerWidth
       const height = pinWrapper.clientHeight || window.innerHeight
+      const isSm = width < 480
+      const isMob = width < 768
+      const targetScale = getTargetCardScale(width)
+      if (cardGroup.scale.x < 3) {
+        cardGroup.scale.set(targetScale, targetScale, targetScale)
+      }
+      camera.position.set(0, 0, isSm ? 9.5 : (isMob ? 8.8 : 8))
       camera.aspect = width / height
       camera.updateProjectionMatrix()
       renderer.setSize(width, height)
