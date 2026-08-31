@@ -52,9 +52,9 @@ export default function BubbleMenu({
   menuContentColor = '#111',
   useFixedPosition = false,
   items,
-  animationEase = 'back.out(1.5)',
-  animationDuration = 0.45,
-  staggerDelay = 0.08
+  animationEase = 'back.out(1.2)',
+  animationDuration = 0.65,
+  staggerDelay = 0.10
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -72,7 +72,7 @@ export default function BubbleMenu({
     useFixedPosition ? 'fixed' : 'absolute',
     'left-0 right-0 top-3 sm:top-5 md:top-6',
     'flex items-center justify-between',
-    'gap-2 sm:gap-3 px-3 sm:px-6 md:px-8',
+    'gap-1 xs:gap-1.5 sm:gap-3 px-2 xs:px-3 sm:px-6 md:px-8',
     'pointer-events-none',
     'z-[1001]',
     'w-full max-w-[1700px] mx-auto',

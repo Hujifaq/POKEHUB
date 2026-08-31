@@ -293,7 +293,7 @@ export default function Floating3DLogo({
       onPointerMove={handlePointerMove}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
-      className={`relative inline-flex items-center justify-center cursor-pointer select-none pointer-events-auto w-[165px] sm:w-[195px] md:w-[225px] h-12 sm:h-14 md:h-16 overflow-visible bg-transparent ${className}`}
+      className={`relative inline-flex items-center justify-center cursor-pointer select-none pointer-events-auto w-[115px] xs:w-[140px] sm:w-[185px] md:w-[225px] h-10 sm:h-12 md:h-16 overflow-visible bg-transparent ${className}`}
       title="POKERHUB 3D"
     >
       <canvas

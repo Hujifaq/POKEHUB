@@ -115,7 +115,7 @@ html.lenis body {
 .brutal-btn {
   border: 3.5px solid var(--true-black);
   box-shadow: 4px 4px 0px var(--true-black);
-  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
@@ -243,15 +243,15 @@ html.lenis body {
 }
 
 .animate-chipToss {
-  animation: chipToss 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: chipToss 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .animate-chipWobble {
-  animation: chipWobble 0.45s ease-in-out both;
+  animation: chipWobble 0.60s ease-in-out both;
 }
 
 .animate-chipFloatUp {
-  animation: chipFloatUp 0.65s ease-out forwards;
+  animation: chipFloatUp 0.85s ease-out forwards;
 }
 
 /* Physical Flying Chip Trajectories into Center Pot */
@@ -419,7 +419,7 @@ html.lenis body {
 .animate-card-flip-3d {
   transform-style: preserve-3d;
   transform-origin: center bottom;
-  animation: cardFlip3DEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: cardFlip3DEnter 0.70s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ========================================================================= */
@@ -492,22 +492,22 @@ html.lenis body {
 }
 
 .animate-deal-community {
-  animation: dealCommunityCard 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+  animation: dealCommunityCard 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
   will-change: transform, opacity;
 }
 
 .animate-deal-player {
-  animation: dealPlayerCard 0.48s cubic-bezier(0.18, 0.89, 0.32, 1.15) forwards;
+  animation: dealPlayerCard 0.68s cubic-bezier(0.18, 0.89, 0.32, 1.15) forwards;
   will-change: transform, opacity;
 }
 
 .animate-deal-bot {
-  animation: dealBotCard 0.38s cubic-bezier(0.2, 0.85, 0.4, 1.1) forwards;
+  animation: dealBotCard 0.55s cubic-bezier(0.2, 0.85, 0.4, 1.1) forwards;
   will-change: transform, opacity;
 }
 
 .animate-card-reveal {
-  animation: cardRevealShowdown 0.4s ease-out forwards;
+  animation: cardRevealShowdown 0.55s ease-out forwards;
 }
 
 /* Neo-Brutalist Infinite Marquee Animation */

@@ -15,14 +15,14 @@ const anim = {
   }),
   closed: (i) => ({
     opacity: 0,
-    transition: { duration: 0.38, delay: 0.02 * i, ease: [0.25, 1, 0.5, 1] }
+    transition: { duration: 0.55, delay: 0.025 * i, ease: [0.25, 1, 0.5, 1] }
   })
 }
 
 const BRAND_LETTERS = "POKERHUB".split('')
 
 /**
- * Clean & Fast Neo-Brutalist Preloader Component
+ * Neo-Brutalist Preloader Component
  * Featuring 20 columns of orange pixel blocks and kinetic typography.
  */
 export default function Preloader({ onComplete }) {
@@ -76,21 +76,21 @@ export default function Preloader({ onComplete }) {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline()
 
-      // 1. Text letters reveal smoothly from bottom (0.42s)
+      // 1. Text letters reveal smoothly from bottom (0.70s)
       tl.fromTo(
         '.brand-letter',
         { yPercent: 120, opacity: 0 },
         {
           yPercent: 0,
           opacity: 1,
-          duration: 0.42,
+          duration: 0.70,
           ease: 'power3.out',
-          stagger: 0.03
+          stagger: 0.06
         },
         0
       )
 
-      // 2. Fast 0-100% Progress Count (0.85s)
+      // 2. Smooth 0-100% Progress Count (1.85s)
       const progressObj = { value: 0 }
       let lastTick = 0
 
@@ -98,14 +98,14 @@ export default function Preloader({ onComplete }) {
         progressObj,
         {
           value: 100,
-          duration: 0.85,
+          duration: 1.85,
           ease: 'power2.inOut',
           onUpdate: () => {
             const val = Math.round(progressObj.value)
             if (counterRef.current) {
               counterRef.current.textContent = `${val}%`
             }
-            if (val - lastTick >= 25) {
+            if (val - lastTick >= 15) {
               lastTick = val
               SoundEngine.playClick()
             }
@@ -120,8 +120,8 @@ export default function Preloader({ onComplete }) {
         {
           yPercent: -130,
           opacity: 0,
-          duration: 0.30,
-          ease: 'power3.in',
+          duration: 0.55,
+          ease: 'power3.inOut',
           onComplete: () => {
             if (isFinishedRef.current) return
             isFinishedRef.current = true
@@ -129,13 +129,13 @@ export default function Preloader({ onComplete }) {
             setIsActive(false)
 
             const maxBlocks = columnsData[0]?.length || 15
-            const totalDelay = maxBlocks * 0.02 + 0.35
+            const totalDelay = maxBlocks * 0.025 + 0.55
             setTimeout(() => {
               if (onComplete) onComplete()
             }, totalDelay * 1000)
           }
         },
-        '+=0.08'
+        '+=0.18'
       )
     }, containerRef)
 

@@ -7,6 +7,7 @@ class SoundEngineClass {
     this.isMuted = false
     this.noiseBuffer = null
     this.listeners = new Set()
+    this._unlockBound = false
 
     if (typeof window !== 'undefined') {
       try {
@@ -16,30 +17,66 @@ class SoundEngineClass {
         }
       } catch (e) {}
 
-      // Auto-unlock Web AudioContext eagerly on any first user interaction after page load/refresh
-      const unlockAudio = () => {
-        this.init()
-        if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
-          this.ctx.resume().catch(() => {})
-        }
-      }
-      window.addEventListener('pointerdown', unlockAudio, { passive: true })
-      window.addEventListener('click', unlockAudio, { passive: true })
-      window.addEventListener('keydown', unlockAudio, { passive: true })
-      window.addEventListener('touchstart', unlockAudio, { passive: true })
+      this._setupGlobalUnlock()
     }
   }
 
-  _initNoiseBuffer() {
-    if (!this.ctx) return
-    try {
-      const bufferSize = Math.floor(this.ctx.sampleRate * 2)
-      this.noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
-      const output = this.noiseBuffer.getChannelData(0)
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1
+  _setupGlobalUnlock() {
+    if (typeof window === 'undefined' || this._unlockBound) return
+    this._unlockBound = true
+
+    const unlockEvents = [
+      'pointerdown',
+      'mousedown',
+      'touchstart',
+      'touchend',
+      'click',
+      'keydown',
+      'wheel',
+      'scroll'
+    ]
+
+    const unlockAudio = () => {
+      this.init()
+      if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+        this.ctx.resume().then(() => {
+          if (this.ctx && this.ctx.state === 'running') {
+            try {
+              // Play a silent 1-sample buffer to permanently unlock hardware audio thread
+              const buffer = this.ctx.createBuffer(1, 1, this.ctx.sampleRate || 44100)
+              const source = this.ctx.createBufferSource()
+              source.buffer = buffer
+              source.connect(this.ctx.destination)
+              source.start(0)
+            } catch (e) {}
+
+            unlockEvents.forEach((ev) => {
+              window.removeEventListener(ev, unlockAudio, true)
+              document.removeEventListener(ev, unlockAudio, true)
+            })
+          }
+        }).catch(() => {})
       }
-    } catch (e) {}
+    }
+
+    unlockEvents.forEach((ev) => {
+      window.addEventListener(ev, unlockAudio, { capture: true, passive: true })
+      document.addEventListener(ev, unlockAudio, { capture: true, passive: true })
+    })
+  }
+
+  _initNoiseBuffer() {
+    if (!this.ctx || this.noiseBuffer) return
+    try {
+      const length = Math.floor(this.ctx.sampleRate * 2) // 2s noise buffer
+      this.noiseBuffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate)
+      const data = this.noiseBuffer.getChannelData(0)
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1
+      }
+    } catch (e) {
+      this.noiseBuffer = null
+    }
   }
 
   init() {
@@ -57,6 +94,36 @@ class SoundEngineClass {
     }
     if (this.ctx && !this.noiseBuffer) {
       this._initNoiseBuffer()
+    }
+    if (!this._unlockBound) {
+      this._setupGlobalUnlock()
+    }
+  }
+
+  /**
+   * Helper that guarantees execution only when AudioContext is running.
+   * If AudioContext is currently suspended, it resumes it and executes the callback once running.
+   */
+  _withContext(fn) {
+    if (this.isMuted) return
+    this.init()
+    if (!this.ctx) return
+
+    if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+      this.ctx.resume().then(() => {
+        if (!this.isMuted && this.ctx && this.ctx.state === 'running') {
+          try {
+            fn(this.ctx.currentTime)
+          } catch (e) {}
+        }
+      }).catch(() => {})
+      return
+    }
+
+    if (this.ctx.state === 'running') {
+      try {
+        fn(this.ctx.currentTime)
+      } catch (e) {}
     }
   }
 
@@ -90,7 +157,7 @@ class SoundEngineClass {
     this.notify()
     if (!this.isMuted) {
       this.init()
-      if (this.ctx && this.ctx.state === 'suspended') {
+      if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
         this.ctx.resume().then(() => {
           this.playClick()
         }).catch(() => {})
@@ -116,26 +183,19 @@ class SoundEngineClass {
 
   // ========================================================
   // SOOTHING ASMR MESSAGE BOX & STEP TRANSITION SOUND
-  // เสียงพลิกกล่องข้อความ / พลิกหน้ากระดาษ นุ่มนวล สบายหู ไม่บาดหู ไม่มีเสียงเลเซอร์
   // ========================================================
   playMessageFlip(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let intensity = 1.0
+      if (typeof opts === 'number') intensity = Math.max(0.2, opts)
+      else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
 
-    let intensity = 1.0
-    if (typeof opts === 'number') intensity = Math.max(0.2, opts)
-    else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.16
-
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.38 * intensity, now)
       masterGain.connect(this.ctx.destination)
 
-      // 1. Soft Velvet Paper Flutter (เสียงลมเปิดกระดาษนุ่มนวล)
+      // 1. Soft Velvet Paper Flutter
       const bufferSize = Math.max(256, Math.floor(this.ctx.sampleRate * duration))
       const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
       const data = noiseBuffer.getChannelData(0)
@@ -165,7 +225,7 @@ class SoundEngineClass {
       paperSrc.start(now)
       paperSrc.stop(now + duration + 0.01)
 
-      // 2. Warm Felt Body Thud (เสียงเคาะนุ่มลึก สบายหู)
+      // 2. Warm Felt Body Thud
       const warmThud = this.ctx.createOscillator()
       const thudGain = this.ctx.createGain()
       warmThud.type = 'sine'
@@ -179,21 +239,16 @@ class SoundEngineClass {
       thudGain.connect(masterGain)
       warmThud.start(now)
       warmThud.stop(now + 0.07)
-    } catch (e) {}
+    })
   }
 
-  // Card swoosh / air slicing glide sound (filtered paper wind)
+  // Card swoosh / air slicing glide sound
   playCardSwoosh(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let intensity = 1.0
+      if (typeof opts === 'number') intensity = Math.max(0.2, opts)
+      else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
 
-    let intensity = 1.0
-    if (typeof opts === 'number') intensity = Math.max(0.2, opts)
-    else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.20
       const bufferSize = Math.max(256, Math.floor(this.ctx.sampleRate * duration))
       const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
@@ -224,21 +279,16 @@ class SoundEngineClass {
 
       noise.start(now)
       noise.stop(now + duration + 0.01)
-    } catch (e) {}
+    })
   }
 
-  // Smooth card slide across felt sound (Tactile paper wind glide across casino baize)
+  // Smooth card slide across felt sound
   playCardSlide(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let intensity = 1.0
+      if (typeof opts === 'number') intensity = Math.max(0.2, opts)
+      else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
 
-    let intensity = 1.0
-    if (typeof opts === 'number') intensity = Math.max(0.2, opts)
-    else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.18
       const bufferSize = Math.max(256, Math.floor(this.ctx.sampleRate * duration))
       const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
@@ -269,28 +319,22 @@ class SoundEngineClass {
 
       noise.start(now)
       noise.stop(now + duration + 0.01)
-    } catch (e) {}
+    })
   }
 
-  // Full Aerodynamic Paper Card Dealing Sound (Paper air flight whoosh + warm felt landing)
+  // Full Aerodynamic Paper Card Dealing Sound
   playCardDeal(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let intensity = 1.0
+      if (typeof opts === 'number') intensity = Math.max(0.2, opts)
+      else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
 
-    let intensity = 1.0
-    if (typeof opts === 'number') intensity = Math.max(0.2, opts)
-    else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.18
-
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.48 * intensity, now)
       masterGain.connect(this.ctx.destination)
 
-      // 1. Aerodynamic Paper Wind Whoosh (เสียงลมกรีดไพ่กระดาษพุ่งตัดอากาศ)
+      // 1. Aerodynamic Paper Wind Whoosh
       const bufferSize = Math.max(256, Math.floor(this.ctx.sampleRate * duration))
       const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
       const data = noiseBuffer.getChannelData(0)
@@ -320,7 +364,7 @@ class SoundEngineClass {
       windSrc.start(now)
       windSrc.stop(now + duration + 0.01)
 
-      // 2. Warm Felt Landing Tap (เสียงสัมผัสผ้าสักหลาดนุ่มๆ)
+      // 2. Warm Felt Landing Tap
       const warmThud = this.ctx.createOscillator()
       const thudGain = this.ctx.createGain()
       warmThud.type = 'sine'
@@ -336,7 +380,7 @@ class SoundEngineClass {
       warmThud.start(now + 0.03)
       warmThud.stop(now + 0.10)
 
-      // 3. High-frequency Air Cushion Rustle (เสียงลมผิวไพ่เสียดสี)
+      // 3. High-frequency Air Cushion Rustle
       const airSrc = this.ctx.createBufferSource()
       airSrc.buffer = noiseBuffer
       const airFilter = this.ctx.createBiquadFilter()
@@ -354,23 +398,17 @@ class SoundEngineClass {
       airGain.connect(masterGain)
       airSrc.start(now)
       airSrc.stop(now + 0.15)
-    } catch (e) {}
+    })
   }
 
-  // Snappy card flip sound (Paper spin wind + gentle organic flick on felt)
+  // Snappy card flip sound
   playCardFlip(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let intensity = 1.0
+      if (typeof opts === 'number') intensity = Math.max(0.2, opts)
+      else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
 
-    let intensity = 1.0
-    if (typeof opts === 'number') intensity = Math.max(0.2, opts)
-    else if (typeof opts === 'object' && opts !== null && Number.isFinite(opts.intensity)) intensity = opts.intensity
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.15
-
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.48 * intensity, now)
       masterGain.connect(this.ctx.destination)
@@ -420,35 +458,25 @@ class SoundEngineClass {
       thudGain.connect(masterGain)
       warmThud.start(now)
       warmThud.stop(now + 0.06)
-    } catch (e) {}
+    })
   }
 
-  // ========================================================
-  // BESPOKE 3D HERO CARD ROTATION: PURE AERODYNAMIC WIND WHOOSH
-  // Pure organic air friction & card wind slicing sound (เสียงลมหมุนไพ่)
-  // No lasers, no sponge pop / burst - only crisp smooth airflow
-  // ========================================================
+  // 3D Hero card rotation sound
   playHeroCardRotate(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let velocity = 1.0
+      let intensity = 1.0
+      let mode = 'rotate'
 
-    let velocity = 1.0
-    let intensity = 1.0
-    let mode = 'rotate'
+      if (typeof opts === 'number') {
+        velocity = Math.max(0.2, Math.min(3.0, opts))
+      } else if (typeof opts === 'object' && opts !== null) {
+        if (Number.isFinite(opts.velocity)) velocity = Math.max(0.2, Math.min(3.0, opts.velocity))
+        if (Number.isFinite(opts.intensity)) intensity = Math.max(0.1, Math.min(2.0, opts.intensity))
+        if (opts.mode) mode = opts.mode
+      }
 
-    if (typeof opts === 'number') {
-      velocity = Math.max(0.2, Math.min(3.0, opts))
-    } else if (typeof opts === 'object' && opts !== null) {
-      if (Number.isFinite(opts.velocity)) velocity = Math.max(0.2, Math.min(3.0, opts.velocity))
-      if (Number.isFinite(opts.intensity)) intensity = Math.max(0.1, Math.min(2.0, opts.intensity))
-      if (opts.mode) mode = opts.mode
-    }
-
-    try {
-      const now = this.ctx.currentTime
       const isMicro = mode === 'micro' || velocity < 0.45
-      // Natural wind duration: 110ms to 220ms
       const duration = isMicro ? 0.09 : Math.max(0.11, Math.min(0.22, 0.15 * (1.1 / Math.sqrt(velocity))))
       const masterVol = isMicro ? 0.18 * intensity : Math.min(0.4, 0.26 * intensity * Math.min(1.4, Math.max(0.5, velocity)))
 
@@ -456,15 +484,11 @@ class SoundEngineClass {
       masterGain.gain.setValueAtTime(masterVol, now)
       masterGain.connect(this.ctx.destination)
 
-      // ----------------------------------------------------
-      // LAYER 1: Core Aerodynamic Air Rush (มวลลมหมุนตัดอากาศ)
-      // ----------------------------------------------------
       const bufferSize = Math.max(256, Math.floor(this.ctx.sampleRate * duration))
       const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate)
       const data = noiseBuffer.getChannelData(0)
       for (let i = 0; i < bufferSize; i++) {
         const progress = i / bufferSize
-        // Smooth Hanning window envelope to prevent any clicks or pops
         const env = Math.sin(progress * Math.PI)
         data[i] = (Math.random() * 2 - 1) * env
       }
@@ -474,7 +498,6 @@ class SoundEngineClass {
 
       const windFilter = this.ctx.createBiquadFilter()
       windFilter.type = 'bandpass'
-      // Organic wind frequency sweep (soft Q = 1.3, natural air whoosh)
       const startF = 350 * Math.min(1.25, velocity)
       const peakF = Math.min(2200, (isMicro ? 1000 : 1550) * Math.min(1.35, velocity))
       const endF = 380
@@ -496,9 +519,6 @@ class SoundEngineClass {
       windSource.start(now)
       windSource.stop(now + duration + 0.01)
 
-      // ----------------------------------------------------
-      // LAYER 2: Silky High-End Air Friction (เสียงลมผิวไพ่เสียดสีอากาศ)
-      // ----------------------------------------------------
       if (!isMicro) {
         const airSource = this.ctx.createBufferSource()
         airSource.buffer = noiseBuffer
@@ -521,17 +541,12 @@ class SoundEngineClass {
         airSource.start(now)
         airSource.stop(now + duration + 0.01)
       }
-    } catch (e) {}
+    })
   }
 
-  // Climax Portal Zoom-Through: Deep Aerodynamic Vortex Air Rush
+  // Climax Portal Zoom-Through
   playHeroCardPortalWarp() {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
-
-    try {
-      const now = this.ctx.currentTime
+    this._withContext((now) => {
       const duration = 0.55
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.38, now)
@@ -588,44 +603,32 @@ class SoundEngineClass {
 
       slipSource.start(now)
       slipSource.stop(now + 0.55)
-    } catch (e) {}
+    })
   }
 
-  // ========================================================
-  // ULTRA-SATISFYING ASMR PAPER CARD RIFFLE SHUFFLE SFX
-  // Authentic Bicycle / Casino paper cardstock texture (เสียงกรีดไพ่กระดาษ)
-  // Crisp paper edge flick, fibrous air-cushion body flap, pure tactile ASMR
-  // ========================================================
+  // Authentic Riffle Shuffle ASMR Card Snap
   playRiffleCardSnap(opts = {}) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
+    this._withContext((now) => {
+      let cardIndex = 0
+      let side = 'center' // 'left', 'right', 'center'
+      let velocity = 1.0
+      let intensity = 1.0
 
-    let cardIndex = 0
-    let side = 'center' // 'left', 'right', 'center'
-    let velocity = 1.0
-    let intensity = 1.0
+      if (typeof opts === 'number') {
+        cardIndex = Math.max(0, Math.floor(opts))
+      } else if (typeof opts === 'object' && opts !== null) {
+        if (Number.isFinite(opts.cardIndex)) cardIndex = Math.max(0, Math.floor(opts.cardIndex))
+        if (opts.side) side = opts.side
+        if (Number.isFinite(opts.velocity)) velocity = Math.max(0.2, Math.min(3.0, opts.velocity))
+        if (Number.isFinite(opts.intensity)) intensity = Math.max(0.1, Math.min(2.0, opts.intensity))
+      }
 
-    if (typeof opts === 'number') {
-      cardIndex = Math.max(0, Math.floor(opts))
-    } else if (typeof opts === 'object' && opts !== null) {
-      if (Number.isFinite(opts.cardIndex)) cardIndex = Math.max(0, Math.floor(opts.cardIndex))
-      if (opts.side) side = opts.side
-      if (Number.isFinite(opts.velocity)) velocity = Math.max(0.2, Math.min(3.0, opts.velocity))
-      if (Number.isFinite(opts.intensity)) intensity = Math.max(0.1, Math.min(2.0, opts.intensity))
-    }
-
-    try {
-      const now = this.ctx.currentTime
       const duration = 0.038 // ~38ms organic paper flick
 
-      // Master Gain
       const masterGain = this.ctx.createGain()
       const vol = Math.min(0.5, Math.max(0.12, 0.32 * intensity * Math.min(1.4, Math.max(0.6, velocity))))
       masterGain.gain.setValueAtTime(vol, now)
 
-      // Stereo Panner (if available) for Left / Right interleaving
-      let outNode = masterGain
       if (this.ctx.createStereoPanner) {
         try {
           const panner = this.ctx.createStereoPanner()
@@ -640,9 +643,7 @@ class SoundEngineClass {
         masterGain.connect(this.ctx.destination)
       }
 
-      // ----------------------------------------------------
-      // 1. Crisp Paper Edge Flick (เสียงขอบไพ่กระดาษสะบัดตัว)
-      // ----------------------------------------------------
+      // 1. Crisp Paper Edge Flick
       const flickLen = Math.max(128, Math.floor(this.ctx.sampleRate * duration))
       const flickBuffer = this.ctx.createBuffer(1, flickLen, this.ctx.sampleRate)
       const flickData = flickBuffer.getChannelData(0)
@@ -656,7 +657,6 @@ class SoundEngineClass {
 
       const flickFilter = this.ctx.createBiquadFilter()
       flickFilter.type = 'bandpass'
-      // Authentic casino paper resonance (2.4kHz - 3.2kHz) with subtle pitch variation
       const cardPitchMod = ((cardIndex * 37) % 200) - 100
       const flickFreq = Math.min(4200, Math.max(1800, 2600 + cardPitchMod + (side === 'left' ? -50 : 50)))
       flickFilter.frequency.setValueAtTime(flickFreq, now)
@@ -673,9 +673,7 @@ class SoundEngineClass {
       flickSource.start(now)
       flickSource.stop(now + duration)
 
-      // ----------------------------------------------------
-      // 2. Warm Organic Acoustic Felt Tap (เสียงกระทบนุ่มนวล สบายหู ไม่แหลม)
-      // ----------------------------------------------------
+      // 2. Warm Organic Felt Tap
       const bodyOsc = this.ctx.createOscillator()
       const bodyGain = this.ctx.createGain()
       bodyOsc.type = 'sine'
@@ -692,9 +690,7 @@ class SoundEngineClass {
       bodyOsc.start(now)
       bodyOsc.stop(now + 0.028)
 
-      // ----------------------------------------------------
-      // 3. Micro Air Cushion Flutter (เสียงลมพริ้วตามขอบไพ่ ASMR)
-      // ----------------------------------------------------
+      // 3. Micro Air Cushion Flutter
       const airSource = this.ctx.createBufferSource()
       airSource.buffer = flickBuffer
 
@@ -713,26 +709,17 @@ class SoundEngineClass {
 
       airSource.start(now)
       airSource.stop(now + duration)
-    } catch (e) {}
+    })
   }
 
-  // ========================================================
-  // CASINO BRIDGE WATERFALL & MONEY COUNT FLUTTER (เสียงกรีดนับเงิน ASMR)
-  // Rapid crisp paper cascade flutter as interleaved cards slide together
-  // ========================================================
+  // Waterfall Flutter
   playWaterfallFlutter(velocity = 1.0) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
-
-    try {
-      const now = this.ctx.currentTime
+    this._withContext((now) => {
       const normVel = Math.min(2.5, Math.max(0.4, velocity || 1.0))
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.42 * Math.min(1.3, normVel), now)
       masterGain.connect(this.ctx.destination)
 
-      // Burst of 8 rapid micro-flicks with slight pitch ascending/descending
       for (let i = 0; i < 8; i++) {
         const t = now + i * 0.018
         const bufLen = Math.floor(this.ctx.sampleRate * 0.02)
@@ -760,22 +747,16 @@ class SoundEngineClass {
         src.start(t)
         src.stop(t + 0.02)
       }
-    } catch (e) {}
+    })
   }
 
-  // Final Paper Deck Square-Up & Table Felt Tap
+  // Final Paper Deck Square-Up
   playRiffleDeckSquare(velocity = 1.0) {
-    if (this.isMuted) return
-    this.init()
-    if (!this.ctx) return
-
-    try {
-      const now = this.ctx.currentTime
+    this._withContext((now) => {
       const masterGain = this.ctx.createGain()
       masterGain.gain.setValueAtTime(0.48, now)
       masterGain.connect(this.ctx.destination)
 
-      // 1. Multi-card paper rustle cascade (ASMR deck square tap)
       for (let i = 0; i < 4; i++) {
         const t = now + i * 0.014
         const bufLen = Math.floor(this.ctx.sampleRate * 0.025)
@@ -803,7 +784,6 @@ class SoundEngineClass {
         src.stop(t + 0.025)
       }
 
-      // 2. Warm felt casino table thud
       const thud = this.ctx.createOscillator()
       const thudG = this.ctx.createGain()
       thud.type = 'triangle'
@@ -815,32 +795,14 @@ class SoundEngineClass {
       thudG.connect(masterGain)
       thud.start(now)
       thud.stop(now + 0.05)
-    } catch (e) {}
-  }
-
-  _initNoiseBuffer() {
-    if (!this.ctx || this.noiseBuffer) return
-    try {
-      const length = Math.floor(this.ctx.sampleRate * 0.1) // 100ms noise buffer
-      this.noiseBuffer = this.ctx.createBuffer(1, length, this.ctx.sampleRate)
-      const data = this.noiseBuffer.getChannelData(0)
-      for (let i = 0; i < length; i++) {
-        data[i] = Math.random() * 2 - 1
-      }
-    } catch (e) {
-      this.noiseBuffer = null
-    }
+    })
   }
 
   // ========================================================
   // ULTRA-PREMIUM 14G WEIGHTED CERAMIC CASINO CHIP SYNTHESIS
   // ========================================================
-
   _synthesizeChipSound(opts = {}) {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
+    this._withContext((now) => {
       let pitch = 1.0
       let volume = 0.42
       let decay = 0.055
@@ -859,606 +821,514 @@ class SoundEngineClass {
         isFelt = !!opts.isFelt
       }
 
-      try {
-        const now = this.ctx.currentTime
-        const safeVolume = Math.max(0.001, Math.min(1.0, volume))
+      const safeVolume = Math.max(0.001, Math.min(1.0, volume))
+      const masterGain = this.ctx.createGain()
+      masterGain.gain.setValueAtTime(safeVolume, now)
+      masterGain.connect(this.ctx.destination)
 
-        // Master output node with subtle soft saturation
-        const masterGain = this.ctx.createGain()
-        masterGain.gain.setValueAtTime(safeVolume, now)
-        masterGain.connect(this.ctx.destination)
-
-        // ----------------------------------------------------
-        // 1. Pristine Ceramic-on-Ceramic Micro Transient (0-4ms)
-        // ----------------------------------------------------
-        if (this.noiseBuffer && clickAmount > 0.05) {
-          try {
-            const noiseSource = this.ctx.createBufferSource()
-            noiseSource.buffer = this.noiseBuffer
-
-            const noiseFilter = this.ctx.createBiquadFilter()
-            noiseFilter.type = isFelt ? 'bandpass' : 'highpass'
-            const safeCutoff = Math.max(300, Math.min(18000, (isFelt ? 2800 : 5200) * brightness))
-            noiseFilter.frequency.setValueAtTime(safeCutoff, now)
-            noiseFilter.Q.setValueAtTime(isFelt ? 2.5 : 6.0, now)
-
-            const noiseGain = this.ctx.createGain()
-            const clickVol = Math.max(0.001, 0.48 * clickAmount)
-            noiseGain.gain.setValueAtTime(clickVol, now)
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.005)
-
-            noiseSource.connect(noiseFilter)
-            noiseFilter.connect(noiseGain)
-            noiseGain.connect(masterGain)
-
-            noiseSource.start(now)
-            noiseSource.stop(now + 0.008)
-          } catch (e) { }
-        }
-
-        // Fast Ceramic Chirp Impulse (8.2kHz -> 2.1kHz)
-        if (clickAmount > 0.2) {
-          try {
-            const snapOsc = this.ctx.createOscillator()
-            const snapGain = this.ctx.createGain()
-
-            snapOsc.type = 'triangle'
-            const startSnapF = Math.max(400, Math.min(18000, 8400 * pitch * brightness))
-            const endSnapF = Math.max(100, Math.min(8000, 2100 * pitch))
-            snapOsc.frequency.setValueAtTime(startSnapF, now)
-            snapOsc.frequency.exponentialRampToValueAtTime(endSnapF, now + 0.0035)
-
-            const snapVol = Math.max(0.001, 0.35 * clickAmount)
-            snapGain.gain.setValueAtTime(snapVol, now)
-            snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.0045)
-
-            snapOsc.connect(snapGain)
-            snapGain.connect(masterGain)
-
-            snapOsc.start(now)
-            snapOsc.stop(now + 0.0055)
-          } catch (e) { }
-        }
-
-        // ----------------------------------------------------
-        // 2. 5-Mode Inharmonic Clay / Ceramic Resonators (Bessel Physics)
-        // ----------------------------------------------------
-        const baseFreq = Math.max(500, Math.min(8000, (2380 + (Math.random() - 0.5) * 140) * pitch))
-        const safeDecay = Math.max(0.015, Math.min(0.5, decay))
-
-        const modes = [
-          { f: baseFreq * 1.00, gain: 0.30, d: safeDecay * 1.00, type: 'sine' },
-          { f: baseFreq * 1.62 * (1 + (Math.random() - 0.5) * 0.02), gain: 0.22, d: safeDecay * 0.82, type: 'triangle' },
-          { f: baseFreq * 2.31 * (1 + (Math.random() - 0.5) * 0.03), gain: 0.16, d: safeDecay * 0.65, type: 'sine' },
-          { f: baseFreq * 3.12 * (1 + (Math.random() - 0.5) * 0.03), gain: 0.11, d: safeDecay * 0.48, type: 'sine' },
-          { f: baseFreq * 4.05 * (1 + (Math.random() - 0.5) * 0.04), gain: 0.07, d: safeDecay * 0.32, type: 'sine' }
-        ]
-
-        modes.forEach(mode => {
-          try {
-            const osc = this.ctx.createOscillator()
-            const gain = this.ctx.createGain()
-
-            osc.type = mode.type
-            const startF = Math.max(100, Math.min(18000, mode.f * brightness))
-            osc.frequency.setValueAtTime(startF, now)
-            // Natural slight pitch bend on impact
-            osc.frequency.exponentialRampToValueAtTime(Math.max(80, startF * 0.985), now + mode.d)
-
-            gain.gain.setValueAtTime(mode.gain * (isFelt ? 0.75 : 1.0), now)
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.008, mode.d))
-
-            osc.connect(gain)
-            gain.connect(masterGain)
-
-            osc.start(now)
-            osc.stop(now + mode.d + 0.01)
-          } catch (e) { }
-        })
-
-        // ----------------------------------------------------
-        // 3. 14-Gram Weighted Clay Body Thud (Low-End Density)
-        // ----------------------------------------------------
+      // 1. Ceramic-on-Ceramic Micro Transient
+      if (this.noiseBuffer && clickAmount > 0.05) {
         try {
-          const bodyOsc = this.ctx.createOscillator()
-          const bodyGain = this.ctx.createGain()
+          const noiseSource = this.ctx.createBufferSource()
+          noiseSource.buffer = this.noiseBuffer
 
-          bodyOsc.type = 'sine'
-          const bodyFreq = Math.max(100, Math.min(1200, (320 + (Math.random() - 0.5) * 35) * pitch))
-          bodyOsc.frequency.setValueAtTime(bodyFreq, now)
-          bodyOsc.frequency.exponentialRampToValueAtTime(95, now + (isFelt ? 0.032 : 0.022))
+          const noiseFilter = this.ctx.createBiquadFilter()
+          noiseFilter.type = isFelt ? 'bandpass' : 'highpass'
+          const safeCutoff = Math.max(300, Math.min(18000, (isFelt ? 2800 : 5200) * brightness))
+          noiseFilter.frequency.setValueAtTime(safeCutoff, now)
+          noiseFilter.Q.setValueAtTime(isFelt ? 2.5 : 6.0, now)
 
-          bodyGain.gain.setValueAtTime(isFelt ? 0.38 : 0.28, now)
-          bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFelt ? 0.036 : 0.025))
+          const noiseGain = this.ctx.createGain()
+          const clickVol = Math.max(0.001, 0.48 * clickAmount)
+          noiseGain.gain.setValueAtTime(clickVol, now)
+          noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.005)
 
-          bodyOsc.connect(bodyGain)
-          bodyGain.connect(masterGain)
+          noiseSource.connect(noiseFilter)
+          noiseFilter.connect(noiseGain)
+          noiseGain.connect(masterGain)
 
-          bodyOsc.start(now)
-          bodyOsc.stop(now + 0.04)
-        } catch (e) { }
-      } catch (e) { }
-    }
-
-    // Ultra-realistic casino chip toss sound (Air glide whoosh + double rim settle)
-    playChipToss() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // 1. Soft air spin flutter
-        if (this.noiseBuffer) {
-          try {
-            const swooshSource = this.ctx.createBufferSource()
-            swooshSource.buffer = this.noiseBuffer
-
-            const swooshFilter = this.ctx.createBiquadFilter()
-            swooshFilter.type = 'bandpass'
-            swooshFilter.frequency.setValueAtTime(1800, now)
-            swooshFilter.frequency.exponentialRampToValueAtTime(4200, now + 0.03)
-            swooshFilter.frequency.exponentialRampToValueAtTime(1400, now + 0.055)
-            swooshFilter.Q.setValueAtTime(2.2, now)
-
-            const swooshGain = this.ctx.createGain()
-            swooshGain.gain.setValueAtTime(0.18, now)
-            swooshGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055)
-
-            swooshSource.connect(swooshFilter)
-            swooshFilter.connect(swooshGain)
-            swooshGain.connect(this.ctx.destination)
-
-            swooshSource.start(now)
-            swooshSource.stop(now + 0.06)
-          } catch (e) { }
-        }
-
-        // 2. Primary 14g chip contact
-        const tossPitch = 0.98 + (Math.random() - 0.5) * 0.06
-        this._synthesizeChipSound({
-          pitch: tossPitch,
-          volume: 0.48,
-          decay: 0.06,
-          brightness: 1.2,
-          clickAmount: 1.25
-        })
-
-        // 3. Secondary rim bounce (16ms later)
-        setTimeout(() => {
-          if (this.isMuted || !this.ctx) return
-          this._synthesizeChipSound({
-            pitch: tossPitch * (1.14 + Math.random() * 0.08),
-            volume: 0.28,
-            decay: 0.038,
-            brightness: 1.3,
-            clickAmount: 0.95
-          })
-        }, 16)
-      } catch (e) { }
-    }
-
-    // Realistic weighted ceramic casino chip clink
-    playChipClink(opts = 1.0) {
-      if (typeof opts === 'object' && opts !== null) {
-        const pitch = Number.isFinite(opts.pitch) && opts.pitch > 0 ? opts.pitch : 0.97 + Math.random() * 0.08
-        const volume = Number.isFinite(opts.volume) && opts.volume >= 0 ? opts.volume : 0.44
-        const brightness = Number.isFinite(opts.brightness) && opts.brightness > 0 ? opts.brightness : 1.15
-        const decay = Number.isFinite(opts.decay) && opts.decay > 0 ? opts.decay : 0.055
-        this._synthesizeChipSound({
-          pitch,
-          volume,
-          decay,
-          brightness,
-          clickAmount: 1.15,
-          isFelt: !!opts.isFelt
-        })
-      } else {
-        const intensity = typeof opts === 'number' && Number.isFinite(opts) ? opts : 1.0
-        const pitch = 0.97 + Math.random() * 0.08
-        this._synthesizeChipSound({
-          pitch,
-          volume: Math.min(0.55, Math.max(0.05, 0.44 * intensity)),
-          decay: 0.055,
-          brightness: 1.15,
-          clickAmount: 1.15
-        })
+          noiseSource.start(now)
+          noiseSource.stop(now + 0.008)
+        } catch (e) {}
       }
-    }
 
-    // Felt table bounce clink
-    playChipBounce(velocity = 1.0) {
-      const rawVel = typeof velocity === 'number' && Number.isFinite(velocity) ? velocity : 1.0
-      const normVel = Math.min(1.5, Math.max(0.2, rawVel))
-      const pitch = 0.95 + Math.random() * 0.12
+      // Fast Ceramic Chirp Impulse
+      if (clickAmount > 0.2) {
+        try {
+          const snapOsc = this.ctx.createOscillator()
+          const snapGain = this.ctx.createGain()
+
+          snapOsc.type = 'triangle'
+          const startSnapF = Math.max(400, Math.min(18000, 8400 * pitch * brightness))
+          const endSnapF = Math.max(100, Math.min(8000, 2100 * pitch))
+          snapOsc.frequency.setValueAtTime(startSnapF, now)
+          snapOsc.frequency.exponentialRampToValueAtTime(endSnapF, now + 0.0035)
+
+          const snapVol = Math.max(0.001, 0.35 * clickAmount)
+          snapGain.gain.setValueAtTime(snapVol, now)
+          snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.0045)
+
+          snapOsc.connect(snapGain)
+          snapGain.connect(masterGain)
+
+          snapOsc.start(now)
+          snapOsc.stop(now + 0.0055)
+        } catch (e) {}
+      }
+
+      // 2. Inharmonic Ceramic Resonators
+      const baseFreq = Math.max(500, Math.min(8000, (2380 + (Math.random() - 0.5) * 140) * pitch))
+      const safeDecay = Math.max(0.015, Math.min(0.5, decay))
+
+      const modes = [
+        { f: baseFreq * 1.00, gain: 0.30, d: safeDecay * 1.00, type: 'sine' },
+        { f: baseFreq * 1.62 * (1 + (Math.random() - 0.5) * 0.02), gain: 0.22, d: safeDecay * 0.82, type: 'triangle' },
+        { f: baseFreq * 2.31 * (1 + (Math.random() - 0.5) * 0.03), gain: 0.16, d: safeDecay * 0.65, type: 'sine' },
+        { f: baseFreq * 3.12 * (1 + (Math.random() - 0.5) * 0.03), gain: 0.11, d: safeDecay * 0.48, type: 'sine' },
+        { f: baseFreq * 4.05 * (1 + (Math.random() - 0.5) * 0.04), gain: 0.07, d: safeDecay * 0.32, type: 'sine' }
+      ]
+
+      modes.forEach((mode) => {
+        try {
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+
+          osc.type = mode.type
+          const startF = Math.max(100, Math.min(18000, mode.f * brightness))
+          osc.frequency.setValueAtTime(startF, now)
+          osc.frequency.exponentialRampToValueAtTime(Math.max(80, startF * 0.985), now + mode.d)
+
+          gain.gain.setValueAtTime(mode.gain * (isFelt ? 0.75 : 1.0), now)
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.008, mode.d))
+
+          osc.connect(gain)
+          gain.connect(masterGain)
+
+          osc.start(now)
+          osc.stop(now + mode.d + 0.01)
+        } catch (e) {}
+      })
+
+      // 3. Weighted Body Thud
+      try {
+        const bodyOsc = this.ctx.createOscillator()
+        const bodyGain = this.ctx.createGain()
+
+        bodyOsc.type = 'sine'
+        const bodyFreq = Math.max(100, Math.min(1200, (320 + (Math.random() - 0.5) * 35) * pitch))
+        bodyOsc.frequency.setValueAtTime(bodyFreq, now)
+        bodyOsc.frequency.exponentialRampToValueAtTime(95, now + (isFelt ? 0.032 : 0.022))
+
+        bodyGain.gain.setValueAtTime(isFelt ? 0.38 : 0.28, now)
+        bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isFelt ? 0.036 : 0.025))
+
+        bodyOsc.connect(bodyGain)
+        bodyGain.connect(masterGain)
+
+        bodyOsc.start(now)
+        bodyOsc.stop(now + 0.04)
+      } catch (e) {}
+    })
+  }
+
+  playChipToss() {
+    this._withContext((now) => {
+      if (this.noiseBuffer) {
+        try {
+          const swooshSource = this.ctx.createBufferSource()
+          swooshSource.buffer = this.noiseBuffer
+
+          const swooshFilter = this.ctx.createBiquadFilter()
+          swooshFilter.type = 'bandpass'
+          swooshFilter.frequency.setValueAtTime(1800, now)
+          swooshFilter.frequency.exponentialRampToValueAtTime(4200, now + 0.03)
+          swooshFilter.frequency.exponentialRampToValueAtTime(1400, now + 0.055)
+          swooshFilter.Q.setValueAtTime(2.2, now)
+
+          const swooshGain = this.ctx.createGain()
+          swooshGain.gain.setValueAtTime(0.18, now)
+          swooshGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.055)
+
+          swooshSource.connect(swooshFilter)
+          swooshFilter.connect(swooshGain)
+          swooshGain.connect(this.ctx.destination)
+
+          swooshSource.start(now)
+          swooshSource.stop(now + 0.06)
+        } catch (e) {}
+      }
+
+      const tossPitch = 0.98 + (Math.random() - 0.5) * 0.06
+      this._synthesizeChipSound({
+        pitch: tossPitch,
+        volume: 0.48,
+        decay: 0.06,
+        brightness: 1.2,
+        clickAmount: 1.25
+      })
+
+      setTimeout(() => {
+        if (this.isMuted) return
+        this._synthesizeChipSound({
+          pitch: tossPitch * (1.14 + Math.random() * 0.08),
+          volume: 0.28,
+          decay: 0.038,
+          brightness: 1.3,
+          clickAmount: 0.95
+        })
+      }, 16)
+    })
+  }
+
+  playChipClink(opts = 1.0) {
+    if (typeof opts === 'object' && opts !== null) {
+      const pitch = Number.isFinite(opts.pitch) && opts.pitch > 0 ? opts.pitch : 0.97 + Math.random() * 0.08
+      const volume = Number.isFinite(opts.volume) && opts.volume >= 0 ? opts.volume : 0.44
+      const brightness = Number.isFinite(opts.brightness) && opts.brightness > 0 ? opts.brightness : 1.15
+      const decay = Number.isFinite(opts.decay) && opts.decay > 0 ? opts.decay : 0.055
       this._synthesizeChipSound({
         pitch,
-        volume: Math.min(0.48, 0.32 * normVel),
-        decay: 0.042 * (1 + normVel * 0.12),
-        brightness: 1.05 + normVel * 0.18,
-        isFelt: true,
-        clickAmount: 0.9 * normVel
+        volume,
+        decay,
+        brightness,
+        clickAmount: 1.15,
+        isFelt: !!opts.isFelt
+      })
+    } else {
+      const intensity = typeof opts === 'number' && Number.isFinite(opts) ? opts : 1.0
+      const pitch = 0.97 + Math.random() * 0.08
+      this._synthesizeChipSound({
+        pitch,
+        volume: Math.min(0.55, Math.max(0.05, 0.44 * intensity)),
+        decay: 0.055,
+        brightness: 1.15,
+        clickAmount: 1.15
       })
     }
+  }
 
-    // Multiple chips cascade / stack splash sound (ASMR Casino Quality)
-    playChipsStack(count = 4) {
-      const safeCount = typeof count === 'number' && Number.isFinite(count) ? Math.min(8, Math.max(1, count)) : 4
-      for (let i = 0; i < safeCount; i++) {
-        setTimeout(() => {
-          const pitch = 0.94 + (i * 0.035) + (Math.random() - 0.5) * 0.05
-          this._synthesizeChipSound({
-            pitch,
-            volume: Math.max(0.12, 0.38 - i * 0.025),
-            decay: 0.048,
-            brightness: 1.18,
-            clickAmount: 1.05
-          })
-        }, i * 28 + Math.random() * 8)
-      }
+  playChipBounce(velocity = 1.0) {
+    const rawVel = typeof velocity === 'number' && Number.isFinite(velocity) ? velocity : 1.0
+    const normVel = Math.min(1.5, Math.max(0.2, rawVel))
+    const pitch = 0.95 + Math.random() * 0.12
+    this._synthesizeChipSound({
+      pitch,
+      volume: Math.min(0.48, 0.32 * normVel),
+      decay: 0.042 * (1 + normVel * 0.12),
+      brightness: 1.05 + normVel * 0.18,
+      isFelt: true,
+      clickAmount: 0.9 * normVel
+    })
+  }
+
+  playChipsStack(count = 4) {
+    const safeCount = typeof count === 'number' && Number.isFinite(count) ? Math.min(8, Math.max(1, count)) : 4
+    for (let i = 0; i < safeCount; i++) {
+      setTimeout(() => {
+        const pitch = 0.94 + (i * 0.035) + (Math.random() - 0.5) * 0.05
+        this._synthesizeChipSound({
+          pitch,
+          volume: Math.max(0.12, 0.38 - i * 0.025),
+          decay: 0.048,
+          brightness: 1.18,
+          clickAmount: 1.05
+        })
+      }, i * 28 + Math.random() * 8)
     }
+  }
 
-    // Rapid Casino Chip Riffle Shuffle ASMR
-    playChipsRiffle() {
-      if (this.isMuted) return
-      const ticks = 7
-      for (let i = 0; i < ticks; i++) {
-        setTimeout(() => {
-          this._synthesizeChipSound({
-            pitch: 1.0 + (i * 0.04) + (Math.random() - 0.5) * 0.06,
-            volume: 0.22 + (i % 2 === 0 ? 0.08 : 0),
-            decay: 0.035,
-            brightness: 1.25,
-            clickAmount: 1.0
-          })
-        }, i * 18 + Math.random() * 5)
-      }
+  playChipsRiffle() {
+    if (this.isMuted) return
+    const ticks = 7
+    for (let i = 0; i < ticks; i++) {
+      setTimeout(() => {
+        this._synthesizeChipSound({
+          pitch: 1.0 + (i * 0.04) + (Math.random() - 0.5) * 0.06,
+          volume: 0.22 + (i % 2 === 0 ? 0.08 : 0),
+          decay: 0.035,
+          brightness: 1.25,
+          clickAmount: 1.0
+        })
+      }, i * 18 + Math.random() * 5)
     }
+  }
 
-    // UI micro-click
-    playClick() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
+  // UI micro-click
+  playClick() {
+    this._withContext((now) => {
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
 
-      if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
-        this.ctx.resume().then(() => {
-          if (!this.isMuted) this.playClick()
-        }).catch(() => {})
-        return
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(1200, now)
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.03)
+
+      gain.gain.setValueAtTime(0.18, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+
+      osc.connect(gain)
+      gain.connect(this.ctx.destination)
+
+      osc.start(now)
+      osc.stop(now + 0.04)
+    })
+  }
+
+  // Victory / Jackpot chime
+  playJackpot() {
+    this._withContext((now) => {
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]
+
+      notes.forEach((freq, idx) => {
+        try {
+          const startTime = now + idx * 0.09
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+
+          osc.type = 'triangle'
+          osc.frequency.setValueAtTime(freq, startTime)
+
+          gain.gain.setValueAtTime(0.25, startTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6)
+
+          osc.connect(gain)
+          gain.connect(this.ctx.destination)
+
+          osc.start(startTime)
+          osc.stop(startTime + 0.65)
+        } catch (e) {}
+      })
+    })
+  }
+
+  // 1. OBSIDIAN FOIL
+  playObsidianFoilHover() {
+    this._withContext((now) => {
+      // A. Deep sub-bass pulse
+      const subOsc = this.ctx.createOscillator()
+      const subGain = this.ctx.createGain()
+      subOsc.type = 'sine'
+      subOsc.frequency.setValueAtTime(72, now)
+      subOsc.frequency.exponentialRampToValueAtTime(36, now + 0.32)
+      subGain.gain.setValueAtTime(0.38, now)
+      subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35)
+      subOsc.connect(subGain)
+      subGain.connect(this.ctx.destination)
+      subOsc.start(now)
+      subOsc.stop(now + 0.36)
+
+      // B. Resonant dark void filter sweep
+      if (this.noiseBuffer) {
+        const noise = this.ctx.createBufferSource()
+        noise.buffer = this.noiseBuffer
+        const filter = this.ctx.createBiquadFilter()
+        filter.type = 'bandpass'
+        filter.frequency.setValueAtTime(2800, now)
+        filter.frequency.exponentialRampToValueAtTime(260, now + 0.28)
+        filter.Q.setValueAtTime(4.5, now)
+
+        const noiseGain = this.ctx.createGain()
+        noiseGain.gain.setValueAtTime(0.22, now)
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3)
+
+        noise.connect(filter)
+        filter.connect(noiseGain)
+        noiseGain.connect(this.ctx.destination)
+        noise.start(now)
+        noise.stop(now + 0.32)
       }
 
-      try {
-        const now = this.ctx.currentTime
+      // C. High obsidian crystal chime
+      const crystalOsc = this.ctx.createOscillator()
+      const crystalGain = this.ctx.createGain()
+      crystalOsc.type = 'sine'
+      crystalOsc.frequency.setValueAtTime(1760, now)
+      crystalOsc.frequency.exponentialRampToValueAtTime(1320, now + 0.18)
+      crystalGain.gain.setValueAtTime(0.12, now)
+      crystalGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2)
+      crystalOsc.connect(crystalGain)
+      crystalGain.connect(this.ctx.destination)
+      crystalOsc.start(now)
+      crystalOsc.stop(now + 0.22)
+    })
+  }
+
+  // 2. IVORY GOLD
+  playIvoryGoldHover() {
+    this._withContext((now) => {
+      const goldFrequencies = [1046.5, 1318.5, 1567.98, 2093.0]
+      goldFrequencies.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator()
         const gain = this.ctx.createGain()
 
         osc.type = 'sine'
-        osc.frequency.setValueAtTime(1200, now)
-        osc.frequency.exponentialRampToValueAtTime(400, now + 0.03)
+        osc.frequency.setValueAtTime(freq, now + idx * 0.015)
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.995, now + 0.45)
 
-        gain.gain.setValueAtTime(0.18, now)
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+        const startVol = (0.22 / (idx + 1)) * 1.2
+        gain.gain.setValueAtTime(startVol, now + idx * 0.015)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55 + idx * 0.05)
 
         osc.connect(gain)
         gain.connect(this.ctx.destination)
 
-        osc.start(now)
-        osc.stop(now + 0.04)
-      } catch (e) { }
-    }
+        osc.start(now + idx * 0.015)
+        osc.stop(now + 0.65)
+      })
 
-    // Victory / Jackpot chime (Pentatonic fanfare)
-    playJackpot() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98]
-        const now = this.ctx.currentTime
-
-        notes.forEach((freq, idx) => {
-          try {
-            const startTime = now + idx * 0.09
-            const osc = this.ctx.createOscillator()
-            const gain = this.ctx.createGain()
-
-            osc.type = 'triangle'
-            osc.frequency.setValueAtTime(freq, startTime)
-
-            gain.gain.setValueAtTime(0.25, startTime)
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6)
-
-            osc.connect(gain)
-            gain.connect(this.ctx.destination)
-
-            osc.start(startTime)
-            osc.stop(startTime + 0.65)
-          } catch (e) { }
-        })
-      } catch (e) { }
-    }
-
-    // ========================================================
-    // BESPOKE PREMIUM CARD THEME HOVER SOUND EFFECTS
-    // ========================================================
-
-    // 1. OBSIDIAN FOIL: Deep sub-bass cosmic void + dark metallic crystal overtone
-    playObsidianFoilHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // A. Deep sub-bass pulse (68Hz -> 38Hz)
-        const subOsc = this.ctx.createOscillator()
-        const subGain = this.ctx.createGain()
-        subOsc.type = 'sine'
-        subOsc.frequency.setValueAtTime(72, now)
-        subOsc.frequency.exponentialRampToValueAtTime(36, now + 0.32)
-        subGain.gain.setValueAtTime(0.38, now)
-        subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35)
-        subOsc.connect(subGain)
-        subGain.connect(this.ctx.destination)
-        subOsc.start(now)
-        subOsc.stop(now + 0.36)
-
-        // B. Resonant dark void filter sweep
-        if (this.noiseBuffer) {
-          const noise = this.ctx.createBufferSource()
-          noise.buffer = this.noiseBuffer
-          const filter = this.ctx.createBiquadFilter()
-          filter.type = 'bandpass'
-          filter.frequency.setValueAtTime(2800, now)
-          filter.frequency.exponentialRampToValueAtTime(260, now + 0.28)
-          filter.Q.setValueAtTime(4.5, now)
-
-          const noiseGain = this.ctx.createGain()
-          noiseGain.gain.setValueAtTime(0.22, now)
-          noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3)
-
-          noise.connect(filter)
-          filter.connect(noiseGain)
-          noiseGain.connect(this.ctx.destination)
-          noise.start(now)
-          noise.stop(now + 0.32)
-        }
-
-        // C. High obsidian crystal chime (harmonic cluster)
-        const crystalOsc = this.ctx.createOscillator()
-        const crystalGain = this.ctx.createGain()
-        crystalOsc.type = 'sine'
-        crystalOsc.frequency.setValueAtTime(1760, now)
-        crystalOsc.frequency.exponentialRampToValueAtTime(1320, now + 0.18)
-        crystalGain.gain.setValueAtTime(0.12, now)
-        crystalGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2)
-        crystalOsc.connect(crystalGain)
-        crystalGain.connect(this.ctx.destination)
-        crystalOsc.start(now)
-        crystalOsc.stop(now + 0.22)
-      } catch (e) { }
-    }
-
-    // 2. IVORY GOLD: 24K Royal High Roller pure gold coin harmonics + sparkling chime
-    playIvoryGoldHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // Pure gold bell chord: C6 (1046.5Hz), E6 (1318.5Hz), G6 (1567.98Hz), C7 (2093Hz)
-        const goldFrequencies = [1046.5, 1318.5, 1567.98, 2093.0]
-        goldFrequencies.forEach((freq, idx) => {
-          const osc = this.ctx.createOscillator()
-          const gain = this.ctx.createGain()
-
-          osc.type = 'sine'
-          osc.frequency.setValueAtTime(freq, now + idx * 0.015)
-          // Micro vibrato for rich 24K luster
-          osc.frequency.exponentialRampToValueAtTime(freq * 0.995, now + 0.45)
-
-          const startVol = (0.22 / (idx + 1)) * 1.2
-          gain.gain.setValueAtTime(startVol, now + idx * 0.015)
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55 + idx * 0.05)
-
-          osc.connect(gain)
-          gain.connect(this.ctx.destination)
-
-          osc.start(now + idx * 0.015)
-          osc.stop(now + 0.65)
-        })
-
-        // Fast golden coin clink transient
-        this._synthesizeChipSound({ pitch: 1.6, volume: 0.25, brightness: 1.5, decay: 0.06 })
-      } catch (e) { }
-    }
-
-    // 3. CYBER NEON: Holographic Synthwave laser diffraction & futuristic lock-on
-    playCyberNeonHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // Fast 3-step neon cyber pulse arpeggio
-        const cyberNotes = [880, 1320, 1760]
-        cyberNotes.forEach((freq, idx) => {
-          const t = now + idx * 0.022
-          const osc = this.ctx.createOscillator()
-          const gain = this.ctx.createGain()
-
-          osc.type = 'sawtooth'
-          osc.frequency.setValueAtTime(freq, t)
-          osc.frequency.exponentialRampToValueAtTime(freq * 1.4, t + 0.04)
-
-          const filter = this.ctx.createBiquadFilter()
-          filter.type = 'bandpass'
-          filter.frequency.setValueAtTime(3200, t)
-          filter.Q.setValueAtTime(4.0, t)
-
-          gain.gain.setValueAtTime(0.18, t)
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
-
-          osc.connect(filter)
-          filter.connect(gain)
-          gain.connect(this.ctx.destination)
-
-          osc.start(t)
-          osc.stop(t + 0.09)
-        })
-
-        // Holographic laser sweep
-        const laserOsc = this.ctx.createOscillator()
-        const laserGain = this.ctx.createGain()
-        laserOsc.type = 'sine'
-        laserOsc.frequency.setValueAtTime(3600, now)
-        laserOsc.frequency.exponentialRampToValueAtTime(620, now + 0.18)
-        laserGain.gain.setValueAtTime(0.15, now)
-        laserGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2)
-        laserOsc.connect(laserGain)
-        laserGain.connect(this.ctx.destination)
-        laserOsc.start(now)
-        laserOsc.stop(now + 0.22)
-      } catch (e) { }
-    }
-
-    // 4. EMERALD SUITE: Monte Carlo French baize felt friction & pristine velvet card slide
-    playEmeraldSuiteHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // Rich tactile card friction across green casino felt
-        if (this.noiseBuffer) {
-          const noise = this.ctx.createBufferSource()
-          noise.buffer = this.noiseBuffer
-
-          const filter = this.ctx.createBiquadFilter()
-          filter.type = 'bandpass'
-          filter.frequency.setValueAtTime(750, now)
-          filter.frequency.exponentialRampToValueAtTime(1600, now + 0.08)
-          filter.frequency.exponentialRampToValueAtTime(500, now + 0.22)
-          filter.Q.setValueAtTime(2.2, now)
-
-          const gain = this.ctx.createGain()
-          gain.gain.setValueAtTime(0.28, now)
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24)
-
-          noise.connect(filter)
-          filter.connect(gain)
-          gain.connect(this.ctx.destination)
-          noise.start(now)
-          noise.stop(now + 0.25)
-        }
-
-        // Elegant velvet wood/clay snap
-        const snapOsc = this.ctx.createOscillator()
-        const snapGain = this.ctx.createGain()
-        snapOsc.type = 'triangle'
-        snapOsc.frequency.setValueAtTime(480, now)
-        snapOsc.frequency.exponentialRampToValueAtTime(120, now + 0.05)
-        snapGain.gain.setValueAtTime(0.3, now)
-        snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06)
-        snapOsc.connect(snapGain)
-        snapGain.connect(this.ctx.destination)
-        snapOsc.start(now)
-        snapOsc.stop(now + 0.07)
-      } catch (e) { }
-    }
-
-    // 5. SAKURA RUBY: Akihabara arcade cherry blossom bells & ethereal pentatonic bloom
-    playSakuraRubyHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // Sakura pentatonic scale cascade: B5 (987.77), D6 (1174.66), E6 (1318.51), F#6 (1479.98), B6 (1975.53)
-        const sakuraScale = [987.77, 1174.66, 1318.51, 1479.98, 1975.53]
-        sakuraScale.forEach((freq, idx) => {
-          const t = now + idx * 0.032
-          const osc = this.ctx.createOscillator()
-          const gain = this.ctx.createGain()
-
-          osc.type = 'sine'
-          osc.frequency.setValueAtTime(freq, t)
-          // Gentle vibrato
-          osc.frequency.exponentialRampToValueAtTime(freq * 1.01, t + 0.15)
-          osc.frequency.exponentialRampToValueAtTime(freq, t + 0.35)
-
-          gain.gain.setValueAtTime(0.18, t)
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42)
-
-          osc.connect(gain)
-          gain.connect(this.ctx.destination)
-
-          osc.start(t)
-          osc.stop(t + 0.45)
-        })
-      } catch (e) { }
-    }
-
-    // 6. RETRO 8-BIT: Authentic Genesis / NES 4-step square wave powerup flourish
-    playRetro8BitHover() {
-      if (this.isMuted) return
-      this.init()
-      if (!this.ctx) return
-
-      try {
-        const now = this.ctx.currentTime
-
-        // 8-bit fast arpeggio: E4 (329.63), A4 (440.0), E5 (659.25), A5 (880.0), C#6 (1108.7)
-        const arpHertz = [329.63, 440.0, 659.25, 880.0, 1108.7]
-        arpHertz.forEach((freq, idx) => {
-          const t = now + idx * 0.024
-          const osc = this.ctx.createOscillator()
-          const gain = this.ctx.createGain()
-
-          osc.type = 'square'
-          osc.frequency.setValueAtTime(freq, t)
-
-          const filter = this.ctx.createBiquadFilter()
-          filter.type = 'lowpass'
-          filter.frequency.setValueAtTime(3200, t)
-
-          gain.gain.setValueAtTime(0.12, t)
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
-
-          osc.connect(filter)
-          filter.connect(gain)
-          gain.connect(this.ctx.destination)
-
-          osc.start(t)
-          osc.stop(t + 0.09)
-        })
-      } catch (e) { }
-    }
-
-    // Master helper: Dispatches the corresponding themed hover sound
-    playThemeCardHover(theme) {
-      if (this.isMuted) return
-      const key = (theme || '').toLowerCase()
-      if (key.includes('obsidian')) return this.playObsidianFoilHover()
-      if (key.includes('gold')) return this.playIvoryGoldHover()
-      if (key.includes('cyber')) return this.playCyberNeonHover()
-      if (key.includes('emerald')) return this.playEmeraldSuiteHover()
-      if (key.includes('sakura')) return this.playSakuraRubyHover()
-      if (key.includes('retro')) return this.playRetro8BitHover()
-      return this.playCardFlip()
-    }
+      this._synthesizeChipSound({ pitch: 1.6, volume: 0.25, brightness: 1.5, decay: 0.06 })
+    })
   }
 
-  export const SoundEngine = new SoundEngineClass()
+  // 3. CYBER NEON
+  playCyberNeonHover() {
+    this._withContext((now) => {
+      const cyberNotes = [880, 1320, 1760]
+      cyberNotes.forEach((freq, idx) => {
+        const t = now + idx * 0.022
+        const osc = this.ctx.createOscillator()
+        const gain = this.ctx.createGain()
+
+        osc.type = 'sawtooth'
+        osc.frequency.setValueAtTime(freq, t)
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.4, t + 0.04)
+
+        const filter = this.ctx.createBiquadFilter()
+        filter.type = 'bandpass'
+        filter.frequency.setValueAtTime(3200, t)
+        filter.Q.setValueAtTime(4.0, t)
+
+        gain.gain.setValueAtTime(0.18, t)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
+
+        osc.connect(filter)
+        filter.connect(gain)
+        gain.connect(this.ctx.destination)
+
+        osc.start(t)
+        osc.stop(t + 0.09)
+      })
+
+      const laserOsc = this.ctx.createOscillator()
+      const laserGain = this.ctx.createGain()
+      laserOsc.type = 'sine'
+      laserOsc.frequency.setValueAtTime(3600, now)
+      laserOsc.frequency.exponentialRampToValueAtTime(620, now + 0.18)
+      laserGain.gain.setValueAtTime(0.15, now)
+      laserGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2)
+      laserOsc.connect(laserGain)
+      laserGain.connect(this.ctx.destination)
+      laserOsc.start(now)
+      laserOsc.stop(now + 0.22)
+    })
+  }
+
+  // 4. EMERALD SUITE
+  playEmeraldSuiteHover() {
+    this._withContext((now) => {
+      if (this.noiseBuffer) {
+        const noise = this.ctx.createBufferSource()
+        noise.buffer = this.noiseBuffer
+
+        const filter = this.ctx.createBiquadFilter()
+        filter.type = 'bandpass'
+        filter.frequency.setValueAtTime(750, now)
+        filter.frequency.exponentialRampToValueAtTime(1600, now + 0.08)
+        filter.frequency.exponentialRampToValueAtTime(500, now + 0.22)
+        filter.Q.setValueAtTime(2.2, now)
+
+        const gain = this.ctx.createGain()
+        gain.gain.setValueAtTime(0.28, now)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24)
+
+        noise.connect(filter)
+        filter.connect(gain)
+        gain.connect(this.ctx.destination)
+        noise.start(now)
+        noise.stop(now + 0.25)
+      }
+
+      const snapOsc = this.ctx.createOscillator()
+      const snapGain = this.ctx.createGain()
+      snapOsc.type = 'triangle'
+      snapOsc.frequency.setValueAtTime(480, now)
+      snapOsc.frequency.exponentialRampToValueAtTime(120, now + 0.05)
+      snapGain.gain.setValueAtTime(0.3, now)
+      snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06)
+      snapOsc.connect(snapGain)
+      snapGain.connect(this.ctx.destination)
+      snapOsc.start(now)
+      snapOsc.stop(now + 0.07)
+    })
+  }
+
+  // 5. SAKURA RUBY
+  playSakuraRubyHover() {
+    this._withContext((now) => {
+      const sakuraScale = [987.77, 1174.66, 1318.51, 1479.98, 1975.53]
+      sakuraScale.forEach((freq, idx) => {
+        const t = now + idx * 0.032
+        const osc = this.ctx.createOscillator()
+        const gain = this.ctx.createGain()
+
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, t)
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.01, t + 0.15)
+        osc.frequency.exponentialRampToValueAtTime(freq, t + 0.35)
+
+        gain.gain.setValueAtTime(0.18, t)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.42)
+
+        osc.connect(gain)
+        gain.connect(this.ctx.destination)
+
+        osc.start(t)
+        osc.stop(t + 0.45)
+      })
+    })
+  }
+
+  // 6. RETRO 8-BIT
+  playRetro8BitHover() {
+    this._withContext((now) => {
+      const arpHertz = [329.63, 440.0, 659.25, 880.0, 1108.7]
+      arpHertz.forEach((freq, idx) => {
+        const t = now + idx * 0.024
+        const osc = this.ctx.createOscillator()
+        const gain = this.ctx.createGain()
+
+        osc.type = 'square'
+        osc.frequency.setValueAtTime(freq, t)
+
+        const filter = this.ctx.createBiquadFilter()
+        filter.type = 'lowpass'
+        filter.frequency.setValueAtTime(3200, t)
+
+        gain.gain.setValueAtTime(0.12, t)
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08)
+
+        osc.connect(filter)
+        filter.connect(gain)
+        gain.connect(this.ctx.destination)
+
+        osc.start(t)
+        osc.stop(t + 0.09)
+      })
+    })
+  }
+
+  // Master helper: Dispatches the corresponding themed hover sound
+  playThemeCardHover(theme) {
+    if (this.isMuted) return
+    const key = (theme || '').toLowerCase()
+    if (key.includes('obsidian')) return this.playObsidianFoilHover()
+    if (key.includes('gold')) return this.playIvoryGoldHover()
+    if (key.includes('cyber')) return this.playCyberNeonHover()
+    if (key.includes('emerald')) return this.playEmeraldSuiteHover()
+    if (key.includes('sakura')) return this.playSakuraRubyHover()
+    if (key.includes('retro')) return this.playRetro8BitHover()
+    return this.playCardFlip()
+  }
+}
+
+export const SoundEngine = new SoundEngineClass()
