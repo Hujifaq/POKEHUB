@@ -979,8 +979,8 @@ export default function PokerHandOrbitSection() {
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 7.5}`,
-          scrub: 1.2,
+          end: () => `+=${window.innerHeight * 9.0}`,
+          scrub: 1.6,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
@@ -1611,8 +1611,11 @@ export default function PokerHandOrbitSection() {
         {/* ------------------------------------------------------------- */}
         {/* 3. 3D CARD-FLIP KINETIC HERO HUD (BOTTOM-LEFT ON DESKTOP, BOTTOM-CENTER ON MOBILE) */}
         {/* ------------------------------------------------------------- */}
+        {/* ------------------------------------------------------------- */}
+        {/* 3. 3D CARD-FLIP KINETIC HERO HUD (BOTTOM-LEFT ON DESKTOP, BOTTOM-CENTER ON MOBILE) */}
+        {/* ------------------------------------------------------------- */}
         <div
-          className={`absolute bottom-6 sm:bottom-10 lg:bottom-12 left-4 right-4 sm:right-auto sm:left-10 lg:left-14 z-20 pointer-events-none max-w-sm sm:max-w-md lg:max-w-lg [perspective:1200px] transition-all duration-500 ${
+          className={`absolute bottom-3 sm:bottom-10 lg:bottom-12 left-3 right-3 sm:right-auto sm:left-10 lg:left-14 z-20 pointer-events-none max-w-sm sm:max-w-md lg:max-w-lg [perspective:1200px] transition-all duration-500 ${
             isZoomingToNext
               ? 'opacity-0 -translate-y-6 scale-95 pointer-events-none'
               : 'opacity-100 translate-y-0 scale-100'
@@ -1623,9 +1626,9 @@ export default function PokerHandOrbitSection() {
             className="animate-card-flip-3d"
           >
             {/* Tag Badge */}
-            <div className="mb-2 sm:mb-3">
+            <div className="mb-1.5 sm:mb-3">
               <span
-                className="font-pixel text-[9px] sm:text-xs font-black uppercase px-2.5 sm:px-3 py-0.5 sm:py-1 border-[2.5px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
+                className="font-pixel text-[8.5px] sm:text-xs font-black uppercase px-2.5 sm:px-3 py-0.5 sm:py-1 border-[2px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
                 style={{ backgroundColor: currentPhase.accentColor }}
               >
                 {currentPhase.tag}
@@ -1633,17 +1636,17 @@ export default function PokerHandOrbitSection() {
             </div>
 
             {/* Giant Chunky Headline */}
-            <h2 className="font-display text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase text-true-black tracking-tight leading-[0.94] mb-2 sm:mb-4 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
+            <h2 className="font-display text-xl xs:text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase text-true-black tracking-tight leading-[0.94] mb-1.5 sm:mb-4 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
               {currentPhase.headline}
             </h2>
 
             {/* Neo-Brutalist Description Card with Accent Line */}
-            <div className="brutal-window bg-white p-3 sm:p-5 border-[3px] sm:border-[4px] border-true-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
+            <div className="brutal-window bg-white p-2.5 xs:p-3 sm:p-5 border-[2.5px] sm:border-[4px] border-true-black shadow-[3px_3px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
               <div
                 className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
                 style={{ backgroundColor: currentPhase.accentColor }}
               />
-              <p className="font-mono-nb text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
+              <p className="font-mono-nb text-[10.5px] xs:text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
                 {currentPhase.description}
               </p>
             </div>
@@ -1651,10 +1654,10 @@ export default function PokerHandOrbitSection() {
         </div>
 
         {/* ------------------------------------------------------------- */}
-        {/* 4. INTERACTIVE STREET SELECTOR (TOP ON MOBILE, BOTTOM-RIGHT ON DESKTOP) */}
+        {/* 4. INTERACTIVE STREET SELECTOR (TOP-20 ON MOBILE, BOTTOM-RIGHT ON DESKTOP) */}
         {/* ------------------------------------------------------------- */}
         <div
-          className={`absolute top-16 sm:top-auto sm:bottom-6 left-3 right-3 sm:left-auto sm:right-10 z-20 pointer-events-auto flex items-center gap-1.5 sm:gap-2 justify-center sm:justify-end overflow-x-auto custom-scrollbar transition-all duration-500 ${
+          className={`absolute top-20 sm:top-auto sm:bottom-6 left-2 right-2 sm:left-auto sm:right-10 z-20 pointer-events-auto flex items-center gap-1 sm:gap-2 justify-center sm:justify-end overflow-x-auto custom-scrollbar transition-all duration-500 ${
             isZoomingToNext ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
           }`}
         >
@@ -1664,10 +1667,10 @@ export default function PokerHandOrbitSection() {
               <button
                 key={p.id}
                 onClick={() => handleJumpToPhase(idx)}
-                className={`brutal-btn px-2 sm:px-3.5 py-1 sm:py-1.5 font-pixel text-[8px] sm:text-[10px] uppercase font-bold transition-all cursor-pointer shrink-0 ${
+                className={`brutal-btn px-1.5 xs:px-2 sm:px-3.5 py-1 sm:py-1.5 font-pixel text-[7.5px] xs:text-[8px] sm:text-[10px] uppercase font-bold transition-all cursor-pointer shrink-0 ${
                   isActive
                     ? 'bg-[#0D0D0D] text-white shadow-[2px_2px_0px_#FFE500] sm:shadow-[3px_3px_0px_#FFE500] -translate-y-0.5 sm:-translate-y-1'
-                    : 'bg-white text-true-black hover:bg-gray-100 shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000]'
+                    : 'bg-white text-true-black hover:bg-gray-100 shadow-[1.5px_1.5px_0px_#000] sm:shadow-[3px_3px_0px_#000]'
                 }`}
               >
                 <span

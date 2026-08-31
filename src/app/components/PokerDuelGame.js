@@ -458,7 +458,7 @@ function getMatchBadgeLabel(rank, isWinner) {
     case 3: return 'TRIPS'
     case 2: return '2-PAIR'
     case 1: return 'PAIR'
-    default: return 'MATCH'
+    default: return null
   }
 }
 
@@ -477,7 +477,7 @@ function decideBotAction({ bot, cards, communityCards, stage, pot, currentCallAm
     return { action: 'FOLD', amount: 0 }
   }
   const allCards = [...cards, ...(communityCards || [])]
-  const evalResult = evaluateHand(allCards)
+  const evalResult = evaluate7CardHand(allCards)
   const rank = evalResult.rank
 
   // Pre-flop
@@ -580,7 +580,10 @@ function BrutalistCard({
 
   const graffitiMat = PIXEL_GRAFFITI[skinTheme.themeStyle] || PIXEL_GRAFFITI.default || PIXEL_GRAFFITI.obsidian
   const frontMat = PIXEL_FRONTS[skinTheme.themeStyle] || PIXEL_FRONTS.obsidian
-  const suitPix = card ? (PIX_SUITS[card.suit] || PIX_SUITS.spades) : PIX_SUITS.spades
+  const suitPix = card ? (PIX_SUITS[card.suit] || PIX_SUITS[card.suitKey] || PIX_SUITS.spades) : PIX_SUITS.spades
+  const isRed = card?.suit === '♥' || card?.suit === '♦' || card?.suitKey === 'hearts' || card?.suitKey === 'diamonds' || card?.suit === 'hearts' || card?.suit === 'diamonds'
+  const cardColor = card?.color || (isRed ? '#FF3333' : '#0D0D0D')
+  const cardSymbol = card?.symbol || (card?.suit === '♥' || card?.suit === '♦' || card?.suit === '♠' || card?.suit === '♣' ? card.suit : isRed ? (card?.suitKey === 'diamonds' || card?.suit === 'diamonds' ? '♦' : '♥') : (card?.suitKey === 'clubs' || card?.suit === 'clubs' ? '♣' : '♠'))
 
   // FLUID SIZES FOR MAXIMUM READABILITY & FULL DEVICE RESPONSIVENESS
   const sizeClasses = small
@@ -617,7 +620,7 @@ function BrutalistCard({
       )}
 
       {/* Floating MATCH / PAIR / WINNER Badge on matching cards */}
-      {(highlighted || isWinner) && !hidden && card && (
+      {(Boolean(matchBadge) || isWinner) && !hidden && card && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-none whitespace-nowrap animate-bounce">
           <span
             className={`font-pixel font-black flex items-center gap-0.5 rounded-full border-[1.5px] border-[#0D0D0D] shadow-[1.5px_1.5px_0px_#0D0D0D] ${small
@@ -631,7 +634,7 @@ function BrutalistCard({
               }`}
           >
             <span>★</span>
-            <span>{isWinner ? 'WINNER' : (matchBadge || 'MATCH')}</span>
+            <span>{isWinner ? 'WIN' : matchBadge}</span>
           </span>
         </div>
       )}
@@ -685,20 +688,20 @@ function BrutalistCard({
             <div className="flex flex-col items-center">
               <span
                 className={`font-pixel ${small ? 'text-[7.5px] xs:text-[8px]' : large ? 'text-[10px] xs:text-xs sm:text-sm md:text-base' : 'text-[8.5px] xs:text-[9.5px] sm:text-xs md:text-sm'} font-black leading-none drop-shadow-[1px_1px_0px_#fff] inline-block`}
-                style={{ color: card.color }}
+                style={{ color: cardColor }}
               >
                 {card.rank}
               </span>
               <div className="mt-0.5">
                 <PixelArt
                   matrix={suitPix}
-                  size={small ? 0.7 : large ? 1.1 : 0.8}
-                  defaultColor={card.color}
+                  size={small ? 0.75 : large ? 1.2 : 0.85}
+                  defaultColor={cardColor}
                 />
               </div>
             </div>
-            <span className={`${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: card.color }}>
-              {card.symbol}
+            <span className={`${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: cardColor }}>
+              {cardSymbol}
             </span>
           </div>
 
@@ -717,20 +720,20 @@ function BrutalistCard({
 
           {/* Bottom Inverted Corner Index */}
           <div className="flex justify-between items-end leading-none relative z-10 select-none pb-0.5">
-            <span className={`rotate-180 ${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: card.color }}>
-              {card.symbol}
+            <span className={`rotate-180 ${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: cardColor }}>
+              {cardSymbol}
             </span>
             <div className="flex flex-col items-center">
               <div className="rotate-180 mb-0.5">
                 <PixelArt
                   matrix={suitPix}
-                  size={small ? 0.7 : large ? 1.1 : 0.8}
-                  defaultColor={card.color}
+                  size={small ? 0.75 : large ? 1.2 : 0.85}
+                  defaultColor={cardColor}
                 />
               </div>
               <span
                 className={`rotate-180 font-pixel ${small ? 'text-[7.5px] xs:text-[8px]' : large ? 'text-[10px] xs:text-xs sm:text-sm md:text-base' : 'text-[8.5px] xs:text-[9.5px] sm:text-xs md:text-sm'} font-black leading-none drop-shadow-[1px_1px_0px_#fff] inline-block`}
-                style={{ color: card.color }}
+                style={{ color: cardColor }}
               >
                 {card.rank}
               </span>
@@ -982,9 +985,9 @@ export default function PokerDuelGame({
         bankroll: 10000,
         cards: [],
         currentBet: 0,
-        lastAction: 'SEATED',
+        lastAction: 'WAITING TO JOIN',
         actionType: 'none',
-        folded: false,
+        folded: true,
         isBusted: false,
         queuedToJoin: true,
         handName: '',
@@ -993,7 +996,7 @@ export default function PokerDuelGame({
       activeBotsRef.current = updated
       return updated
     })
-    triggerToast('TABLE', `${rosterBot.name} SEATED ($10,000)!`, '#FFE500', '+')
+    triggerToast('TABLE', `${rosterBot.name} SEATED ($10,000)! QUEUED FOR NEXT HAND`, '#FFE500', '+')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
     }
@@ -1033,10 +1036,19 @@ export default function PokerDuelGame({
 
   const handleRebuyBot = (botId) => {
     SoundEngine.playChipsStack()
-    const updated = activeBots.map(b => b.id === botId ? { ...b, queuedToJoin: true, isSeated: true } : b)
-    setActiveBots(updated)
-    activeBotsRef.current = updated
-    const bot = activeBots.find(b => b.id === botId)
+    setActiveBots(prev => {
+      const updated = prev.map(b => b.id === botId ? {
+        ...b,
+        queuedToJoin: true,
+        isSeated: true,
+        bankroll: 10000,
+        isBusted: false,
+        lastAction: 'WAITING TO JOIN'
+      } : b)
+      activeBotsRef.current = updated
+      return updated
+    })
+    const bot = (activeBotsRef.current || []).find(b => b.id === botId)
     triggerToast('TABLE', `${bot?.name || 'BOT'} +$10,000! QUEUED TO RE-JOIN NEXT HAND`, '#FFE500', '✓')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
@@ -1045,9 +1057,18 @@ export default function PokerDuelGame({
 
   const handleRebuyAllBots = () => {
     SoundEngine.playJackpot()
-    const updated = activeBots.map(b => ({ ...b, isSeated: true, queuedToJoin: true, isBusted: false, bankroll: 10000 }))
-    setActiveBots(updated)
-    activeBotsRef.current = updated
+    setActiveBots(prev => {
+      const updated = prev.map(b => ({
+        ...b,
+        isSeated: true,
+        queuedToJoin: true,
+        isBusted: false,
+        bankroll: 10000,
+        lastAction: 'WAITING TO JOIN'
+      }))
+      activeBotsRef.current = updated
+      return updated
+    })
     triggerToast('TABLE', 'ALL BOTS SEATED & REBOUGHT ($10,000)!', '#FFE500', '✓')
     if (stageRef.current === 'table_paused' || stageRef.current === 'showdown' || stageRef.current === 'idle') {
       setTimeout(startNewHand, 300)
@@ -1124,13 +1145,51 @@ export default function PokerDuelGame({
     setBbIndex(engineState.bbIndex !== undefined ? engineState.bbIndex : 2)
     setSidePots(engineState.sidePots || [])
 
-    // Map bots to activeBots format
+    // Map bots to activeBots format while preserving pending queuedToJoin / seat states
+    const previousBots = activeBotsRef.current || []
     const mappedBots = BOT_ROSTER.map((roster, idx) => {
       const b = bots[idx]
-      if (!b) return { ...roster, isSeated: false, bankroll: 0, cards: [], isBusted: true, folded: true }
+      const prevBot = previousBots[idx]
+      
+      // If the engine state already has this bot active in the hand with cards, they have entered the table!
+      const isAlreadyInHand = Boolean(b && b.isSeated && b.cards && b.cards.length >= 2)
+      const isQueued = !isAlreadyInHand && Boolean(prevBot?.queuedToJoin)
+
+      if (isQueued) {
+        return {
+          ...roster,
+          avatarKey: roster.avatarKey || prevBot?.avatarKey || 'samurai',
+          ...(b || {}),
+          ...prevBot,
+          isSeated: true,
+          queuedToJoin: true,
+          bankroll: prevBot?.bankroll || 10000,
+          currentBet: b?.roundBet || 0,
+          cards: b?.cards || [],
+          isBusted: false,
+          folded: b ? b.folded : true
+        }
+      }
+
+      if (!b || !b.isSeated) {
+        return {
+          ...roster,
+          avatarKey: roster.avatarKey || 'samurai',
+          isSeated: false,
+          bankroll: 0,
+          cards: [],
+          isBusted: true,
+          folded: true,
+          queuedToJoin: false
+        }
+      }
+
       return {
         ...roster,
         ...b,
+        avatarKey: roster.avatarKey || b.avatarKey || 'samurai',
+        isSeated: true,
+        queuedToJoin: false,
         currentBet: b.roundBet || 0,
         isBusted: b.bankroll < (engineState.bbAmount || 500) && !b.totalHandBet,
         cards: b.cards || []
@@ -1578,17 +1637,20 @@ export default function PokerDuelGame({
 
     const updatedBots = BOT_ROSTER.map((rosterBot, idx) => {
       const existing = currentBotsList[idx]
-      const shouldBeSeated = existing ? existing.isSeated : idx < seatedCount
+      const shouldBeSeated = existing
+        ? (Boolean(existing.isSeated) || Boolean(existing.queuedToJoin))
+        : idx < seatedCount
       let bBankroll = existing?.bankroll || 0
 
-      // Auto-rebuy bot if below big blind ($500)
-      if (shouldBeSeated && bBankroll < 500) {
+      // Auto-rebuy bot if below big blind ($500) or if freshly queued to join
+      if (shouldBeSeated && (bBankroll < 500 || existing?.queuedToJoin)) {
         bBankroll = 10000
       }
 
       return {
         ...rosterBot,
         ...(existing || {}),
+        avatarKey: rosterBot.avatarKey || existing?.avatarKey || 'samurai',
         isSeated: shouldBeSeated,
         bankroll: shouldBeSeated ? bBankroll : 0,
         isBusted: false,
@@ -1604,6 +1666,9 @@ export default function PokerDuelGame({
         isThinking: false
       }
     })
+
+    activeBotsRef.current = updatedBots
+    setActiveBots(updatedBots)
 
     // 3. Assemble all 6 seats for pokerEngine (Seat 0: Hero, Seats 1-5: Bots)
     const heroSeat = {
@@ -1885,7 +1950,7 @@ export default function PokerDuelGame({
   if (!isOpen) return null
 
   // Real-time Hero Hand and Matched Card IDs calculation
-  const heroEval = playerCards.length > 0 ? evaluateHand([...playerCards, ...communityCards]) : null
+  const heroEval = playerCards.length > 0 ? evaluate7CardHand([...playerCards, ...communityCards]) : null
   const heroMatchedCardIds = new Set(
     (heroEval?.matchingCards || []).map(c => c.id).filter(Boolean)
   )
@@ -1903,7 +1968,7 @@ export default function PokerDuelGame({
         ? [...winningBot.cards, ...communityCards]
         : [...playerCards, ...communityCards])
     : []
-  const winningEval = stage === 'showdown' && winningCardsForEval.length > 0 ? evaluateHand(winningCardsForEval) : null
+  const winningEval = stage === 'showdown' && winningCardsForEval.length > 0 ? evaluate7CardHand(winningCardsForEval) : null
   const winningMatchedCardIds = new Set(
     (winningEval?.matchingCards || []).map(c => c.id).filter(Boolean)
   )
@@ -1959,10 +2024,10 @@ export default function PokerDuelGame({
               title={isBusted ? (bot.queuedToJoin ? 'Queued to rejoin next hand ($10,000)' : 'Click [+] to bring bot back with $10,000') : bot.name}
             >
               <PixelAvatar
-                avatarKey={bot.avatarKey || 'samurai'}
+                avatarKey={bot.avatarKey || rosterBot.avatarKey || 'samurai'}
                 size={2.4}
-                isBusted={isBusted}
-                isQueued={bot.queuedToJoin}
+                isBusted={isBusted && !bot.queuedToJoin}
+                isQueued={Boolean(bot.queuedToJoin)}
                 className="w-full h-full object-contain"
               />
 
@@ -2027,7 +2092,7 @@ export default function PokerDuelGame({
             <div className={`relative inline-flex items-center justify-center -space-x-3 xs:-space-x-4 sm:-space-x-5 ${bot.folded ? 'opacity-40 grayscale' : ''}`}>
               {(() => {
                 const isBotShowdown = stage === 'showdown' && !bot.folded
-                const botEval = isBotShowdown ? evaluateHand([...bot.cards, ...communityCards]) : null
+                const botEval = isBotShowdown ? evaluate7CardHand([...bot.cards, ...communityCards]) : null
                 const botMatchedIds = isBotShowdown ? new Set((botEval?.matchingCards || []).map(c => c.id).filter(Boolean)) : new Set()
                 const isThisBotWinner = stage === 'showdown' && showWinnerOverlay && (winnerName === bot.name || winnerName.includes(bot.name))
                 const botBadge = getMatchBadgeLabel(botEval?.rank || 0, isThisBotWinner)
@@ -2560,10 +2625,10 @@ export default function PokerDuelGame({
           {renderBotSeat(activeBots[2], 2, 'top-2 sm:top-4 right-2 sm:right-6 md:right-10', 'top-[64px] sm:top-[76px] right-14 sm:right-24')}
 
           {/* SEAT 4: Mid/Bottom Left (Bot 3 - High Roller) */}
-          {renderBotSeat(activeBots[3], 3, 'bottom-16 sm:bottom-20 md:bottom-24 left-1 sm:left-4 md:left-8', '-top-8 sm:-top-10 left-12 sm:left-18')}
+          {renderBotSeat(activeBots[3], 3, 'bottom-14 xs:bottom-16 sm:bottom-20 md:bottom-24 left-1 sm:left-4 md:left-8', '-top-7 xs:-top-8 sm:-top-10 left-10 xs:left-12 sm:left-18')}
 
           {/* SEAT 5: Mid/Bottom Right (Bot 4 - Neon Queen) */}
-          {renderBotSeat(activeBots[4], 4, 'bottom-16 sm:bottom-20 md:bottom-24 right-1 sm:right-4 md:right-8', '-top-8 sm:-top-10 right-12 sm:right-18')}
+          {renderBotSeat(activeBots[4], 4, 'bottom-14 xs:bottom-16 sm:bottom-20 md:bottom-24 right-1 sm:right-4 md:right-8', '-top-7 xs:-top-8 sm:-top-10 right-10 xs:right-12 sm:right-18')}
 
           {/* ------------------------------------------------------ */}
           {/* SEAT 0: BOTTOM CENTER (HERO / YOU - LARGE COCKPIT)     */}
@@ -2657,7 +2722,7 @@ export default function PokerDuelGame({
                       hidden={isPlayerFolded}
                       animClass={isPlayerFolded ? 'animate-card-reveal' : 'animate-deal-player'}
                       deckSkin={equippedDeck}
-                      highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[0].id) || isPlayerAllIn)}
+                      highlighted={!isPlayerFolded && heroMatchedCardIds.has(playerCards[0].id)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[0].id)}
                       matchBadge={!isPlayerFolded && heroMatchedCardIds.has(playerCards[0].id) ? heroMatchBadgeLabel : null}
                     />
@@ -2671,7 +2736,7 @@ export default function PokerDuelGame({
                       hidden={isPlayerFolded}
                       animClass={isPlayerFolded ? 'animate-card-reveal' : 'animate-deal-player'}
                       deckSkin={equippedDeck}
-                      highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[1].id) || isPlayerAllIn)}
+                      highlighted={!isPlayerFolded && heroMatchedCardIds.has(playerCards[1].id)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[1].id)}
                       matchBadge={!isPlayerFolded && heroMatchedCardIds.has(playerCards[1].id) ? heroMatchBadgeLabel : null}
                     />

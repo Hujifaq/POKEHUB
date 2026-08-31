@@ -28,7 +28,7 @@ const royalFlush = evaluate7CardHand([
   { val: 2, suitKey: 'spades' },
   { val: 3, suitKey: 'clubs' }
 ])
-assert(royalFlush.name === 'ROYAL FLUSH', 'Royal flush evaluated correctly')
+assert(royalFlush.name.includes('Royal Flush'), 'Royal flush evaluated correctly')
 
 const fullHouse = evaluate7CardHand([
   { val: 14, suitKey: 'spades' },
@@ -118,5 +118,43 @@ assert(state.currentTurnIndex === 1, 'Turn loops back to SB (Index 1) to respond
 state = executePlayerAction(state, 1, PlayerActionType.CALL)
 assert(state.phase === GamePhase.TURN, 'Phase advanced to TURN')
 assert(state.communityCards.length === 4, 'Turn dealt 4th card')
+
+console.log('\n--- TEST 5: Uncontested Fold Bankroll Payout ---')
+const foldGameState = {
+  phase: GamePhase.IDLE,
+  dealerButtonIndex: 0,
+  sbAmount: 250,
+  bbAmount: 500,
+  players: [
+    { id: 'P0', name: 'Player 0', bankroll: 10000, isSeated: true, folded: false, isBusted: false, isSittingOut: false },
+    { id: 'P1', name: 'Player 1', bankroll: 10000, isSeated: true, folded: false, isBusted: false, isSittingOut: false }
+  ]
+}
+let fGame = startNewHand(foldGameState) // Button 1, SB 1 (posted 250, bankroll 9750), BB 0 (posted 500, bankroll 9500), Pot = 750
+// SB (Player 1) folds preflop
+fGame = executePlayerAction(fGame, 1, PlayerActionType.FOLD)
+assert(fGame.phase === GamePhase.HAND_RESOLVED, 'Game resolved on fold')
+assert(fGame.players[0].bankroll === 10250, 'BB received full pot ($9,500 + $750 = $10,250)')
+
+console.log('\n--- TEST 6: Odd Chip Distribution in Split Pot ---')
+import { evaluateShowdownAndDistributePots } from '../src/app/utils/pokerEngine.js'
+// 2 players tie for an odd pot of $751. Button is at 0.
+// SB is Player 1 (left of button -> distance 1). BB is Player 0 (button -> distance 0).
+// Player 1 (SB) is closest to left of button, so Player 1 gets the odd chip ($376) and Player 0 gets ($375).
+const splitState = {
+  phase: GamePhase.SHOWDOWN,
+  dealerButtonIndex: 0,
+  communityCards: [
+    { val: 14, suitKey: 'spades' }, { val: 13, suitKey: 'hearts' }, { val: 12, suitKey: 'diamonds' }, { val: 11, suitKey: 'clubs' }, { val: 9, suitKey: 'spades' }
+  ],
+  sidePots: [{ amount: 751, eligibleWinnerIds: ['p0', 'p1'], isSidePot: false }],
+  players: [
+    { id: 'p0', name: 'P0', bankroll: 0, cards: [{ val: 2, suitKey: 'c' }, { val: 3, suitKey: 'd' }], folded: false, isSeated: true },
+    { id: 'p1', name: 'P1', bankroll: 0, cards: [{ val: 4, suitKey: 'c' }, { val: 5, suitKey: 'd' }], folded: false, isSeated: true }
+  ]
+}
+const showdownResult = evaluateShowdownAndDistributePots(splitState)
+assert(showdownResult.players[1].bankroll === 376, 'Odd chip ($1) awarded to P1 (first seat left of button)')
+assert(showdownResult.players[0].bankroll === 375, 'P0 received base split ($375)')
 
 console.log('\n--- ALL UNIT TESTS PASSED PERFECTLY! ---')

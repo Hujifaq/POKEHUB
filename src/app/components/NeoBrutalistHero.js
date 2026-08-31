@@ -483,10 +483,10 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
     cardGroup.add(smokeMesh)
 
-    // Start position: centered on load as the main Hero Section
+    // Start position: perfectly centered facing front as the main Hero Section
     const initialCardScale = getTargetCardScale(initWidth)
     cardGroup.position.set(0, 0, 0)
-    cardGroup.rotation.set(-0.06, -0.22, 0.02)
+    cardGroup.rotation.set(0, 0, 0)
     cardGroup.scale.set(initialCardScale, initialCardScale, initialCardScale)
     scene.add(cardGroup)
     cardGroupRef.current = cardGroup
@@ -505,13 +505,60 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
     accentCyan.position.set(5, -3, 4)
     scene.add(accentCyan)
 
-    // Gentle idle floating loop & 3D pixel smoke animation
+    // Mouse Interactive Parallax & 3D Tilt System
+    let targetMouseX = 0
+    let targetMouseY = 0
+    let currentMouseX = 0
+    let currentMouseY = 0
+
+    const onMouseMove = (e) => {
+      // mouseX: -1 (left) to +1 (right)
+      // mouseY: -1 (top) to +1 (bottom)
+      const x = (e.clientX / window.innerWidth) * 2 - 1
+      const y = (e.clientY / window.innerHeight) * 2 - 1
+      targetMouseX = Math.max(-1, Math.min(1, x))
+      targetMouseY = Math.max(-1, Math.min(1, y))
+    }
+
+    const onMouseLeave = () => {
+      targetMouseX = 0
+      targetMouseY = 0
+    }
+
+    window.addEventListener('mousemove', onMouseMove, { passive: true })
+    window.addEventListener('mouseleave', onMouseLeave)
+    window.addEventListener('blur', onMouseLeave)
+
+    // Gentle idle floating loop, 3D mouse tilt & 3D pixel smoke animation
     let raf = 0
     const start = performance.now()
     const animate = () => {
       const t = (performance.now() - start) / 1000
+
+      // Smooth damping lerp for mouse parallax
+      currentMouseX += (targetMouseX - currentMouseX) * 0.08
+      currentMouseY += (targetMouseY - currentMouseY) * 0.08
+
       if (cardGroup.scale.x < 3) {
-        card.position.y = Math.sin(t * 1.2) * 0.06
+        // Natural interactive 3D tilt facing the mouse cursor:
+        // Cursor UP (mouseY = -1) -> card.rotation.x = -0.55 (card tilts back, front face points UP)
+        // Cursor DOWN (mouseY = +1) -> card.rotation.x = +0.55 (card tilts forward, front face points DOWN)
+        // Cursor LEFT (mouseX = -1) -> card.rotation.y = -0.55 (card turns left, front face points LEFT)
+        // Cursor RIGHT (mouseX = +1) -> card.rotation.y = +0.55 (card turns right, front face points RIGHT)
+        card.rotation.x = currentMouseY * 0.55
+        card.rotation.y = currentMouseX * 0.55
+        card.rotation.z = -currentMouseX * 0.08
+
+        // Dynamic spatial parallax translation (following mouse in 3D space)
+        card.position.x = currentMouseX * 0.35
+        card.position.y = -currentMouseY * 0.35 + Math.sin(t * 1.2) * 0.06
+
+        // Dynamic specular highlight glinting across the card foil
+        key.position.x = 4 + currentMouseX * 4
+        key.position.y = 6 - currentMouseY * 4
+      } else {
+        card.rotation.set(0, 0, 0)
+        card.position.set(0, 0, 0)
       }
 
       // Update 3D pixel dark smoke particles
@@ -548,7 +595,7 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
     // Scrollytelling Timeline: Complete Zoom-Through -> Seamless Transition into How To Play (Riffle Deck)
     let lastPlayTime = 0
-    let lastRotationY = -0.22
+    let lastRotationY = 0
     let portalSoundPlayed = false
 
     const ctx = gsap.context(() => {
@@ -558,9 +605,8 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 1.0}`,
-          pinSpacing: false,
-          scrub: 0.8,
+          end: () => `+=${window.innerHeight * 3.5}`,
+          scrub: 1.8,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
@@ -571,13 +617,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
             const scrollVel = Math.abs(self.getVelocity() / 1000)
 
             // STAGE 1 & 2: As the 3D card rotates / turns through space
-            if (progress < 0.65) {
+            if (progress < 0.70) {
               if (progress < 0.45) {
                 portalSoundPlayed = false
               }
 
               // Trigger on rotation delta with responsive throttling
-              if (rotDelta > 0.32 && (now - lastPlayTime > 80)) {
+              if (rotDelta > 0.32 && (now - lastPlayTime > 100)) {
                 const direction = currentRotY >= lastRotationY ? 1 : -1
                 const normVel = Math.min(2.5, Math.max(0.35, scrollVel || rotDelta * 2.2))
                 const isMicro = normVel < 0.65 && rotDelta < 0.55
@@ -592,7 +638,7 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
                 lastPlayTime = now
                 lastRotationY = currentRotY
               }
-            } else if (progress >= 0.65 && progress <= 0.95) {
+            } else if (progress >= 0.70 && progress <= 0.98) {
               // STAGE 4: Climax Zoom-Through Portal Warp
               if (!portalSoundPlayed && self.direction > 0 && (now - lastPlayTime > 180)) {
                 SoundEngine.playHeroCardPortalWarp()
@@ -605,12 +651,12 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       })
 
       // ==========================================
-      // STAGE 1: SEAMLESS ENTRY & FOCUS (0.0 -> 0.65s)
+      // STAGE 1: SEAMLESS ENTRY & FOCUS (0.0 -> 0.7s)
       // Card steps forward from depth to dead center with smooth 360 spin
       // ==========================================
       tl.to(
         cardGroup.position,
-        { x: 0, y: 0, z: 0, ease: 'power2.out', duration: 0.65 },
+        { x: 0, y: 0, z: 0, ease: 'power2.out', duration: 0.70 },
         0
       )
         .to(
@@ -620,13 +666,13 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
             y: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
             z: () => getTargetCardScale(pinWrapper.clientWidth || window.innerWidth),
             ease: 'power2.out',
-            duration: 0.65
+            duration: 0.70
           },
           0
         )
         .to(
           cardGroup.rotation,
-          { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.out', duration: 0.65 },
+          { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.out', duration: 0.70 },
           0
         )
 
@@ -634,74 +680,74 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       if (textRef.current) {
         tl.to(
           textRef.current,
-          { autoAlpha: 0, y: -70, ease: 'power2.in', duration: 0.38 },
+          { autoAlpha: 0, y: -70, ease: 'power2.in', duration: 0.45 },
           0
         )
       }
 
       // ==========================================
-      // STAGE 2: SHOWCASE & FOIL HIGHLIGHT (0.65 -> 1.15s)
+      // STAGE 2: SHOWCASE & FOIL HIGHLIGHT (0.7 -> 1.3s)
       // ==========================================
       if (secondRevealRef.current) {
         tl.fromTo(
           secondRevealRef.current,
           { autoAlpha: 0, y: 60, scale: 0.88 },
-          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.42 },
-          0.65
+          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.2)', duration: 0.55 },
+          0.70
         )
       }
 
       // Subtle metallic foil shine tilt
       tl.to(
         cardGroup.rotation,
-        { y: Math.PI * 2 + 0.12, x: 0.05, ease: 'power1.inOut', duration: 0.42 },
-        0.70
+        { y: Math.PI * 2 + 0.12, x: 0.05, ease: 'power1.inOut', duration: 0.55 },
+        0.75
       )
 
       // ==========================================
-      // STAGE 3: LOCK ON CENTER & CLEAR UI (1.15 -> 1.45s)
+      // STAGE 3: LOCK ON CENTER & CLEAR UI (1.3 -> 1.7s)
       // ==========================================
       // Straighten card perfectly facing camera
       tl.to(
         cardGroup.rotation,
-        { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.inOut', duration: 0.30 },
-        1.15
+        { y: Math.PI * 2, x: 0, z: 0, ease: 'power2.inOut', duration: 0.40 },
+        1.30
       )
 
       // Secondary Reveal Banner drops down and disappears
       if (secondRevealRef.current) {
         tl.to(
           secondRevealRef.current,
-          { autoAlpha: 0, y: 50, scale: 0.85, ease: 'power2.in', duration: 0.28 },
-          1.15
+          { autoAlpha: 0, y: 50, scale: 0.85, ease: 'power2.in', duration: 0.35 },
+          1.30
         )
       }
 
       // ==========================================
-      // STAGE 4: CINEMATIC ZOOM-THROUGH (1.45s -> 2.05s)
+      // STAGE 4: CINEMATIC ZOOM-THROUGH (1.7s -> 2.4s)
       // Card expands into flying portal & dissolves
       // ==========================================
       tl.to(
         camera.position,
-        { z: 0.1, ease: 'power3.in', duration: 0.50 },
-        1.45
+        { z: 0.1, ease: 'power3.in', duration: 0.70 },
+        1.70
       )
         .to(
           cardGroup.scale,
-          { x: 50, y: 50, z: 50, ease: 'power3.in', duration: 0.50 },
-          1.45
+          { x: 50, y: 50, z: 50, ease: 'power3.in', duration: 0.70 },
+          1.70
         )
         .to(
           cardGroup.position,
-          { z: 2.2, ease: 'power2.in', duration: 0.50 },
-          1.45
+          { z: 2.2, ease: 'power2.in', duration: 0.70 },
+          1.70
         )
 
       // Fade out 3D black smoke on penetration
       tl.to(
         smokeMat,
-        { opacity: 0, duration: 0.35, ease: 'power2.in' },
-        1.45
+        { opacity: 0, duration: 0.45, ease: 'power2.in' },
+        1.70
       )
 
       // Portal warp flare expands and dissolves smoothly without edge clipping (Zero-Cutoff Soft Radial Decay)
@@ -709,32 +755,41 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
         tl.fromTo(
           portalOverlayRef.current,
           { autoAlpha: 0, scale: 0.4 },
-          { autoAlpha: 1.0, scale: 1.35, ease: 'power2.out', duration: 0.25 },
-          1.45
+          { autoAlpha: 1.0, scale: 1.35, ease: 'power2.out', duration: 0.35 },
+          1.70
         )
           .to(
             portalOverlayRef.current,
-            { autoAlpha: 0, scale: 1.9, ease: 'power2.in', duration: 0.26 },
-            1.70
+            { autoAlpha: 0, scale: 1.9, ease: 'power2.in', duration: 0.35 },
+            2.05
           )
       }
 
       // Materials dissolve smoothly as camera passes through
       tl.to(
         frontFoilMaterial,
-        { opacity: 0, duration: 0.30, ease: 'power2.out' },
-        1.70
+        { opacity: 0, duration: 0.40, ease: 'power2.out' },
+        2.00
       )
         .to(
           backFoilMaterial,
-          { opacity: 0, duration: 0.30, ease: 'power2.out' },
-          1.70
+          { opacity: 0, duration: 0.40, ease: 'power2.out' },
+          2.00
         )
         .to(
           edgeMaterial,
-          { opacity: 0, duration: 0.30, ease: 'power2.out' },
-          1.70
+          { opacity: 0, duration: 0.40, ease: 'power2.out' },
+          2.00
         )
+
+      // Fade canvas out right at the conclusion of Hero zoom-through
+      if (canvasRef.current) {
+        tl.to(
+          canvasRef.current,
+          { opacity: 0, duration: 0.40, ease: 'power2.out' },
+          2.00
+        )
+      }
 
     }, containerRef)
 
@@ -768,6 +823,9 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
       clearTimeout(refreshTimer)
       cancelAnimationFrame(raf)
       window.removeEventListener('resize', onResize)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseleave', onMouseLeave)
+      window.removeEventListener('blur', onMouseLeave)
       ctx.revert()
       bodyGeometry.dispose()
       frontGeometry.dispose()
@@ -833,38 +891,38 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
         {/* Main Hero UI Layer */}
         <div
           ref={textRef}
-          className="relative z-20 flex h-full flex-col items-center justify-center px-6 text-center will-change-transform"
+          className="relative z-20 flex h-full flex-col items-center justify-center px-4 sm:px-6 text-center will-change-transform pt-16 sm:pt-20 md:pt-0 pb-12 sm:pb-0"
         >
           {/* Retro Badge */}
           <div
-            className="font-mono-nb mb-6 inline-flex items-center gap-2 border-[3px] border-true-black bg-white px-4 py-1.5 text-xs font-bold tracking-widest text-true-black uppercase brutal-shadow-sm"
+            className="font-mono-nb mb-3 xs:mb-4 sm:mb-6 inline-flex items-center gap-1.5 sm:gap-2 border-[2.5px] sm:border-[3px] border-true-black bg-white px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold tracking-wider text-true-black uppercase brutal-shadow-sm"
           >
             <span>Deck v2.0 — Now Shuffling</span>
           </div>
 
           {/* Headline */}
-          <h1 className="font-display max-w-4xl text-4xl leading-[1.1] text-true-black uppercase sm:text-6xl lg:text-7xl">
+          <h1 className="font-display max-w-4xl text-3xl xs:text-4xl sm:text-6xl lg:text-7xl leading-[1.05] sm:leading-[1.1] text-true-black uppercase">
             <span className="font-serif italic capitalize font-normal text-[1.18em] tracking-normal text-[#D6336C] drop-shadow-[3px_3px_0px_#050505] -rotate-3 inline-block mr-1 align-baseline select-none">
               Play
             </span>{' '}
             <span
-              className="text-white drop-shadow-[4px_4px_0px_#050505]"
+              className="text-white drop-shadow-[3px_3px_0px_#050505] sm:drop-shadow-[4px_4px_0px_#050505]"
               style={{
-                WebkitTextStroke: '3px #050505',
+                WebkitTextStroke: '2.5px #050505',
                 paintOrder: 'stroke fill'
               }}
             >
               YOUR
             </span>{' '}
             <span
-              className="inline-block -rotate-2 border-[4px] border-true-black bg-accent-yellow px-4 py-1 text-true-black brutal-shadow transition-transform hover:rotate-0"
+              className="inline-block -rotate-2 border-[3px] sm:border-[4px] border-true-black bg-accent-yellow px-2.5 sm:px-4 py-0.5 sm:py-1 text-true-black brutal-shadow transition-transform hover:rotate-0"
             >
               winning
             </span>{' '}
             <span
-              className="text-white drop-shadow-[4px_4px_0px_#050505]"
+              className="text-white drop-shadow-[3px_3px_0px_#050505] sm:drop-shadow-[4px_4px_0px_#050505]"
               style={{
-                WebkitTextStroke: '3px #050505',
+                WebkitTextStroke: '2.5px #050505',
                 paintOrder: 'stroke fill'
               }}
             >
@@ -874,7 +932,7 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
 
           {/* Subtitle */}
           <p
-            className="font-mono-nb mt-6 max-w-xl text-xs sm:text-sm text-accent-yellow font-black leading-relaxed drop-shadow-[2px_2px_0px_#050505]"
+            className="font-mono-nb mt-3 xs:mt-4 sm:mt-6 max-w-xl text-[11px] xs:text-xs sm:text-sm text-accent-yellow font-black leading-relaxed drop-shadow-[1.5px_1.5px_0px_#050505] sm:drop-shadow-[2px_2px_0px_#050505]"
             style={{
               WebkitTextStroke: '1px #050505',
               paintOrder: 'stroke fill'
@@ -884,10 +942,10 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
           </p>
 
           {/* Interactive Action Buttons */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-5 xs:mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-4">
             <button
               onClick={handleDrawCard}
-              className="brutal-btn bg-true-black text-white px-7 py-3.5 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer hover:bg-accent-yellow hover:text-true-black transition-colors"
+              className="brutal-btn bg-true-black text-white px-5 sm:px-7 py-2.5 sm:py-3.5 font-display text-xs sm:text-base font-black uppercase tracking-wider cursor-pointer hover:bg-accent-yellow hover:text-true-black transition-colors"
             >
               Draw a card →
             </button>
@@ -898,17 +956,17 @@ export default function NeoBrutalistHero({ onOpenDuel, onScrollToGallery, contai
                 if (onScrollToGallery) {
                   onScrollToGallery()
                 } else if (containerRef.current) {
-                  window.scrollBy({ top: window.innerHeight * 2.5, behavior: 'smooth' })
+                  window.scrollBy({ top: window.innerHeight * 4.0, behavior: 'smooth' })
                 }
               }}
-              className="brutal-btn bg-white text-true-black px-5 py-3.5 font-pixel text-[10px] sm:text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-accent-yellow"
+              className="brutal-btn bg-white text-true-black px-3.5 sm:px-5 py-2.5 sm:py-3.5 font-pixel text-[9px] xs:text-[10px] sm:text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-accent-yellow"
             >
               Explore Decks ↓
             </button>
           </div>
 
           {/* Scroll Cue */}
-          <div className="font-mono-nb absolute bottom-8 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs font-bold tracking-widest text-true-black/60 uppercase flex flex-col items-center gap-1">
+          <div className="font-mono-nb absolute bottom-3 sm:bottom-8 left-1/2 -translate-x-1/2 text-[9px] sm:text-xs font-bold tracking-widest text-true-black/60 uppercase hidden xs:flex flex-col items-center gap-0.5 sm:gap-1">
             <span className="animate-bounce">↓</span>
             <span>Scroll to plunge into 3D Card</span>
           </div>

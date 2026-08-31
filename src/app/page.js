@@ -293,16 +293,16 @@ export default function Home() {
             </Link>
 
             {/* Bankroll Faux Window */}
-            <div className="brutal-window flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0">
+            <div className="brutal-window flex items-center gap-1 sm:gap-2 px-1.5 xs:px-2.5 sm:px-3.5 py-1 sm:py-2 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0">
               <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider font-pixel text-true-black hidden sm:inline">
                 BANKROLL:
               </span>
-              <span className="text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
+              <span className="text-[11px] xs:text-xs sm:text-sm font-black text-emerald-600 tracking-tight drop-shadow-[1px_1px_0px_#050505] font-display">
                 ${bankroll.toLocaleString()}
               </span>
               <button
                 onClick={handleRefillBankroll}
-                className="brutal-btn bg-accent-yellow text-true-black text-[8px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5"
+                className="brutal-btn bg-accent-yellow text-true-black text-[7.5px] xs:text-[8.5px] sm:text-[10px] font-black px-1 sm:px-2 py-0.5"
                 title="Add +$5,000 High Roller Chips"
               >
                 +$5K
@@ -312,7 +312,7 @@ export default function Home() {
             {/* Sound Effects Mute / Unmute Toggle Button */}
             <button
               onClick={handleToggleMute}
-              className={`brutal-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
+              className={`brutal-btn flex items-center gap-1 px-1.5 xs:px-2.5 sm:px-3 py-1 sm:py-2 font-pixel text-[8px] xs:text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
                 !isMuted
                   ? 'bg-accent-cyan text-true-black'
                   : 'bg-white text-gray-500'
@@ -336,9 +336,9 @@ export default function Home() {
         menuBg="#ffffff"
         menuContentColor="#050505"
         menuAriaLabel="Toggle navigation"
-        animationEase="back.out(1.5)"
-        animationDuration={0.5}
-        staggerDelay={0.1}
+        animationEase="back.out(1.2)"
+        animationDuration={0.65}
+        staggerDelay={0.10}
         items={bubbleMenuItems}
       />
 

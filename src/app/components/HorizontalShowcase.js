@@ -988,7 +988,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
       ref={cardFrameRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`w-[85vw] sm:w-[500px] md:w-[580px] lg:w-[640px] h-[500px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-5 sm:p-8 rounded-[28px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] overflow-hidden bg-gradient-to-br ${item.bgGradient} md:${item.rotation} transition-transform duration-300 hover:scale-[1.01]`}
+      className={`w-[88vw] xs:w-[85vw] sm:w-[500px] md:w-[580px] lg:w-[640px] h-[480px] xs:h-[530px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-3.5 xs:p-5 sm:p-8 rounded-[24px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[5px_5px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] overflow-hidden bg-gradient-to-br ${item.bgGradient} md:${item.rotation} transition-transform duration-300 hover:scale-[1.01]`}
       style={{ perspective: 1200 }}
     >
       {/* Background Watermark Number */}
@@ -1071,7 +1071,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
             SoundEngine.playThemeCardHover(item.themeStyle || item.cardSkin)
             setIsFlipped(f => !f)
           }}
-          className="relative w-[190px] xs:w-[210px] sm:w-[240px] md:w-[270px] h-[270px] xs:h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
+          className="relative w-[165px] xs:w-[200px] sm:w-[240px] md:w-[270px] h-[240px] xs:h-[290px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
           style={{ perspective: 1200 }}
         >
           {/* Inner 3D Flipping Card Body */}
@@ -1190,8 +1190,8 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${getScrollDistance()}`,
-          scrub: 1,
+          end: () => `+=${Math.round(getScrollDistance() * 1.3)}`,
+          scrub: 1.6,
           invalidateOnRefresh: true,
           anticipatePin: 1
         }
@@ -1226,54 +1226,54 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           className="flex items-stretch md:items-center h-full w-full md:w-max overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none px-4 sm:px-8 md:px-20 gap-4 sm:gap-8 md:gap-16 custom-scrollbar touch-pan-x pb-4 md:pb-0 will-change-transform"
         >
           {/* SLIDE 1: Hero Typography Headline */}
-          <div className="w-[88vw] sm:w-[500px] md:w-[620px] lg:w-[680px] snap-center shrink-0 flex flex-col justify-center pr-2 sm:pr-4">
+          <div className="w-[88vw] xs:w-[85vw] sm:w-[500px] md:w-[620px] lg:w-[680px] snap-center shrink-0 flex flex-col justify-center pr-2 sm:pr-4">
             {/* Top Pill Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm w-max mb-4 sm:mb-6">
-              <span className="font-pixel text-[10px] sm:text-xs font-black uppercase text-true-black">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent-cyan border-[2.5px] sm:border-[3px] border-true-black brutal-shadow-sm w-max mb-3 sm:mb-6">
+              <span className="font-pixel text-[9px] xs:text-[10px] sm:text-xs font-black uppercase text-true-black">
                 POKERHUB VAULT
               </span>
             </div>
 
             {/* Main Huge Punchy Title */}
             <div className="font-display tracking-tight text-true-black leading-[0.95]">
-              <span className="block text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[3px_3px_0px_#ffa6c9] sm:drop-shadow-[4px_4px_0px_#ffa6c9]">
+              <span className="block text-2xl xs:text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[2.5px_2.5px_0px_#ffa6c9] sm:drop-shadow-[4px_4px_0px_#ffa6c9]">
                 WE HAVE 6
               </span>
 
               {/* FREAKING Boxed Highlight Badge */}
-              <div className="my-2 sm:my-3 inline-block transform -rotate-2 hover:rotate-0 transition-transform">
-                <div className="bg-accent-yellow border-[3px] sm:border-[4px] border-true-black px-3.5 sm:px-6 py-1 sm:py-2 brutal-shadow">
-                  <span className="font-display text-3xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight">
+              <div className="my-1.5 xs:my-2 sm:my-3 inline-block transform -rotate-2 hover:rotate-0 transition-transform">
+                <div className="bg-accent-yellow border-[3px] sm:border-[4px] border-true-black px-2.5 xs:px-3.5 sm:px-6 py-0.5 sm:py-2 brutal-shadow">
+                  <span className="font-display text-2xl xs:text-3xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight">
                     FREAKING
                   </span>
                 </div>
               </div>
 
-              <span className="block text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[3px_3px_0px_#a6d8ff] sm:drop-shadow-[4px_4px_0px_#a6d8ff]">
+              <span className="block text-2xl xs:text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[2.5px_2.5px_0px_#a6d8ff] sm:drop-shadow-[4px_4px_0px_#a6d8ff]">
                 ELITE DECKS
               </span>
             </div>
 
             {/* Subtitle description */}
-            <p className="font-pixel text-[11px] sm:text-sm text-gray-700 mt-4 sm:mt-6 leading-relaxed max-w-lg">
+            <p className="font-pixel text-[10px] xs:text-[11px] sm:text-sm text-gray-700 mt-3 sm:mt-6 leading-relaxed max-w-lg">
               (COLLECTIBLE HIGH-ROLLER ARCHIVES, HOLOGRAPHIC FOILS &amp; PROCEDURAL 3D FINISHES)
             </p>
 
             {/* Action Button & Scroll/Swipe Indicator */}
-            <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="mt-4 sm:mt-8 flex flex-wrap items-center gap-2.5 sm:gap-4">
               <button
                 onClick={() => {
                   SoundEngine.playClick()
                   const skin = equippedSkin || 'obsidian'
                   window.location.href = `/game?skin=${skin}`
                 }}
-                className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-5 sm:px-6 py-2.5 sm:py-3 font-display text-xs sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
+                className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-4 sm:px-6 py-2 sm:py-3 font-display text-xs sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
                 <span>PLAY IN 3D ARENA →</span>
               </button>
 
-              <div className="brutal-window px-3 sm:px-4 py-2 sm:py-2.5 bg-white flex items-center gap-1.5 shadow-[2px_2px_0px_#000]">
-                <span className="font-pixel text-[9px] sm:text-[10px] font-bold text-true-black">
+              <div className="brutal-window px-2.5 sm:px-4 py-1.5 sm:py-2.5 bg-white flex items-center gap-1.5 shadow-[2px_2px_0px_#000]">
+                <span className="font-pixel text-[8.5px] xs:text-[9px] sm:text-[10px] font-bold text-true-black">
                   <span className="md:hidden">SWIPE RIGHT ➔</span>
                   <span className="hidden md:inline">SCROLL RIGHT ➔</span>
                 </span>
@@ -1292,19 +1292,19 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           ))}
 
           {/* SLIDE 8: Outro Call-To-Action Finale Frame */}
-          <div className="w-[85vw] sm:w-[480px] h-[500px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] bg-gradient-to-br from-[#ffa6c9] via-[#ffbed3] to-[#a6d8ff] -rotate-1 md:-rotate-[2deg]">
+          <div className="w-[88vw] xs:w-[85vw] sm:w-[480px] h-[480px] xs:h-[530px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-4 xs:p-6 sm:p-8 rounded-[24px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[5px_5px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] bg-gradient-to-br from-[#ffa6c9] via-[#ffbed3] to-[#a6d8ff] -rotate-1 md:-rotate-[2deg]">
             <div className="flex items-center justify-between">
-              <span className="font-pixel text-[9px] sm:text-[10px] font-black uppercase px-2 py-1 bg-white border-[2px] border-true-black brutal-shadow-sm text-true-black">
+              <span className="font-pixel text-[8.5px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:py-1 bg-white border-[2px] border-true-black brutal-shadow-sm text-true-black">
                 GAME READY
               </span>
-              <span className="font-mono-nb font-black text-xs sm:text-sm bg-black text-white px-2 py-1 border border-black shadow-[2px_2px_0px_#fff]">3D ARENA</span>
+              <span className="font-mono-nb font-black text-xs sm:text-sm bg-black text-white px-2 py-0.5 sm:py-1 border border-black shadow-[2px_2px_0px_#fff]">3D ARENA</span>
             </div>
 
-            <div className="space-y-3 sm:space-y-4">
-              <h3 className="font-display text-3xl sm:text-5xl font-black text-true-black leading-tight">
+            <div className="space-y-2 sm:space-y-4">
+              <h3 className="font-display text-2xl xs:text-3xl sm:text-5xl font-black text-true-black leading-tight">
                 TEST YOUR HAND IN 3D
               </h3>
-              <p className="font-pixel text-[11px] sm:text-xs text-true-black/90 leading-relaxed">
+              <p className="font-pixel text-[10px] xs:text-[11px] sm:text-xs text-true-black/90 leading-relaxed">
                 Step into the high-roller table. Challenge dealer AI, double down on your bankroll, and climb the royal flush rankings.
               </p>
             </div>

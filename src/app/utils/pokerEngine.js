@@ -42,6 +42,7 @@ export function createShuffledDeck() {
       deck.push({
         id: `${r}_${s.key}`,
         suit: s.symbol,
+        symbol: s.symbol,
         suitKey: s.key,
         suitName: s.name,
         rank: r,
@@ -51,9 +52,23 @@ export function createShuffledDeck() {
     }
   }
 
-  // Fisher-Yates Shuffle
+  // Cryptographically Secure Fisher-Yates Shuffle
+  const getRandomInt = (max) => {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const arr = new Uint32Array(1)
+      window.crypto.getRandomValues(arr)
+      return arr[0] % max
+    }
+    if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.getRandomValues) {
+      const arr = new Uint32Array(1)
+      globalThis.crypto.getRandomValues(arr)
+      return arr[0] % max
+    }
+    return Math.floor(Math.random() * max)
+  }
+
   for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const j = getRandomInt(i + 1)
     const temp = deck[i]
     deck[i] = deck[j]
     deck[j] = temp
@@ -61,12 +76,89 @@ export function createShuffledDeck() {
   return deck
 }
 
+export const RANK_NAMES = {
+  2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10',
+  11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace'
+}
+
+export const RANK_PLURALS = {
+  2: '2s', 3: '3s', 4: '4s', 5: '5s', 6: '6s', 7: '7s', 8: '8s', 9: '9s', 10: '10s',
+  11: 'Jacks', 12: 'Queens', 13: 'Kings', 14: 'Aces', 1: 'Aces'
+}
+
+export const SUIT_NAMES = {
+  hearts: 'Hearts',
+  diamonds: 'Diamonds',
+  spades: 'Spades',
+  clubs: 'Clubs',
+  '♥': 'Hearts',
+  '♦': 'Diamonds',
+  '♠': 'Spades',
+  '♣': 'Clubs'
+}
+
+export function getCardRankName(val) {
+  return RANK_NAMES[val] || String(val)
+}
+
+export function getCardRankPlural(val) {
+  return RANK_PLURALS[val] || `${val}s`
+}
+
+export function getSuitName(suitKeyOrSymbol) {
+  return SUIT_NAMES[suitKeyOrSymbol] || 'Cards'
+}
+
+export function describePreflopHand(card1, card2) {
+  if (!card1 || !card2) return 'High Card'
+  const isPair = card1.val === card2.val
+  const highVal = Math.max(card1.val, card2.val)
+  const lowVal = Math.min(card1.val, card2.val)
+  const isSuited = card1.suitKey === card2.suitKey || (card1.suit && card1.suit === card2.suit)
+
+  if (isPair) {
+    return `Pocket ${getCardRankPlural(highVal)}`
+  }
+
+  const highName = getCardRankName(highVal)
+  const lowName = getCardRankName(lowVal)
+  const suitedLabel = isSuited ? 'Suited' : 'Offsuit'
+
+  return `${highName}-${lowName} ${suitedLabel}`
+}
+
 /**
  * Evaluates best 5-card combination from up to 7 cards
  */
 export function evaluate7CardHand(cards) {
-  if (!cards || cards.length < 5) {
-    return { score: 0, name: 'HIGH CARD', rank: 0, bestFiveCards: cards || [] }
+  if (!cards || cards.length === 0) {
+    return { score: 0, name: 'NO CARDS', rank: 0, bestFiveCards: [] }
+  }
+
+  // Pre-flop: 2 Hole Cards evaluation
+  if (cards.length === 2) {
+    const isPair = cards[0].val === cards[1].val
+    const highVal = Math.max(cards[0].val, cards[1].val)
+    const lowVal = Math.min(cards[0].val, cards[1].val)
+    const score = isPair ? 1e10 + highVal * 1e8 : highVal * 1e8 + lowVal * 1e6
+    return {
+      score,
+      name: describePreflopHand(cards[0], cards[1]),
+      rank: isPair ? 1 : 0,
+      matchingCards: isPair ? cards : [],
+      bestFiveCards: cards
+    }
+  }
+
+  if (cards.length < 5) {
+    const sortedSmall = [...cards].sort((a, b) => b.val - a.val)
+    return {
+      score: sortedSmall[0].val * 1e8,
+      name: `High Card ${getCardRankName(sortedSmall[0].val)}`,
+      rank: 0,
+      matchingCards: [],
+      bestFiveCards: sortedSmall
+    }
   }
 
   const sorted = [...cards].sort((a, b) => b.val - a.val)
@@ -126,18 +218,23 @@ export function evaluate7CardHand(cards) {
     const flushCards = suitGroups[flushSuit].sort((a, b) => b.val - a.val)
     const straightFlush = getStraight(flushCards)
     if (straightFlush) {
+      const suitName = getSuitName(flushSuit)
       if (straightFlush.topVal === 14) {
         return {
           score: 9e10,
-          name: 'ROYAL FLUSH',
+          name: `Royal Flush (${suitName})`,
           rank: 9,
+          matchingCards: straightFlush.cards,
           bestFiveCards: straightFlush.cards
         }
       }
+      const topName = straightFlush.topVal === 5 ? '5' : getCardRankName(straightFlush.topVal)
+      const specialName = straightFlush.topVal === 5 ? ' (Steel Wheel)' : ''
       return {
         score: 8e10 + straightFlush.topVal * 1e8,
-        name: `STRAIGHT FLUSH (${straightFlush.topVal} HIGH)`,
+        name: `Straight Flush, ${topName} High (${suitName})${specialName}`,
         rank: 8,
+        matchingCards: straightFlush.cards,
         bestFiveCards: straightFlush.cards
       }
     }
@@ -164,8 +261,9 @@ export function evaluate7CardHand(cards) {
     const kicker = sorted.find(c => c.val !== quadVal)
     return {
       score: 7e10 + quadVal * 1e8 + (kicker ? kicker.val * 1e6 : 0),
-      name: `FOUR OF A KIND (${quadVal}S)`,
+      name: `Four of a Kind, ${getCardRankPlural(quadVal)}`,
       rank: 7,
+      matchingCards: quadCards,
       bestFiveCards: [...quadCards, kicker].filter(Boolean)
     }
   }
@@ -178,8 +276,9 @@ export function evaluate7CardHand(cards) {
     const pairCards = sorted.filter(c => c.val === pairVal).slice(0, 2)
     return {
       score: 6e10 + tripleVal * 1e8 + pairVal * 1e6,
-      name: `FULL HOUSE (${tripleVal}S FULL OF ${pairVal}S)`,
+      name: `Full House, ${getCardRankPlural(tripleVal)} full of ${getCardRankPlural(pairVal)}`,
       rank: 6,
+      matchingCards: [...tripCards, ...pairCards],
       bestFiveCards: [...tripCards, ...pairCards]
     }
   }
@@ -191,10 +290,12 @@ export function evaluate7CardHand(cards) {
     top5Flush.forEach((c, idx) => {
       score += c.val * Math.pow(10, 8 - idx * 2)
     })
+    const suitName = getSuitName(flushSuit)
     return {
       score,
-      name: `FLUSH (${top5Flush[0].val} HIGH)`,
+      name: `${getCardRankName(top5Flush[0].val)}-High Flush (${suitName})`,
       rank: 5,
+      matchingCards: top5Flush,
       bestFiveCards: top5Flush
     }
   }
@@ -202,10 +303,19 @@ export function evaluate7CardHand(cards) {
   // 5. Straight
   const straight = getStraight(sorted)
   if (straight) {
+    let straightDesc = ''
+    if (straight.topVal === 14) {
+      straightDesc = 'Broadway Straight (10 to Ace)'
+    } else if (straight.topVal === 5) {
+      straightDesc = 'Wheel Straight (Ace to 5)'
+    } else {
+      straightDesc = `Straight, ${getCardRankName(straight.topVal - 4)} to ${getCardRankName(straight.topVal)}`
+    }
     return {
       score: 4e10 + straight.topVal * 1e8,
-      name: `STRAIGHT (${straight.topVal} HIGH)`,
+      name: straightDesc,
       rank: 4,
+      matchingCards: straight.cards,
       bestFiveCards: straight.cards
     }
   }
@@ -221,8 +331,9 @@ export function evaluate7CardHand(cards) {
     })
     return {
       score,
-      name: `THREE OF A KIND (${tripVal}S)`,
+      name: `Three of a Kind, ${getCardRankPlural(tripVal)}`,
       rank: 3,
+      matchingCards: tripCards,
       bestFiveCards: [...tripCards, ...kickers]
     }
   }
@@ -237,8 +348,9 @@ export function evaluate7CardHand(cards) {
     const score = 2e10 + highPair * 1e8 + lowPair * 1e6 + (kicker ? kicker.val * 1e4 : 0)
     return {
       score,
-      name: `TWO PAIR (${highPair}S & ${lowPair}S)`,
+      name: `Two Pair, ${getCardRankPlural(highPair)} and ${getCardRankPlural(lowPair)}`,
       rank: 2,
+      matchingCards: [...pair1, ...pair2],
       bestFiveCards: [...pair1, ...pair2, kicker].filter(Boolean)
     }
   }
@@ -254,8 +366,9 @@ export function evaluate7CardHand(cards) {
     })
     return {
       score,
-      name: `ONE PAIR (${pairVal}S)`,
+      name: `Pair of ${getCardRankPlural(pairVal)}`,
       rank: 1,
+      matchingCards: pairCards,
       bestFiveCards: [...pairCards, ...kickers]
     }
   }
@@ -268,8 +381,9 @@ export function evaluate7CardHand(cards) {
   })
   return {
     score,
-    name: `HIGH CARD (${top5[0].val})`,
+    name: `High Card ${getCardRankName(top5[0].val)}`,
     rank: 0,
+    matchingCards: [],
     bestFiveCards: top5
   }
 }
@@ -593,15 +707,18 @@ export function executePlayerAction(state, playerIndex, actionType, amount = 0) 
 
         if (finalBet > newHighBet) {
           const diff = finalBet - newHighBet
-          if (diff >= newMinRaise) {
+          const isFullRaise = diff >= state.minRaise
+          if (isFullRaise) {
             newMinRaise = diff
           }
           newHighBet = finalBet
 
-          // Re-open action for all other active players
+          // Full Bet Rule: Re-open action for active players facing the new bet
           state.players.forEach((p, idx) => {
             if (idx !== playerIndex && !p.folded && !p.isAllIn) {
-              p.hasActed = false
+              if (isFullRaise || p.roundBet < newHighBet) {
+                p.hasActed = false
+              }
             }
           })
         }
@@ -637,15 +754,18 @@ export function executePlayerAction(state, playerIndex, actionType, amount = 0) 
 
       if (finalBet > newHighBet) {
         const diff = finalBet - newHighBet
-        if (diff >= newMinRaise) {
+        const isFullRaise = diff >= state.minRaise
+        if (isFullRaise) {
           newMinRaise = diff
         }
         newHighBet = finalBet
 
-        // Re-open action for all other active players
+        // Full Bet Rule: Re-open action for active players facing the new bet
         state.players.forEach((p, idx) => {
           if (idx !== playerIndex && !p.folded && !p.isAllIn) {
-            p.hasActed = false
+            if (isFullRaise || p.roundBet < newHighBet) {
+              p.hasActed = false
+            }
           }
         })
       }
@@ -689,9 +809,20 @@ export function executePlayerAction(state, playerIndex, actionType, amount = 0) 
   const activeUnfolded = updatedPlayers.filter(p => p.isSeated && !p.folded)
   if (activeUnfolded.length === 1) {
     const survivor = activeUnfolded[0]
+    const resolvedPlayers = updatedPlayers.map(p => {
+      if (p.id === survivor.id) {
+        return {
+          ...p,
+          bankroll: p.bankroll + updatedPot
+        }
+      }
+      return p
+    })
+
     return {
       ...nextState,
       phase: GamePhase.HAND_RESOLVED,
+      players: resolvedPlayers,
       currentTurnIndex: -1,
       winners: [{
         id: survivor.id,
@@ -720,8 +851,8 @@ export function executePlayerAction(state, playerIndex, actionType, amount = 0) 
  * Advances the street (PRE_FLOP -> FLOP -> TURN -> RIVER -> SHOWDOWN)
  */
 export function advanceStreet(state) {
-  const deck = [...state.deck]
-  const community = [...state.communityCards]
+  const deck = state.deck ? [...state.deck] : []
+  const community = state.communityCards ? [...state.communityCards] : []
 
   // Reset street round bets
   const resetPlayers = state.players.map(p => ({
@@ -813,21 +944,47 @@ export function evaluateShowdownAndDistributePots(state) {
   const sidePots = state.sidePots.length > 0 ? state.sidePots : calculateSidePots(evaluatedPlayers)
   const payouts = {}
   const potSummaries = []
+  const totalSeats = state.players.length
+
+  // Helper to compute order clockwise starting from first seat left of dealer button
+  const getClockwiseOrderFromLeftOfButton = (playerIndex) => {
+    const btn = state.dealerButtonIndex !== undefined ? state.dealerButtonIndex : 0
+    return (playerIndex - (btn + 1) + totalSeats) % totalSeats
+  }
 
   // Distribute each side pot / main pot to highest hand among eligible contenders
   sidePots.forEach((pot, potIdx) => {
-    const eligibleContenders = evaluatedPlayers.filter(
+    let eligibleContenders = evaluatedPlayers.filter(
       p => pot.eligibleWinnerIds.includes(p.id) && p.handEval
     )
+
+    // Fallback if all contenders in this tier folded: roll down to active evaluated players
+    if (eligibleContenders.length === 0) {
+      eligibleContenders = evaluatedPlayers.filter(p => !p.folded && p.handEval)
+    }
 
     if (eligibleContenders.length === 0) return
 
     const maxScore = Math.max(...eligibleContenders.map(c => c.handEval.score))
     const potWinners = eligibleContenders.filter(c => c.handEval.score === maxScore)
-    const splitPayout = Math.floor(pot.amount / potWinners.length)
 
-    potWinners.forEach(w => {
-      payouts[w.id] = (payouts[w.id] || 0) + splitPayout
+    // Odd Chip Rule (TDA / WSOP):
+    // Distribute floor amount to each winner, then award remaining odd chips (1 chip each)
+    // to winners starting from the player closest to the left of the button.
+    const baseSplit = Math.floor(pot.amount / potWinners.length)
+    const remainder = pot.amount % potWinners.length
+
+    // Sort pot winners by clockwise order from left of button (closest to button+1 receives first)
+    const sortedPotWinners = [...potWinners].sort((a, b) => {
+      const idxA = evaluatedPlayers.findIndex(p => p.id === a.id)
+      const idxB = evaluatedPlayers.findIndex(p => p.id === b.id)
+      return getClockwiseOrderFromLeftOfButton(idxA) - getClockwiseOrderFromLeftOfButton(idxB)
+    })
+
+    sortedPotWinners.forEach((w, wIdx) => {
+      const oddChip = wIdx < remainder ? 1 : 0
+      const winAmount = baseSplit + oddChip
+      payouts[w.id] = (payouts[w.id] || 0) + winAmount
     })
 
     potSummaries.push({
@@ -835,7 +992,7 @@ export function evaluateShowdownAndDistributePots(state) {
       isSidePot: pot.isSidePot,
       amount: pot.amount,
       winners: potWinners.map(w => ({ id: w.id, name: w.name, handName: w.handEval.name })),
-      splitPayout
+      splitPayout: baseSplit
     })
   })
 

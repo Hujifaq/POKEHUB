@@ -351,7 +351,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
                 </span>
               </div>
 
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
                 {BOT_OPTIONS.map(opt => {
                   const isSelected = botCount === opt.count
                   return (
@@ -361,16 +361,16 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
                         SoundEngine.playClick()
                         setBotCount(opt.count)
                       }}
-                      className={`py-1.5 px-1 rounded-lg border-[2px] border-[#0D0D0D] flex flex-col items-center justify-center transition-all cursor-pointer ${
+                      className={`py-1 sm:py-1.5 px-0.5 sm:px-1 rounded-lg border-[1.5px] sm:border-[2px] border-[#0D0D0D] flex flex-col items-center justify-center transition-all cursor-pointer ${
                         isSelected
                           ? 'bg-[#00FFA3] shadow-[2px_2px_0px_#0D0D0D] scale-105 font-black text-[#0D0D0D]'
                           : 'bg-[#F6F5FA] hover:bg-[#FFFFFF] text-[#0D0D0D]'
                       }`}
                     >
-                      <span className="font-display font-black text-xs">
+                      <span className="font-display font-black text-[10px] xs:text-xs">
                         {opt.count} BOT
                       </span>
-                      <span className="font-pixel text-[6.5px] text-[#0D0D0D]/80 uppercase">
+                      <span className="font-pixel text-[5.5px] xs:text-[6.5px] text-[#0D0D0D]/80 uppercase">
                         {opt.tag}
                       </span>
                     </button>

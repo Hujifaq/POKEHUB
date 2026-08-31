@@ -627,8 +627,8 @@ export default function RiffleShuffleSection({ containerRefProp }) {
           pin: pinWrapper,
           pinSpacing: true,
           start: 'top top',
-          end: () => `+=${window.innerHeight * 5.2}`,
-          scrub: 1.0,
+          end: () => `+=${window.innerHeight * 7.0}`,
+          scrub: 1.6,
           anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => {
@@ -693,18 +693,18 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         }
       })
 
-      // STAGE 0: SYNCHRONIZED EMERGENCE OF 3D DECK & MESSAGE BOX (0.10s -> 0.60s)
+      // STAGE 0: SYNCHRONIZED EMERGENCE OF 3D DECK & MESSAGE BOX (0.0s -> 0.45s)
       tl.fromTo(
         canvasRef.current,
         { opacity: 0 },
-        { opacity: 1, duration: 0.50, ease: 'power2.out' },
-        0.10
+        { opacity: 1, duration: 0.45, ease: 'power2.out' },
+        0.0
       )
       tl.fromTo(
         deckRootGroup.position,
         { y: -0.5 },
-        { y: 0, duration: 0.50, ease: 'power2.out' },
-        0.10
+        { y: 0, duration: 0.45, ease: 'power2.out' },
+        0.0
       )
       tl.fromTo(
         deckRootGroup.scale,
@@ -717,22 +717,22 @@ export default function RiffleShuffleSection({ containerRefProp }) {
           x: initialDeckScale,
           y: initialDeckScale,
           z: initialDeckScale,
-          duration: 0.50,
+          duration: 0.45,
           ease: 'power2.out'
         },
-        0.10
+        0.0
       )
 
       if (hudTextRef.current) {
         tl.fromTo(
           hudTextRef.current,
           { autoAlpha: 0, y: 70, scale: 0.88 },
-          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.50 },
-          0.10
+          { autoAlpha: 1, y: 0, scale: 1, ease: 'back.out(1.4)', duration: 0.45 },
+          0.0
         )
       }
 
-      // STAGE 1: CUT & SPLIT (0.60 -> 1.50s)
+      // STAGE 1: CUT & SPLIT (0.45 -> 1.35s)
       cards.forEach((c) => {
         const targetX = c.isLeft ? -2.75 : 2.75
         const targetY = 0.15 + c.stackIndex * STACK_GAP
@@ -750,7 +750,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               duration: 0.90,
               ease: 'power2.inOut'
             },
-            0.60
+            0.45
           )
         } else {
           tl.to(
@@ -760,7 +760,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               duration: 0.45,
               ease: 'power2.out'
             },
-            0.60
+            0.45
           ).to(
             c,
             {
@@ -771,17 +771,17 @@ export default function RiffleShuffleSection({ containerRefProp }) {
               duration: 0.45,
               ease: 'power2.in'
             },
-            1.05
+            0.90
           )
         }
       })
 
       // ==================================================================
-      // STEP 1: THE RIFFLE INTERLOCK (1.50 -> 4.30s)
+      // STEP 1: THE RIFFLE INTERLOCK (1.35 -> 4.15s)
       // Hands hold remaining cards high above the growing center stack.
       // Hand stacks rise continuously so the pile never penetrates the held cards!
       // ==================================================================
-      const weaveStart = 1.50
+      const weaveStart = 1.35
       const weaveStepInterval = 0.09
       const weaveDropDuration = 0.12
 
@@ -1039,7 +1039,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     <div ref={containerRef} id="how-to-play" className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex flex-col justify-end items-center sm:flex-row sm:items-center sm:justify-start px-4 sm:px-12 lg:px-20 pb-16 sm:pb-0"
+        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex flex-col justify-end items-center sm:flex-row sm:items-center sm:justify-start px-4 sm:px-12 lg:px-20 pb-6 sm:pb-0"
       >
         {/* Pure Clean Flat 3D Canvas */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10 opacity-0 will-change-transform" />
@@ -1049,16 +1049,16 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         {/* ------------------------------------------------------------- */}
         <div
           ref={hudTextRef}
-          className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-12 sm:mb-0 opacity-0 will-change-transform"
+          className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-3 sm:mb-0 opacity-0 will-change-transform"
         >
           <div
             key={currentScene.id}
             className="animate-card-flip-3d"
           >
             {/* Tag Badge */}
-            <div className="mb-2 sm:mb-4">
+            <div className="mb-1.5 sm:mb-4">
               <span
-                className="font-pixel text-[9px] sm:text-xs font-black uppercase px-2.5 sm:px-3.5 py-1 sm:py-1.5 border-[2.5px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
+                className="font-pixel text-[8.5px] sm:text-xs font-black uppercase px-2.5 sm:px-3.5 py-0.5 sm:py-1.5 border-[2px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
                 style={{ backgroundColor: currentScene.accentColor }}
               >
                 {currentScene.tag}
@@ -1066,17 +1066,17 @@ export default function RiffleShuffleSection({ containerRefProp }) {
             </div>
 
             {/* Giant Chunky Headline */}
-            <h2 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-2 sm:mb-5 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
+            <h2 className="font-display text-xl xs:text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-1.5 sm:mb-5 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
               {currentScene.headline}
             </h2>
 
             {/* Neo-Brutalist Description Card with Accent Line */}
-            <div className="brutal-window bg-white p-3 sm:p-5 border-[3px] sm:border-[4px] border-true-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
+            <div className="brutal-window bg-white p-2.5 xs:p-3 sm:p-5 border-[2.5px] sm:border-[4px] border-true-black shadow-[3px_3px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
               <div
                 className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
                 style={{ backgroundColor: currentScene.accentColor }}
               />
-              <p className="font-mono-nb text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
+              <p className="font-mono-nb text-[10.5px] xs:text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
                 {currentScene.description}
               </p>
             </div>

@@ -2,87 +2,179 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import BubbleMenu from '../components/BubbleMenu'
 import Floating3DLogo from '../components/Floating3DLogo'
 import Preloader from '../components/Preloader'
 import { PixelAvatar } from '../components/PixelAvatars'
 import Footer from '../components/Footer'
 import { SoundEngine } from '../components/SoundEngine'
+import HandRankingsModal from '../components/HandRankingsModal'
 
+// =========================================================================
+// DEVELOPER TEAM ROSTER (KMUTT)
+// =========================================================================
 const TEAM_MEMBERS = [
   {
-    id: 'anda',
-    name: 'ANDA',
-    fullName: 'Anda',
-    role: 'Lead Architect & Engine Specialist',
-    university: 'KMUTT',
-    faculty: 'Computer Science & Technology',
+    id: 'palise',
+    name: 'PALISE WATANAVISO',
+    email: 'palise.wata@mail.kmutt.ac.th',
     avatarKey: 'hero',
     cardColor: 'bg-[#00FFA3]',
-    accentColor: '#00FFA3',
-    stats: { 'Poker IQ': 96, 'Luck': 88 },
-    bio: 'Architecting high-performance Texas Hold\'em engine mechanics and real-time state machines.',
-    tag: 'CORE ARCHITECT'
+    role: 'FRONTEND & 3D GRAPHICS'
   },
   {
-    id: 'hut',
-    name: 'HUT',
-    fullName: 'Hut',
-    role: '3D Graphics & Shader Engineer',
-    university: 'KMUTT',
-    faculty: 'Interactive Media & Simulation',
+    id: 'nanthanat',
+    name: 'NANTHANAT CHAROENSUK',
+    email: 'nanthanat.char@mail.kmutt.ac.th',
     avatarKey: 'samurai',
     cardColor: 'bg-[#FF70A6]',
-    accentColor: '#FF70A6',
-    stats: { 'Poker IQ': 91, 'Luck': 95 },
-    bio: 'Crafting procedural 3D card physics, lighting atmosphere, and spatial canvas interactions.',
-    tag: '3D ENGINE'
+    role: 'GAME ENGINE & LOGIC'
   },
   {
-    id: 'gram',
-    name: 'GRAM',
-    fullName: 'Gram',
-    role: 'UI/UX & Neo-Brutalist Designer',
-    university: 'KMUTT',
-    faculty: 'Digital Design & Experience',
+    id: 'kadsan',
+    name: 'KADSAN SUPPHAAKKARHASOPHON',
+    email: 'kadsan.supp@mail.kmutt.ac.th',
     avatarKey: 'cyborg',
     cardColor: 'bg-[#FFE500]',
-    accentColor: '#FFE500',
-    stats: { 'Poker IQ': 94, 'Luck': 92 },
-    bio: 'Designing high-contrast typography, 8-bit visual assets, and arcade-grade user experiences.',
-    tag: 'LEAD DESIGNER'
+    role: 'AUDIO & UI/UX DESIGN'
   },
   {
-    id: 'p',
-    name: 'P',
-    fullName: 'P',
-    role: 'AI Logic & Game Systems Engineer',
-    university: 'KMUTT',
-    faculty: 'Software Engineering & AI Systems',
+    id: 'phurichaya',
+    name: 'PHURICHAYA CHALOEMSRI',
+    email: 'phurichaya.chal@mail.kmutt.ac.th',
     avatarKey: 'punk',
     cardColor: 'bg-[#00F5FF]',
-    accentColor: '#00F5FF',
-    stats: { 'Poker IQ': 98, 'Luck': 85 },
-    bio: 'Building intelligent bot decision trees, side-pot calculations, and shot-clock timing flow.',
-    tag: 'AI SPECIALIST'
+    role: 'ARCHITECTURE & QA'
+  }
+]
+
+// =========================================================================
+// FULL PROJECT TECHNOLOGY STACK
+// =========================================================================
+const TECH_STACK_DOMAINS = [
+  {
+    domain: 'FRAMEWORK & RUNTIME',
+    themeColor: 'bg-[#FFE500]',
+    items: [
+      {
+        tech: 'Next.js 16 (App Router)',
+        role: 'Server & Client Components architecture, dynamic code splitting, and SSR optimization.'
+      },
+      {
+        tech: 'React 19',
+        role: 'Concurrent rendering, reactive game state handling, and custom audio/render hooks.'
+      }
+    ]
+  },
+  {
+    domain: '3D GRAPHICS & WEBGL',
+    themeColor: 'bg-[#00FFA3]',
+    items: [
+      {
+        tech: 'Three.js (r185)',
+        role: 'WebGL scene graph, spatial perspective cameras, dynamic lighting, and card collision physics.'
+      },
+      {
+        tech: '@react-three/fiber & drei',
+        role: 'Declarative 3D pipeline in React, GLTF model loading, and 6 procedural card deck shaders.'
+      }
+    ]
+  },
+  {
+    domain: 'MOTION & PHYSICS',
+    themeColor: 'bg-[#FF70A6]',
+    items: [
+      {
+        tech: 'GSAP 3.15 + ScrollTrigger',
+        role: 'Scroll-scrubbed 3D showcase timelines, horizontal card pinning, and card orbit kinetic sequences.'
+      },
+      {
+        tech: 'Lenis 1.3 & Motion 13',
+        role: 'Inertial smooth scrolling engine integrated with requestAnimationFrame and spring physics.'
+      }
+    ]
+  },
+  {
+    domain: 'PROCEDURAL WEB AUDIO',
+    themeColor: 'bg-[#00F5FF]',
+    items: [
+      {
+        tech: 'Web Audio API (AudioContext)',
+        role: 'Synthesizes real-time ASMR card shuffles, riffle snaps, chip clinks, and table landing thuds.'
+      },
+      {
+        tech: 'Zero-Asset Sound Synthesizer',
+        role: 'Pure code-generated audio with 0ms asset loading delay and 0KB external MP3/WAV overhead.'
+      }
+    ]
+  },
+  {
+    domain: 'POKER ENGINE & CRYPTO',
+    themeColor: 'bg-[#FFE500]',
+    items: [
+      {
+        tech: 'WSOP Texas Hold\'em State Machine',
+        role: 'Turn order (UTG to Button), multiway side pots, 7-card hand evaluators, and heuristic bot AI.'
+      },
+      {
+        tech: 'Web Crypto API (RNG)',
+        role: 'Cryptographically secure Fisher-Yates randomization for 100% provably fair deck shuffling.'
+      }
+    ]
+  },
+  {
+    domain: 'STYLING & TYPOGRAPHY',
+    themeColor: 'bg-[#FFFFFF]',
+    items: [
+      {
+        tech: 'Tailwind CSS v4 + PostCSS',
+        role: 'High-contrast neo-brutalist utility system, 3-4px solid black borders, and hard-offset shadows.'
+      },
+      {
+        tech: 'Google Fonts Pipeline',
+        role: 'Bungee, Press Start 2P, Archivo Black, Space Mono, and Instrument Serif typography.'
+      }
+    ]
   }
 ]
 
 export default function AboutPage() {
+  const router = useRouter()
   const [showPreloader, setShowPreloader] = useState(true)
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return SoundEngine.getMuted()
+    }
+    return false
+  })
+  const [copiedEmail, setCopiedEmail] = useState(null)
+  const [handRankingsOpen, setHandRankingsOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo(0, 0)
     }
+    return SoundEngine.subscribe((muted) => {
+      setIsMuted(muted)
+    })
   }, [])
 
   const handleToggleMute = () => {
-    const next = !isMuted
+    const next = SoundEngine.toggleMute()
     setIsMuted(next)
-    SoundEngine.setMuted(next)
-    if (!next) SoundEngine.playClick()
+  }
+
+  const handleCopyEmail = (email) => {
+    try {
+      SoundEngine.playClick()
+    } catch {}
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(email).then(() => {
+        setCopiedEmail(email)
+        setTimeout(() => setCopiedEmail(null), 2000)
+      }).catch(() => {})
+    }
   }
 
   const bubbleMenuItems = useMemo(() => [
@@ -92,7 +184,7 @@ export default function AboutPage() {
       rotation: -4,
       hoverStyles: { bgColor: '#FFDE59', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/'
+        router.push('/')
       }
     },
     {
@@ -101,16 +193,16 @@ export default function AboutPage() {
       rotation: 4,
       hoverStyles: { bgColor: '#00FFA3', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/game'
+        router.push('/game')
       }
     },
     {
       label: 'deck skin',
-      ariaLabel: '6 Freaking Elite Decks Showcase',
+      ariaLabel: '6 Elite Decks Showcase',
       rotation: -6,
       hoverStyles: { bgColor: '#FF90E8', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/#deck-skins'
+        router.push('/#deck-skins')
       }
     },
     {
@@ -128,25 +220,22 @@ export default function AboutPage() {
       rotation: -8,
       hoverStyles: { bgColor: '#FFE500', textColor: '#000000' },
       onClick: () => {
-        window.location.href = '/#how-to-play'
+        router.push('/#how-to-play')
       }
     }
-  ], [])
+  ], [router])
 
   return (
-    <main className="w-full relative min-h-screen text-true-black overflow-x-hidden bg-[#F6F5FA] font-display pt-24 pb-0">
-      {/* Infinite Seamless Fixed Graph Grid */}
-      <div className="fixed-graph-grid opacity-20" />
+    <main className="w-full relative min-h-screen text-[#0D0D0D] overflow-x-hidden bg-[#F6F5FA] font-display pt-24 pb-0">
+      <div className="fixed-graph-grid opacity-25" />
 
-      {/* Intro Preloader */}
       {showPreloader && <Preloader onComplete={() => setShowPreloader(false)} />}
 
-      {/* Navigation Navbar */}
       <BubbleMenu
         logo={
           <Floating3DLogo
             onClick={() => {
-              window.location.href = '/'
+              router.push('/')
             }}
           />
         }
@@ -154,8 +243,8 @@ export default function AboutPage() {
           <>
             <button
               onClick={handleToggleMute}
-              className={`brutal-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 font-pixel text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] ${
-                !isMuted ? 'bg-accent-cyan text-true-black' : 'bg-white text-gray-500'
+              className={`brutal-btn flex items-center gap-1 px-1.5 xs:px-2.5 sm:px-3 py-1 sm:py-2 font-pixel text-[8px] xs:text-[9px] sm:text-[10px] uppercase font-bold transition-all shrink-0 shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] cursor-pointer ${
+                !isMuted ? 'bg-[#00F5FF] text-[#0D0D0D]' : 'bg-white text-gray-500'
               }`}
               title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
             >
@@ -164,7 +253,10 @@ export default function AboutPage() {
 
             <Link
               href="/game"
-              className="brutal-btn bg-[#00FFA3] text-true-black flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 font-display text-xs font-black uppercase hover:bg-[#00e693] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0"
+              onClick={() => {
+                try { SoundEngine.playClick() } catch {}
+              }}
+              className="brutal-btn bg-[#00FFA3] text-[#0D0D0D] flex items-center gap-1 px-2 xs:px-3 sm:px-4 py-1 sm:py-2 font-display text-[10px] xs:text-xs font-black uppercase hover:bg-[#00e693] shadow-[2px_2px_0px_#000000] sm:shadow-[3px_3px_0px_#000000] shrink-0 cursor-pointer"
               title="Play 3D Arena"
             >
               <span>PLAY ARENA</span>
@@ -175,179 +267,189 @@ export default function AboutPage() {
         menuBg="#ffffff"
         menuContentColor="#050505"
         menuAriaLabel="Toggle navigation"
-        animationEase="back.out(1.5)"
-        animationDuration={0.5}
-        staggerDelay={0.1}
+        animationEase="back.out(1.2)"
+        animationDuration={0.65}
+        staggerDelay={0.10}
         items={bubbleMenuItems}
       />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-8 flex flex-col gap-10 sm:gap-14 relative z-10 pb-16">
 
-        {/* ======================================================== */}
-        {/* HERO TITLE & UNIVERSITY BANNER                           */}
-        {/* ======================================================== */}
-        <section className="flex flex-col items-center text-center gap-3 sm:gap-4 mt-6">
-          
-          {/* KMUTT Pride Badge */}
-          <div className="flex items-center gap-2 bg-[#FFFFFF] border-[2.5px] sm:border-[3px] border-[#0D0D0D] px-3.5 sm:px-5 py-1 sm:py-1.5 rounded-full shadow-[3px_3px_0px_#0D0D0D] -rotate-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FFE500] border border-black" />
-            <span className="font-pixel text-[8.5px] sm:text-xs font-bold text-[#0D0D0D] uppercase tracking-wider">
-              KMUTT CREATIVE CREW • KING MONGKUT&apos;S UNIVERSITY OF TECHNOLOGY THONBURI
+        <section className="mt-4 sm:mt-6">
+          <div className="bg-[#FFFFFF] border-[3.5px] sm:border-[4px] border-[#0D0D0D] rounded-2xl sm:rounded-3xl shadow-[6px_6px_0px_#0D0D0D] sm:shadow-[8px_8px_0px_#0D0D0D] overflow-hidden">
+            
+            <div className="bg-[#0D0D0D] text-white px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border-b-[3px] border-[#0D0D0D]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FF3366] border border-black inline-block" />
+                <span className="w-3 h-3 rounded-full bg-[#FFE500] border border-black inline-block" />
+                <span className="w-3 h-3 rounded-full bg-[#00FFA3] border border-black inline-block" />
+                <span className="font-pixel text-[8px] sm:text-[10px] text-[#FFE500] font-bold ml-2 tracking-wider">
+                  SYS://KMUTT.POKEHUB.V1.0
+                </span>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-10 flex flex-col items-center text-center gap-4">
+              <div className="flex items-center gap-2 bg-[#F6F5FA] border-[2.5px] border-[#0D0D0D] px-3.5 sm:px-5 py-1.5 rounded-full shadow-[3px_3px_0px_#0D0D0D]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FFE500] border border-black animate-pulse" />
+                <span className="font-pixel text-[8.5px] sm:text-xs font-bold text-[#0D0D0D] uppercase tracking-wider">
+                  KING MONGKUT&apos;S UNIVERSITY OF TECHNOLOGY THONBURI (KMUTT)
+                </span>
+              </div>
+
+              <h1 className="font-display text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-black text-[#0D0D0D] uppercase tracking-tight leading-tight">
+                MEET THE DEVS &amp; ARCHITECTURE
+              </h1>
+
+              <p className="font-mono-nb text-xs sm:text-sm text-gray-700 max-w-2xl font-bold leading-relaxed">
+                POKEHUB is a real-time 3D Texas Hold&apos;em arcade built with hardware-accelerated WebGL, procedural Web Audio synthesis, and deterministic poker algorithms.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-5">
+          <div className="flex items-center justify-between border-b-[3px] border-[#0D0D0D] pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-1 bg-[#FFE500] border-[2px] border-[#0D0D0D] text-[#0D0D0D] font-pixel text-[9px] sm:text-xs font-black rounded shadow-[2px_2px_0px_#0D0D0D]">
+                CORE TEAM
+              </span>
+              <h2 className="font-display text-xl sm:text-2xl font-black text-[#0D0D0D] uppercase">
+                ENGINEERING ROSTER
+              </h2>
+            </div>
+            <span className="font-mono-nb text-xs text-gray-600 font-bold hidden sm:block">
+              4 DEVELOPERS • KMUTT
             </span>
           </div>
 
-          {/* Main Headline */}
-          <div className="bg-[#FFE500] border-[3.5px] sm:border-[5px] border-[#0D0D0D] px-6 sm:px-12 py-3 sm:py-5 shadow-[6px_6px_0px_#0D0D0D] sm:shadow-[10px_10px_0px_#0D0D0D] rotate-1">
-            <h1 className="font-display text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-black text-[#0D0D0D] uppercase tracking-tight">
-              MEET THE DEVS
-            </h1>
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {TEAM_MEMBERS.map((member) => (
+              <div
+                key={member.id}
+                className={`border-[3px] sm:border-[4px] border-[#0D0D0D] rounded-2xl sm:rounded-3xl shadow-[5px_5px_0px_#0D0D0D] sm:shadow-[7px_7px_0px_#0D0D0D] p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1.5 hover:shadow-[8px_8px_0px_#0D0D0D] ${member.cardColor}`}
+              >
+                <div>
+                  <div className="flex items-center justify-between border-b-[2.5px] border-[#0D0D0D] pb-3 mb-4">
+                    <span className="font-pixel text-[8px] sm:text-[9px] font-bold px-2 py-0.5 bg-white border border-[#0D0D0D] text-[#0D0D0D] rounded">
+                      {member.role}
+                    </span>
+                  </div>
 
-          <p className="font-mono-nb text-xs sm:text-base font-bold text-gray-700 max-w-2xl mt-1">
-            We are a team of 4 creators from <span className="text-[#0D0D0D] font-black underline decoration-[#FF70A6] decoration-4">KMUTT</span> crafting next-generation 3D interactive web experiences, procedural card physics, and intelligent game architectures.
-          </p>
-        </section>
+                  <div className="w-full aspect-square bg-[#FFFFFF] border-[3px] border-[#0D0D0D] rounded-xl sm:rounded-2xl flex items-center justify-center p-3 shadow-[3px_3px_0px_#0D0D0D] mb-4 overflow-hidden relative group">
+                    <PixelAvatar
+                      avatarKey={member.avatarKey}
+                      size={3.8}
+                      className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110"
+                    />
+                    <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-[#FFE500] border-[1.5px] border-[#0D0D0D] font-pixel text-[7px] font-black shadow-[1px_1px_0px_#0D0D0D]">
+                      KMUTT
+                    </div>
+                  </div>
 
-        {/* ======================================================== */}
-        {/* 4 DEVELOPER ROSTER CARDS                                */}
-        {/* ======================================================== */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {TEAM_MEMBERS.map((member, idx) => (
-            <div
-              key={member.id}
-              className={`border-[3px] sm:border-[4px] border-[#0D0D0D] rounded-2xl sm:rounded-3xl shadow-[5px_5px_0px_#0D0D0D] sm:shadow-[7px_7px_0px_#0D0D0D] p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[8px_8px_0px_#0D0D0D] ${member.cardColor}`}
-            >
-              <div>
-                {/* Card Header: Tag & Number */}
-                <div className="flex items-center justify-between border-b-[2.5px] border-[#0D0D0D] pb-3 mb-4">
-                  <span className="font-pixel text-[8px] sm:text-[9px] font-black px-2 py-0.5 bg-[#0D0D0D] text-[#FFE500] rounded">
-                    {member.tag}
-                  </span>
-                  <span className="font-display font-black text-sm text-[#0D0D0D]">
-                    0{idx + 1}
-                  </span>
+                  <h3 className="font-display text-sm sm:text-base font-black text-[#0D0D0D] uppercase tracking-tight leading-snug break-words">
+                    {member.name}
+                  </h3>
                 </div>
 
-                {/* 8-Bit Pixel Character Avatar Container */}
-                <div className="w-full aspect-square bg-[#FFFFFF] border-[3px] border-[#0D0D0D] rounded-xl sm:rounded-2xl flex items-center justify-center p-3 shadow-[3px_3px_0px_#0D0D0D] mb-4 overflow-hidden relative group">
-                  <PixelAvatar
-                    avatarKey={member.avatarKey}
-                    size={3.8}
-                    className="w-full h-full object-contain transition-transform group-hover:scale-110"
-                  />
-                  {/* University Badge overlay */}
-                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-[#FFE500] border-[1.5px] border-[#0D0D0D] font-pixel text-[7px] font-black shadow-[1px_1px_0px_#0D0D0D]">
-                    KMUTT
+                <div className="mt-4 pt-3 border-t-[2px] border-[#0D0D0D]">
+                  <button
+                    onClick={() => handleCopyEmail(member.email)}
+                    className="w-full flex items-center justify-between gap-1.5 bg-[#FFFFFF] hover:bg-[#FFE500] border-[2px] border-[#0D0D0D] px-2.5 py-2 rounded-xl shadow-[2px_2px_0px_#0D0D0D] transition-colors cursor-pointer text-left group"
+                    title="Click to copy student email"
+                  >
+                    <span className="font-mono-nb text-[9px] sm:text-[9.5px] font-bold text-[#FF3366] group-hover:text-[#0D0D0D] truncate">
+                      {member.email}
+                    </span>
+                    <span className="font-pixel text-[7.5px] font-black bg-[#0D0D0D] text-[#FFE500] px-1.5 py-0.5 rounded shrink-0">
+                      {copiedEmail === member.email ? 'COPIED!' : 'COPY'}
+                    </span>
+                  </button>
+                </div>
+
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-[#FFFFFF] border-[3.5px] sm:border-[4px] border-[#0D0D0D] rounded-3xl p-6 sm:p-10 shadow-[8px_8px_0px_#0D0D0D] flex flex-col gap-8">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-[3px] border-[#0D0D0D] pb-5">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="w-2.5 h-2.5 bg-[#00FFA3] border border-black rounded-full inline-block" />
+                <span className="font-pixel text-[9px] font-black text-[#0D0D0D] uppercase tracking-wider">
+                  COMPLETE ARCHITECTURE
+                </span>
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl font-black text-[#0D0D0D] uppercase tracking-tight">
+                TECHNOLOGY STACK
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  try { SoundEngine.playClick() } catch {}
+                  setHandRankingsOpen(true)
+                }}
+                className="brutal-btn px-4 py-2 bg-[#FFE500] hover:bg-[#00F5FF] text-[#0D0D0D] font-display text-xs font-black uppercase shadow-[2.5px_2.5px_0px_#0D0D0D] cursor-pointer"
+              >
+                HAND RULES
+              </button>
+              <Link
+                href="/game"
+                onClick={() => {
+                  try { SoundEngine.playClick() } catch {}
+                }}
+                className="brutal-btn px-4 py-2 bg-[#00FFA3] hover:bg-[#FF70A6] text-[#0D0D0D] font-display text-xs font-black uppercase shadow-[2.5px_2.5px_0px_#0D0D0D] cursor-pointer"
+              >
+                TEST ARENA →
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {TECH_STACK_DOMAINS.map((domain, dIdx) => (
+              <div
+                key={`domain-${dIdx}`}
+                className="border-[2.5px] border-[#0D0D0D] rounded-2xl bg-[#F6F5FA] p-5 shadow-[4px_4px_0px_#0D0D0D] flex flex-col justify-between gap-4"
+              >
+                <div>
+                  <div className="border-b-[2px] border-[#0D0D0D] pb-2.5 mb-3">
+                    <h3 className="font-display text-xs sm:text-sm font-black text-[#0D0D0D] uppercase">
+                      {domain.domain}
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {domain.items.map((item, iIdx) => (
+                      <div key={`item-${iIdx}`} className="bg-[#FFFFFF] border-[1.5px] border-[#0D0D0D] rounded-xl p-3 shadow-[2px_2px_0px_#0D0D0D]">
+                        <h4 className="font-display text-xs sm:text-sm font-black text-[#0D0D0D] mb-1">
+                          {item.tech}
+                        </h4>
+                        <p className="font-mono-nb text-[11px] sm:text-xs text-gray-700 font-bold leading-relaxed">
+                          {item.role}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Name & Role */}
-                <h3 className="font-display text-2xl sm:text-3xl font-black text-[#0D0D0D] uppercase tracking-tight">
-                  {member.name}
-                </h3>
-                <div className="font-mono-nb text-[11px] sm:text-xs font-black text-[#0D0D0D] mt-0.5 mb-2">
-                  {member.role}
-                </div>
-
-                {/* Bio */}
-                <p className="font-mono-nb text-[10px] sm:text-[11px] text-gray-900 font-bold leading-relaxed bg-[#FFFFFF]/75 border-[1.5px] border-[#0D0D0D] p-2.5 rounded-lg mb-3">
-                  {member.bio}
-                </p>
               </div>
-
-              {/* Character Stats Meters (Poker IQ & Luck) */}
-              <div className="mt-2 pt-3 border-t-[2px] border-[#0D0D0D] flex flex-col gap-2 bg-[#FFFFFF]/90 p-3 rounded-xl border-[1.5px] shadow-[2px_2px_0px_#0D0D0D]">
-                {Object.entries(member.stats).map(([statName, statVal]) => {
-                  const isLuck = statName.toLowerCase().includes('luck')
-                  const barColor = isLuck ? '#FFE500' : '#00F5FF'
-                  return (
-                    <div key={statName} className="flex flex-col gap-1">
-                      <div className="flex justify-between items-center text-[8.5px] sm:text-[9.5px] font-pixel font-black text-[#0D0D0D]">
-                        <span className="flex items-center gap-1">
-                          <span>{isLuck ? '⚡' : '★'}</span>
-                          <span>{statName}</span>
-                        </span>
-                        <span className="font-mono-nb font-black text-[10px]">{statVal}%</span>
-                      </div>
-                      <div className="w-full h-2.5 bg-[#0D0D0D] rounded-full p-0.5 overflow-hidden border border-black">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${statVal}%`,
-                            backgroundColor: barColor,
-                            boxShadow: `0 0 6px ${barColor}`
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-            </div>
-          ))}
-        </section>
-
-        {/* ======================================================== */}
-        {/* MISSION & TECH STACK SECTION                             */}
-        {/* ======================================================== */}
-        <section className="bg-[#FFFFFF] border-[3.5px] sm:border-[4px] border-[#0D0D0D] rounded-3xl p-6 sm:p-10 shadow-[8px_8px_0px_#0D0D0D] flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-[3px] border-[#0D0D0D] pb-4">
-            <div>
-              <h2 className="font-display text-xl sm:text-3xl font-black text-[#0D0D0D] uppercase">
-                THE POKEHUB ARCHITECTURE
-              </h2>
-              <p className="font-mono-nb text-xs text-gray-700 font-bold">
-                Built by KMUTT engineers using bleeding-edge web technologies
-              </p>
-            </div>
-            <Link
-              href="/game"
-              className="brutal-btn px-6 py-2.5 bg-[#FFE500] hover:bg-[#00FFA3] text-[#0D0D0D] border-[2.5px] border-[#0D0D0D] font-display text-xs sm:text-sm font-black uppercase shadow-[3px_3px_0px_#0D0D0D] self-start sm:self-auto"
-            >
-              LAUNCH GAME ARENA →
-            </Link>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl border-[2px] border-[#0D0D0D] bg-[#F6F5FA] shadow-[3px_3px_0px_#0D0D0D]">
-              <div className="font-pixel text-[9px] font-black text-[#00FFA3] bg-[#0D0D0D] px-2 py-0.5 rounded inline-block mb-2">
-                ENGINE
-              </div>
-              <h4 className="font-display text-base font-black text-[#0D0D0D] uppercase">WSOP Poker Engine</h4>
-              <p className="font-mono-nb text-xs text-gray-700 font-bold mt-1">
-                Deterministic turn order (UTG to Button), blind rotation, multi-way side pots, and 7-card evaluators.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl border-[2px] border-[#0D0D0D] bg-[#F6F5FA] shadow-[3px_3px_0px_#0D0D0D]">
-              <div className="font-pixel text-[9px] font-black text-[#FF70A6] bg-[#0D0D0D] px-2 py-0.5 rounded inline-block mb-2">
-                GRAPHICS
-              </div>
-              <h4 className="font-display text-base font-black text-[#0D0D0D] uppercase">Three.js & Canvas 3D</h4>
-              <p className="font-mono-nb text-xs text-gray-700 font-bold mt-1">
-                Spatial lighting, tactile felt ambience, 6 custom shader card decks, and chip projectile physics.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl border-[2px] border-[#0D0D0D] bg-[#F6F5FA] shadow-[3px_3px_0px_#0D0D0D]">
-              <div className="font-pixel text-[9px] font-black text-[#FFE500] bg-[#0D0D0D] px-2 py-0.5 rounded inline-block mb-2">
-                DESIGN
-              </div>
-              <h4 className="font-display text-base font-black text-[#0D0D0D] uppercase">Neo-Brutalist Arcade</h4>
-              <p className="font-mono-nb text-xs text-gray-700 font-bold mt-1">
-                High-contrast typography, box drop-shadows, 8-bit pixel avatars, and tactile audio synthesis.
-              </p>
-            </div>
-          </div>
         </section>
 
       </div>
 
-      {/* ======================================================== */}
-      {/* FOOTER                                                   */}
-      {/* ======================================================== */}
-      <Footer className="mt-20" />
+      <HandRankingsModal
+        isOpen={handRankingsOpen}
+        onClose={() => setHandRankingsOpen(false)}
+      />
+
+      <Footer className="mt-20" onOpenRankings={() => setHandRankingsOpen(true)} />
 
     </main>
   )
