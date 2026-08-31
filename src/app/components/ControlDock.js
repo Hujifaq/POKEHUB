@@ -66,7 +66,7 @@ export default function ControlDock({
   const activeSkinObj = skins.find(s => s.key === deckSkin) || skins[0]
 
   return (
-    <aside aria-label="Poker Controls" className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-[900] pointer-events-auto max-w-[96vw]">
+    <aside aria-label="Poker Controls" className="hidden md:block fixed bottom-6 left-1/2 -translate-x-1/2 z-[900] pointer-events-auto max-w-[96vw]">
       <div className="brutal-window flex flex-col w-max max-w-[96vw] transition-all duration-200 shadow-[3px_3px_0px_#000]">
         {/* Title Bar / Expand-Collapse Tab */}
         <div
