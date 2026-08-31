@@ -1,9 +1,4 @@
-/**
- * themeConfig.js
- * 
- * Central Theme & Table Felt Colorway Configurations for POKEHUB
- * Neo-Brutalist & Retro 8-bit Arcade aesthetic with high-contrast readability.
- */
+
 
 export const TABLE_THEMES = [
   {

@@ -41,7 +41,249 @@ const SCENES = [
 // PROCEDURAL TEXTURE GENERATORS (FLAT NEO-BRUTALIST / 8-BIT SUITE)
 // ----------------------------------------------------------------------
 
-function createCardFaceCanvas(rank, suit) {
+const PIXEL_SUITS = {
+  hearts: [
+    [0, 1, 1, 0, 1, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 1, 1, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0]
+  ],
+  spades: [
+    [0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 1, 1, 0, 0],
+    [0, 1, 1, 1, 1, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 1, 1, 0, 0]
+  ],
+  diamonds: [
+    [0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0],
+    [1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 0],
+    [0, 0, 1, 0, 0]
+  ],
+  clubs: [
+    [0, 0, 1, 1, 1, 0, 0],
+    [0, 0, 1, 1, 1, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 0, 1, 1, 0],
+    [0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 1, 1, 1, 0, 0]
+  ]
+}
+
+const PIXEL_LETTERS = {
+  A: [
+    [0, 1, 1, 0],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 0, 0, 1]
+  ],
+  K: [
+    [1, 0, 0, 1],
+    [1, 0, 1, 0],
+    [1, 1, 0, 0],
+    [1, 0, 1, 0],
+    [1, 0, 0, 1]
+  ],
+  Q: [
+    [0, 1, 1, 0],
+    [1, 0, 0, 1],
+    [1, 0, 0, 1],
+    [1, 0, 1, 0],
+    [0, 1, 1, 1]
+  ],
+  J: [
+    [0, 0, 0, 1],
+    [0, 0, 0, 1],
+    [0, 0, 0, 1],
+    [1, 0, 0, 1],
+    [0, 1, 1, 0]
+  ],
+  '10': [
+    [1, 0, 1, 1, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1]
+  ],
+  10: [
+    [1, 0, 1, 1, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 1],
+    [1, 0, 1, 1, 1]
+  ],
+  '9': [
+    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [1, 1, 1, 1]
+  ],
+  '8': [
+    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1]
+  ],
+  '7': [
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [0, 0, 1, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0]
+  ],
+  '6': [
+    [1, 1, 1, 1],
+    [1, 0, 0, 0],
+    [1, 1, 1, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1]
+  ],
+  '5': [
+    [1, 1, 1, 1],
+    [1, 0, 0, 0],
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [1, 1, 1, 1]
+  ],
+  '4': [
+    [1, 0, 0, 1],
+    [1, 0, 0, 1],
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [0, 0, 0, 1]
+  ],
+  '3': [
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [0, 1, 1, 1],
+    [0, 0, 0, 1],
+    [1, 1, 1, 1]
+  ],
+  '2': [
+    [1, 1, 1, 1],
+    [0, 0, 0, 1],
+    [1, 1, 1, 1],
+    [1, 0, 0, 0],
+    [1, 1, 1, 1]
+  ]
+}
+
+const DEFAULT_GRAFFITI_MATRIX = [
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0]
+]
+
+const DEFAULT_FRONT_MOTIF = [
+  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+  [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+  [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+  [0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+  [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+  [0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0]
+]
+
+function drawPixelMatrix(ctx, startX, startY, size, matrix, color) {
+  if (!matrix || !Array.isArray(matrix) || matrix.length === 0) return
+  ctx.fillStyle = color
+  for (let r = 0; r < matrix.length; r++) {
+    const row = matrix[r]
+    if (!row) continue
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === 1 || row[c] === true) {
+        ctx.fillRect(Math.floor(startX + c * size), Math.floor(startY + r * size), Math.ceil(size), Math.ceil(size))
+      }
+    }
+  }
+}
+
+function normalizeSuit(suit) {
+  if (suit === '♥' || suit === 'hearts' || suit === 'heart') return 'hearts'
+  if (suit === '♦' || suit === 'diamonds' || suit === 'diamond') return 'diamonds'
+  if (suit === '♣' || suit === 'clubs' || suit === 'club') return 'clubs'
+  return 'spades'
+}
+
+function roundedCardShape(w, h, r) {
+  const shape = new THREE.Shape()
+  const x = -w / 2
+  const y = -h / 2
+  shape.moveTo(x + r, y)
+  shape.lineTo(x + w - r, y)
+  shape.quadraticCurveTo(x + w, y, x + w, y + r)
+  shape.lineTo(x + w, y + h - r)
+  shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+  shape.lineTo(x + r, y + h)
+  shape.quadraticCurveTo(x, y + h, x, y + h - r)
+  shape.lineTo(x, y + r)
+  shape.quadraticCurveTo(x, y, x + r, y)
+  return shape
+}
+
+function createRoundedCardGeometry(w, h, r, segments = 16) {
+  const shape = roundedCardShape(w, h, r)
+  const geom = new THREE.ShapeGeometry(shape, segments)
+  geom.center()
+  const uv = geom.attributes.uv
+  const pos = geom.attributes.position
+  geom.computeBoundingBox()
+  const bb = geom.boundingBox
+  if (bb) {
+    const sx = bb.max.x - bb.min.x
+    const sy = bb.max.y - bb.min.y
+    for (let i = 0; i < uv.count; i++) {
+      uv.setXY(i, (pos.getX(i) - bb.min.x) / sx, (pos.getY(i) - bb.min.y) / sy)
+    }
+    uv.needsUpdate = true
+  }
+  return geom
+}
+
+function createCardFaceCanvas(rank = 'A', rawSuit = 'spades') {
   const W = 512
   const H = 768
   const canvas = document.createElement('canvas')
@@ -52,86 +294,100 @@ function createCardFaceCanvas(rank, suit) {
 
   ctx.imageSmoothingEnabled = false
 
+  const suitKey = normalizeSuit(rawSuit)
+  const isRed = suitKey === 'hearts' || suitKey === 'diamonds'
+  const rankColor = isRed ? '#D61F3D' : '#050505'
+  const accentColor = '#B84A4A' // Default bot skin accent
+  const cornerR = 28
+
+  ctx.save()
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(0, 0, W, H, cornerR)
+  } else {
+    ctx.rect(0, 0, W, H)
+  }
+  ctx.clip()
+
+  // 1. Warm Creamy Porcelain Base (#FAF7F2)
   ctx.fillStyle = '#FAF7F2'
   ctx.fillRect(0, 0, W, H)
 
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.04)'
-  for (let x = 0; x < W; x += 16) ctx.fillRect(x, 0, 1, H)
-  for (let y = 0; y < H; y += 16) ctx.fillRect(0, y, W, 1)
-
-  const P = 8
-  ctx.fillStyle = '#050505'
-  ctx.fillRect(0, 0, W, P * 3)
-  ctx.fillRect(0, H - P * 3, W, P * 3)
-  ctx.fillRect(0, 0, P * 3, H)
-  ctx.fillRect(W - P * 3, 0, P * 3, H)
-
-  ctx.fillStyle = '#050505'
-  for (let x = P * 5; x < W - P * 5; x += P * 2) {
-    ctx.fillRect(x, P * 4.5, P, P)
-    ctx.fillRect(x, H - P * 5.5, P, P)
-  }
-  for (let y = P * 5; y < H - P * 5; y += P * 2) {
-    ctx.fillRect(P * 4.5, y, P, P)
-    ctx.fillRect(W - P * 5.5, y, P, P)
+  // 2. Faint Retro 8-Bit Dither Grid
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.035)'
+  for (let y = 0; y < H; y += 8) {
+    for (let x = (y % 16 === 0 ? 0 : 4); x < W; x += 8) {
+      ctx.fillRect(x, y, 4, 4)
+    }
   }
 
-  const isRed = suit === '♥' || suit === '♦'
-  const mainColor = isRed ? '#D61F3D' : '#050505'
-  const badgeColor = isRed ? '#FFE8EE' : '#F0F2F5'
+  // 4. Stepped Corner Accent Notches in default accent (#B84A4A)
+  ctx.fillStyle = accentColor
+  ctx.fillRect(14, 14, 24, 8)
+  ctx.fillRect(14, 14, 8, 24)
+  ctx.fillRect(W - 38, 14, 24, 8)
+  ctx.fillRect(W - 22, 14, 8, 24)
+  ctx.fillRect(14, H - 22, 24, 8)
+  ctx.fillRect(14, H - 38, 8, 24)
+  ctx.fillRect(W - 38, H - 22, 24, 8)
+  ctx.fillRect(W - 22, H - 38, 8, 24)
 
-  ctx.fillStyle = badgeColor
-  ctx.fillRect(P * 6, P * 6, 84, 114)
-  ctx.strokeStyle = '#050505'
-  ctx.lineWidth = 4
-  ctx.strokeRect(P * 6, P * 6, 84, 114)
+  const suitMatrix = PIXEL_SUITS[suitKey] || PIXEL_SUITS.spades
+  const rankMatrix = PIXEL_LETTERS[rank] || PIXEL_LETTERS['A']
 
-  ctx.fillStyle = mainColor
-  ctx.font = 'bold 44px monospace, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(rank, P * 6 + 42, P * 6 + 40)
-  ctx.font = 'bold 40px sans-serif'
-  ctx.fillText(suit, P * 6 + 42, P * 6 + 85)
+  // 5. Top-Left Index (Rank & Suit)
+  drawPixelMatrix(ctx, 36, 36, 9, rankMatrix, rankColor)
+  drawPixelMatrix(ctx, 36, 92, 8, suitMatrix, rankColor)
 
+  // 6. Bottom-Right Inverted Index
   ctx.save()
-  ctx.translate(W - P * 6, H - P * 6)
+  ctx.translate(W, H)
   ctx.rotate(Math.PI)
-  ctx.fillStyle = badgeColor
-  ctx.fillRect(0, 0, 84, 114)
-  ctx.strokeRect(0, 0, 84, 114)
-  ctx.fillStyle = mainColor
-  ctx.font = 'bold 44px monospace, sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(rank, 42, 40)
-  ctx.font = 'bold 40px sans-serif'
-  ctx.fillText(suit, 42, 85)
+  drawPixelMatrix(ctx, 36, 36, 9, rankMatrix, rankColor)
+  drawPixelMatrix(ctx, 36, 92, 8, suitMatrix, rankColor)
   ctx.restore()
 
+  // 7. Central Pixel Art Motif Box (Exact 1:1 match with Bot/Default Gameplay Card)
+  const boxW = 230
+  const boxH = 230
+  const boxX = Math.floor((W - boxW) / 2)
+  const boxY = Math.floor((H - boxH) / 2)
+
+  // Hard drop shadow
   ctx.fillStyle = '#050505'
-  ctx.fillRect(W / 2 - 130, H / 2 - 170, 260, 340)
-  ctx.fillStyle = isRed ? '#FFF0F3' : '#FFFFFF'
-  ctx.fillRect(W / 2 - 124, H / 2 - 164, 248, 328)
+  ctx.fillRect(boxX + 10, boxY + 10, boxW, boxH)
 
-  ctx.fillStyle = mainColor
-  ctx.font = 'bold 130px sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(suit, W / 2, H / 2 - 20)
-
-  ctx.fillStyle = '#050505'
-  ctx.font = 'bold 18px monospace'
-  ctx.fillText(`POKERHUB • ${rank} OF ${suit === '♠' ? 'SPADES' : suit === '♥' ? 'HEARTS' : suit === '♦' ? 'DIAMONDS' : 'CLUBS'}`, W / 2, H / 2 + 105)
-
-  ctx.fillStyle = '#FFE500'
-  ctx.fillRect(W / 2 - 110, H - 75, 220, 26)
+  // White motif container body
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(boxX, boxY, boxW, boxH)
   ctx.strokeStyle = '#050505'
-  ctx.lineWidth = 3
-  ctx.strokeRect(W / 2 - 110, H - 75, 220, 26)
-  ctx.fillStyle = '#000000'
-  ctx.font = 'bold 12px monospace'
-  ctx.fillText('3D 52-CARD CASINO DECK', W / 2, H - 62)
+  ctx.lineWidth = 8
+  ctx.strokeRect(boxX, boxY, boxW, boxH)
+
+  // Subtle interior glow
+  ctx.fillStyle = `${accentColor}18`
+  ctx.fillRect(boxX + 6, boxY + 6, boxW - 12, boxH - 12)
+
+  // Render centered motif matrix
+  const pSize = 12.5
+  const matW = DEFAULT_FRONT_MOTIF[0].length * pSize
+  const matH = DEFAULT_FRONT_MOTIF.length * pSize
+  const matX = Math.floor((W - matW) / 2)
+  const matY = Math.floor((H - matH) / 2)
+  drawPixelMatrix(ctx, matX, matY, pSize, DEFAULT_FRONT_MOTIF, accentColor)
+
+  ctx.restore()
+
+  // 3. Thick Neo-Brutalist Outer Rounded Border (14px)
+  ctx.strokeStyle = '#050505'
+  ctx.lineWidth = 14
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(7, 7, W - 14, H - 14, cornerR - 4)
+  } else {
+    ctx.strokeRect(7, 7, W - 14, H - 14)
+  }
+  ctx.stroke()
 
   return canvas
 }
@@ -146,56 +402,66 @@ function createCardBackCanvas() {
   if (!ctx) return canvas
 
   ctx.imageSmoothingEnabled = false
-  ctx.fillStyle = '#11141a'
+  const cornerR = 28
+
+  ctx.save()
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(0, 0, W, H, cornerR)
+  } else {
+    ctx.rect(0, 0, W, H)
+  }
+  ctx.clip()
+
+  // 1. Classic Ivory Card Base (#FFF8EE)
+  ctx.fillStyle = '#FFF8EE'
   ctx.fillRect(0, 0, W, H)
 
-  const P = 8
-  ctx.fillStyle = '#FFE500'
-  ctx.fillRect(0, 0, W, P * 3)
-  ctx.fillRect(0, H - P * 3, W, P * 3)
-  ctx.fillRect(0, 0, P * 3, H)
-  ctx.fillRect(W - P * 3, 0, P * 3, H)
-
-  ctx.strokeStyle = '#050505'
-  ctx.lineWidth = 6
-  ctx.strokeRect(P * 3, P * 3, W - P * 6, H - P * 6)
-
-  const cellSize = 32
-  for (let y = P * 4; y < H - P * 4; y += cellSize) {
-    for (let x = P * 4; x < W - P * 4; x += cellSize) {
-      const isEven = (Math.floor(x / cellSize) + Math.floor(y / cellSize)) % 2 === 0
-      ctx.strokeStyle = isEven ? 'rgba(255, 229, 0, 0.25)' : 'rgba(255, 255, 255, 0.08)'
-      ctx.lineWidth = 1.5
-      ctx.strokeRect(x, y, cellSize, cellSize)
-      if (isEven) {
-        ctx.fillStyle = '#FFE500'
-        ctx.fillRect(x + cellSize / 2 - 2, y + cellSize / 2 - 2, 4, 4)
-      }
-    }
+  // 3. Inner Coral/Rose Rectangular Field (#E58383) with rounded corners
+  ctx.fillStyle = '#E58383'
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(24, 24, W - 48, H - 48, 16)
+  } else {
+    ctx.rect(24, 24, W - 48, H - 48)
   }
-
-  const cx = W / 2
-  const cy = H / 2
-  const mw = 220
-  const mh = 220
-
-  ctx.fillStyle = '#050505'
-  ctx.fillRect(cx - mw / 2, cy - mh / 2, mw, mh)
-  ctx.fillStyle = '#FFE500'
-  ctx.fillRect(cx - mw / 2 + 6, cy - mh / 2 + 6, mw - 12, mh - 12)
+  ctx.fill()
   ctx.strokeStyle = '#050505'
-  ctx.lineWidth = 6
-  ctx.strokeRect(cx - mw / 2 + 6, cy - mh / 2 + 6, mw - 12, mh - 12)
+  ctx.lineWidth = 8
+  ctx.stroke()
 
-  ctx.fillStyle = '#050505'
-  ctx.font = 'bold 42px monospace'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('777', cx, cy - 20)
-  ctx.font = 'bold 16px monospace'
-  ctx.fillText('★ POKEHUB ★', cx, cy + 32)
-  ctx.font = 'bold 11px monospace'
-  ctx.fillText('52-CARD FULL DECK', cx, cy + 56)
+  // 4. Stepped Corner Accents
+  ctx.fillStyle = '#B84A4A'
+  ctx.fillRect(24, 24, 28, 8)
+  ctx.fillRect(24, 24, 8, 28)
+  ctx.fillRect(W - 52, 24, 28, 8)
+  ctx.fillRect(W - 32, 24, 8, 28)
+  ctx.fillRect(24, H - 32, 28, 8)
+  ctx.fillRect(24, H - 52, 8, 28)
+  ctx.fillRect(W - 52, H - 32, 28, 8)
+  ctx.fillRect(W - 32, H - 52, 8, 28)
+
+  // 5. Classic 8-bit Lattice Matrix (Default Bot Pattern in #B84A4A)
+  const pSize = 17
+  const matW = DEFAULT_GRAFFITI_MATRIX[0].length * pSize
+  const matH = DEFAULT_GRAFFITI_MATRIX.length * pSize
+  const matX = Math.floor((W - matW) / 2)
+  const matY = Math.floor((H - matH) / 2)
+
+  drawPixelMatrix(ctx, matX, matY, pSize, DEFAULT_GRAFFITI_MATRIX, '#B84A4A')
+
+  ctx.restore()
+
+  // 2. Thick Outer Brutalist Rounded Border
+  ctx.strokeStyle = '#050505'
+  ctx.lineWidth = 14
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(7, 7, W - 14, H - 14, cornerR - 4)
+  } else {
+    ctx.strokeRect(7, 7, W - 14, H - 14)
+  }
+  ctx.stroke()
 
   return canvas
 }
@@ -230,10 +496,14 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     const scene = new THREE.Scene()
     const width = pinWrapper.clientWidth || window.innerWidth
     const height = pinWrapper.clientHeight || window.innerHeight
+    const isSmallMobile = width < 480
+    const isMobile = width < 768
+    const getDeckScale = (w) => (w < 480 ? 0.65 : (w < 768 ? 0.78 : 1.0))
+    const initialDeckScale = getDeckScale(width)
 
     const camera = new THREE.PerspectiveCamera(35, width / height, 0.1, 1000)
-    camera.position.set(0, 6.8, 10.8)
-    camera.lookAt(0, 0.35, 0)
+    camera.position.set(0, isSmallMobile ? 6.2 : (isMobile ? 6.4 : 6.8), isSmallMobile ? 12.0 : (isMobile ? 11.4 : 10.8))
+    camera.lookAt(0, isSmallMobile ? -0.85 : (isMobile ? -0.55 : 0.35), 0)
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -253,7 +523,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     const TOTAL_CARDS = 52
     const HALF_COUNT = 26
 
-    const cardGeometry = new THREE.PlaneGeometry(CARD_W, CARD_H, 1, 1)
+    const cardGeometry = createRoundedCardGeometry(CARD_W, CARD_H, 0.16, 16)
 
     const SUITS = ['♠', '♥', '♦', '♣']
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
@@ -268,6 +538,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     // Sideways 3/4 angled deck group (Turned sideways from original orientation)
     const deckRootGroup = new THREE.Group()
     deckRootGroup.rotation.set(0.18, 0.38, -0.06) // 3/4 perspective angle
+    deckRootGroup.scale.set(initialDeckScale, initialDeckScale, initialDeckScale)
     scene.add(deckRootGroup)
 
     const cards = []
@@ -275,6 +546,8 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     const backCanvas = createCardBackCanvas()
     const backTexture = new THREE.CanvasTexture(backCanvas)
     backTexture.colorSpace = THREE.SRGBColorSpace
+    backTexture.magFilter = THREE.NearestFilter
+    backTexture.minFilter = THREE.NearestFilter
     backTexture.needsUpdate = true
 
     const backMaterial = new THREE.MeshBasicMaterial({
@@ -290,6 +563,8 @@ export default function RiffleShuffleSection({ containerRefProp }) {
       const faceCanvas = createCardFaceCanvas(cardData.rank, cardData.suit)
       const faceTexture = new THREE.CanvasTexture(faceCanvas)
       faceTexture.colorSpace = THREE.SRGBColorSpace
+      faceTexture.magFilter = THREE.NearestFilter
+      faceTexture.minFilter = THREE.NearestFilter
       faceTexture.needsUpdate = true
 
       const faceMaterial = new THREE.MeshBasicMaterial({
@@ -327,58 +602,7 @@ export default function RiffleShuffleSection({ containerRefProp }) {
     }
 
     // ------------------------------------------------------------------
-    // 3. 3D RETRO 8-BIT DARK SMOKE AURA (SUBTLE, CLEAN & DISCREET)
-    // ------------------------------------------------------------------
-    const smokeCount = 30
-    const smokeGeo = new THREE.PlaneGeometry(0.16, 0.16)
-    const smokeMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-      blending: THREE.NormalBlending,
-      side: THREE.DoubleSide
-    })
-    const smokeMesh = new THREE.InstancedMesh(smokeGeo, smokeMat, smokeCount)
-    smokeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-
-    const smokeColors = [
-      new THREE.Color(0x050508),
-      new THREE.Color(0x0a0b10),
-      new THREE.Color(0x12141c),
-      new THREE.Color(0x1b1d28),
-      new THREE.Color(0x282b3a)
-    ]
-
-    const smokeDummy = new THREE.Object3D()
-    const smokeParticles = Array.from({ length: smokeCount }, (_, i) => {
-      const isLeft = i < smokeCount / 2
-      const baseCenterX = isLeft ? -2.6 : 2.6
-      const x = baseCenterX + (Math.random() - 0.5) * 1.6
-      const y = (Math.random() * 0.8)
-      const z = (Math.random() - 0.5) * 2.4
-
-      const color = smokeColors[Math.floor(Math.random() * smokeColors.length)]
-      smokeMesh.setColorAt(i, color)
-
-      return {
-        x,
-        y,
-        z,
-        vx: (Math.random() - 0.5) * 0.003,
-        vy: 0.006 + Math.random() * 0.008,
-        rot: Math.floor(Math.random() * 4) * (Math.PI / 2),
-        scale: 0.35 + Math.random() * 0.35,
-        life: Math.random() * 60,
-        maxLife: 60 + Math.random() * 40,
-        isLeft
-      }
-    })
-    if (smokeMesh.instanceColor) smokeMesh.instanceColor.needsUpdate = true
-    deckRootGroup.add(smokeMesh)
-
-    // ------------------------------------------------------------------
-    // 4. Rigid-Body Card Sync (100% Flat & Non-Intersecting Layers)
+    // 3. Rigid-Body Card Sync (100% Flat & Non-Intersecting Layers)
     // ------------------------------------------------------------------
     const syncAllCards = () => {
       cards.forEach((c) => {
@@ -721,47 +945,10 @@ export default function RiffleShuffleSection({ containerRefProp }) {
       })
     }, container)
 
-    // 6. Render Loop (Fixed Camera, 3/4 Angled Deck, Subtle Dark Smoke)
+    // 5. Render Loop (Fixed Camera, 3/4 Angled Deck)
     let animationFrameId
-    const start = performance.now()
 
     const render = () => {
-      const t = (performance.now() - start) / 1000
-
-      // Update discreet 3D dark smoke particles
-      const leftWingX = cards[0] ? cards[0].posX : -2.6
-      const leftWingY = cards[0] ? cards[0].posY : 0.2
-      const rightWingX = cards[26] ? cards[26].posX : 2.6
-      const rightWingY = cards[26] ? cards[26].posY : 0.2
-
-      for (let i = 0; i < smokeCount; i++) {
-        const p = smokeParticles[i]
-        p.life++
-        p.y += p.vy
-        p.x += p.vx + Math.sin(t * 2 + i) * 0.002
-        p.scale += 0.002
-
-        const baseCenterX = p.isLeft ? leftWingX : rightWingX
-        const baseCenterY = p.isLeft ? leftWingY : rightWingY
-
-        if (p.life >= p.maxLife || p.y > baseCenterY + 1.8) {
-          p.x = baseCenterX + (Math.random() - 0.5) * 1.6
-          p.z = (Math.random() - 0.5) * 2.4
-          p.y = baseCenterY + (Math.random() - 0.2) * 0.2
-          p.vy = 0.005 + Math.random() * 0.008
-          p.scale = 0.30 + Math.random() * 0.25
-          p.life = 0
-          p.maxLife = 50 + Math.random() * 40
-        }
-
-        smokeDummy.position.set(p.x, p.y, p.z)
-        smokeDummy.rotation.set(0, 0, p.rot)
-        smokeDummy.scale.set(p.scale, p.scale, 1)
-        smokeDummy.updateMatrix()
-        smokeMesh.setMatrixAt(i, smokeDummy.matrix)
-      }
-      smokeMesh.instanceMatrix.needsUpdate = true
-
       syncAllCards()
       renderer.render(scene, camera)
       animationFrameId = requestAnimationFrame(render)
@@ -773,8 +960,20 @@ export default function RiffleShuffleSection({ containerRefProp }) {
       if (!pinWrapperRef.current) return
       const w = pinWrapperRef.current.clientWidth || window.innerWidth
       const h = pinWrapperRef.current.clientHeight || window.innerHeight
-      camera.position.set(0, 6.8, 10.8)
-      camera.lookAt(0, 0.35, 0)
+      const smMob = w < 480
+      const mob = w < 768
+      const scale = getDeckScale(w)
+      deckRootGroup.scale.set(scale, scale, scale)
+      if (smMob) {
+        camera.position.set(0, 6.2, 12.0)
+        camera.lookAt(0, -0.85, 0)
+      } else if (mob) {
+        camera.position.set(0, 6.4, 11.4)
+        camera.lookAt(0, -0.55, 0)
+      } else {
+        camera.position.set(0, 6.8, 10.8)
+        camera.lookAt(0, 0.35, 0)
+      }
       camera.aspect = w / h
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -800,10 +999,10 @@ export default function RiffleShuffleSection({ containerRefProp }) {
   const currentScene = SCENES[activeSceneIndex]
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} id="how-to-play" className="relative w-full">
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex items-center justify-start px-6 sm:px-12 lg:px-20"
+        className="relative w-full h-screen bg-transparent overflow-hidden select-none z-20 flex flex-col justify-end items-center sm:flex-row sm:items-center sm:justify-start px-4 sm:px-12 lg:px-20 pb-16 sm:pb-0"
       >
         {/* Pure Clean Flat 3D Canvas (100% CENTERED on Seamless Global Grid) */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full block z-10" />
@@ -811,15 +1010,15 @@ export default function RiffleShuffleSection({ containerRefProp }) {
         {/* ------------------------------------------------------------- */}
         {/* 3D CARD-FLIP KINETIC HERO TYPOGRAPHY                          */}
         {/* ------------------------------------------------------------- */}
-        <div className="relative z-20 pointer-events-none max-w-lg lg:max-w-xl [perspective:1200px]">
+        <div className="relative z-20 pointer-events-none w-full max-w-sm sm:max-w-lg lg:max-w-xl [perspective:1200px] mb-12 sm:mb-0">
           <div
             key={currentScene.id}
             className="animate-card-flip-3d"
           >
             {/* Tag Badge */}
-            <div className="mb-3 sm:mb-4">
+            <div className="mb-2 sm:mb-4">
               <span
-                className="font-pixel text-[11px] sm:text-xs font-black uppercase px-3.5 py-1.5 border-[3px] border-true-black shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
+                className="font-pixel text-[9px] sm:text-xs font-black uppercase px-2.5 sm:px-3.5 py-1 sm:py-1.5 border-[2.5px] sm:border-[3px] border-true-black shadow-[2px_2px_0px_#000] sm:shadow-[3px_3px_0px_#000] inline-block -rotate-1 transition-all duration-300 transform hover:scale-105"
                 style={{ backgroundColor: currentScene.accentColor }}
               >
                 {currentScene.tag}
@@ -827,17 +1026,17 @@ export default function RiffleShuffleSection({ containerRefProp }) {
             </div>
 
             {/* Giant Chunky Headline */}
-            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-4 sm:mb-5 drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
+            <h2 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-black uppercase text-true-black tracking-tight leading-[0.92] mb-2 sm:mb-5 drop-shadow-[2px_2px_0px_rgba(255,255,255,1)] sm:drop-shadow-[3px_3px_0px_rgba(255,255,255,1)]">
               {currentScene.headline}
             </h2>
 
             {/* Neo-Brutalist Description Card with Accent Line */}
-            <div className="brutal-window bg-white p-4 sm:p-5 border-[4px] border-true-black shadow-[8px_8px_0px_#000] max-w-md pointer-events-auto relative overflow-hidden">
+            <div className="brutal-window bg-white p-3 sm:p-5 border-[3px] sm:border-[4px] border-true-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] max-w-full sm:max-w-md pointer-events-auto relative overflow-hidden">
               <div
                 className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
                 style={{ backgroundColor: currentScene.accentColor }}
               />
-              <p className="font-mono-nb text-xs sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-1">
+              <p className="font-mono-nb text-[11px] sm:text-sm md:text-base font-bold text-gray-900 leading-snug pt-0.5 sm:pt-1">
                 {currentScene.description}
               </p>
             </div>

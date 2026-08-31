@@ -109,6 +109,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
   const [selectedSkinKey, setSelectedSkinKey] = useState('obsidian')
   const [selectedThemeKey, setSelectedThemeKey] = useState('classic_pink')
   const [botCount, setBotCount] = useState(2)
+  const [showBetaWarning, setShowBetaWarning] = useState(false)
 
   // Load stored preferences on open
   useEffect(() => {
@@ -121,6 +122,7 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
       if (savedTheme) {
         setSelectedThemeKey(savedTheme)
       }
+      setShowBetaWarning(false)
     }
   }, [isOpen])
 
@@ -133,7 +135,13 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
   const graffitiMatrix = PIXEL_GRAFFITI[activeDeck.themeStyle] || PIXEL_GRAFFITI.obsidian
   const suitMatrix = PIX_SUITS[activeDeck.suitKey] || PIX_SUITS.spade
 
+  const handleEnterClick = () => {
+    SoundEngine.playClick()
+    setShowBetaWarning(true)
+  }
+
   const handleLaunch = () => {
+    setShowBetaWarning(false)
     SoundEngine.playCardSwoosh()
     SoundEngine.playJackpot()
 
@@ -535,13 +543,70 @@ export default function GameSetupModal({ isOpen, onClose, onLaunchSession }) {
 
           <button
             type="button"
-            onClick={handleLaunch}
+            onClick={handleEnterClick}
             className="brutal-btn px-6 sm:px-10 py-2.5 sm:py-3 bg-[#00FFA3] hover:bg-[#FFE500] text-[#0D0D0D] font-display text-xs sm:text-base font-black uppercase shadow-[4px_4px_0px_#0D0D0D] border-[2.5px] border-[#0D0D0D] cursor-pointer transition-all active:scale-95 flex items-center gap-2"
           >
             <span>★</span>
             <span>ENTER 3D ARENA →</span>
           </button>
         </div>
+
+        {/* Beta Testing Warning Modal Overlay */}
+        {showBetaWarning && (
+          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+            <div className="relative w-full max-w-md bg-[#FFFFFF] border-[3.5px] border-[#0D0D0D] rounded-2xl sm:rounded-3xl shadow-[8px_8px_0px_#0D0D0D] p-5 sm:p-6 text-center select-none animate-scaleIn">
+              
+              {/* Flashing Warning Badge */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFE500] border-[2px] border-[#0D0D0D] shadow-[2px_2px_0px_#0D0D0D] mb-3">
+                <span className="text-sm">⚠</span>
+                <span className="font-pixel text-[9px] sm:text-[10px] font-black text-[#0D0D0D] tracking-wider uppercase">
+                  BETA TESTING NOTICE
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 className="font-display font-black text-lg sm:text-2xl text-[#0D0D0D] tracking-tight uppercase mb-2">
+                EXPERIMENTAL BUILD
+              </h3>
+
+              {/* Notice Card */}
+              <div className="bg-[#FFF8EE] border-[2px] border-[#0D0D0D] rounded-xl p-3.5 sm:p-4 text-left shadow-[2px_2px_0px_#0D0D0D] mb-5 space-y-2 text-xs sm:text-sm text-gray-800">
+                <p className="font-bold text-[#0D0D0D]">
+                  The 6-Max Texas Hold&apos;em AI Arena is currently in active <span className="text-[#FF3333] font-black">Beta Testing</span> and not 100% stable.
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 text-[11px] sm:text-xs">
+                  <li>Bot AI decision models and speed optimizations are undergoing tuning.</li>
+                  <li>Minor visual anomalies or unexpected behavior might happen sometimes.</li>
+                  <li>Bankrolls and equipped deck styles are safely persisted locally.</li>
+                </ul>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    SoundEngine.playClick()
+                    setShowBetaWarning(false)
+                  }}
+                  className="brutal-btn flex-1 py-2.5 bg-white hover:bg-gray-200 text-[#0D0D0D] font-display text-xs sm:text-sm font-black uppercase shadow-[2px_2px_0px_#0D0D0D] border-[2px] border-[#0D0D0D] cursor-pointer"
+                >
+                  GO BACK
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleLaunch}
+                  className="brutal-btn flex-1 py-2.5 sm:py-3 bg-[#00FFA3] hover:bg-[#FFE500] text-[#0D0D0D] font-display text-xs sm:text-sm font-black uppercase shadow-[3px_3px_0px_#0D0D0D] border-[2.5px] border-[#0D0D0D] cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                >
+                  <span>★</span>
+                  <span>I UNDERSTAND →</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

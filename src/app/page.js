@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -13,6 +13,7 @@ import RiffleShuffleSection from './components/RiffleShuffleSection'
 import PokerHandOrbitSection from './components/PokerHandOrbitSection'
 import NeoBrutalistHero from './components/NeoBrutalistHero'
 import GameSetupModal from './components/GameSetupModal'
+import Footer from './components/Footer'
 import { SoundEngine } from './components/SoundEngine'
 import { generateGameUrl } from './utils/gameUrl'
 
@@ -145,8 +146,6 @@ export default function Home() {
 
       if (e.key === 'g' || e.key === 'G') {
         window.location.href = generateGameUrl()
-      } else if (e.key === 'l' || e.key === 'L') {
-        window.location.href = '/leaderboard'
       }
     }
 
@@ -180,7 +179,7 @@ export default function Home() {
   }, [scrollToHowToPlay, scrollToDeckSkins])
 
   // Hamburger Menu Items: Home, 3D Arena, Deck Skin, Rankings, How to Play
-  const bubbleMenuItems = [
+  const bubbleMenuItems = useMemo(() => [
     {
       label: 'home',
       ariaLabel: 'POKERHUB Home',
@@ -226,7 +225,7 @@ export default function Home() {
         scrollToHowToPlay()
       }
     }
-  ]
+  ], [scrollToHowToPlay, scrollToDeckSkins])
 
   return (
     <main className="w-full relative min-h-screen transition-colors duration-700 text-true-black overflow-x-hidden bg-transparent">
@@ -378,71 +377,13 @@ export default function Home() {
       />
 
       {/* ======================================================== */}
-      {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER (ABOUT US)       */}
+      {/* SECTION 5: NEO-BRUTALIST ARCADE FOOTER                   */}
       {/* ======================================================== */}
-      <footer id="about" className="w-full bg-true-black text-white border-t-[4px] border-true-black relative z-40 py-16 px-6 overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none opacity-5"
-          style={{
-            backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)',
-            backgroundSize: '24px 24px'
-          }}
-        />
-
-        <div className="max-w-7xl mx-auto flex flex-col gap-12 relative z-10">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 pb-10 border-b-[2px] border-white/20">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/PKH_Logo.jpg"
-                  alt="POKERHUB Logo"
-                  className="h-10 w-auto rounded border border-white/40"
-                />
-                <span className="font-display text-2xl md:text-3xl font-black tracking-tight uppercase text-accent-yellow">
-                  POKERHUB
-                </span>
-              </div>
-              <p className="font-mono-nb text-xs text-gray-400 max-w-md uppercase tracking-wider">
-                Next-Gen Neo-Brutalist 3D Poker Arena with Procedural Physics & Intelligent AI Opponents.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <Link
-                href="/game"
-                className="brutal-btn px-5 py-3 bg-[#00FFA3] text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#00e693] cursor-pointer"
-              >
-                PLAY 3D ARENA →
-              </Link>
-              <Link
-                href="/leaderboard"
-                className="brutal-btn px-5 py-3 bg-ui-pink text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#ff8cb8]"
-              >
-                LEADERBOARD
-              </Link>
-              <button
-                onClick={() => setIsRankingsOpen(true)}
-                className="brutal-btn px-4 py-3 bg-white text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-accent-yellow"
-              >
-                HAND RULES
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left font-mono-nb text-xs text-gray-500">
-            <div>
-              © 2026 POKERHUB ARCHIVES. ALL RIGHTS RESERVED.
-            </div>
-            <div className="flex items-center gap-6 text-gray-400">
-              <Link href="/leaderboard" className="hover:text-white">LEADERBOARD</Link>
-              <span className="cursor-pointer hover:text-white" onClick={() => setIsVIPOpen(true)}>VIP CLUB</span>
-              <span className="cursor-pointer hover:text-white" onClick={() => setIsRankingsOpen(true)}>RULES</span>
-              <span className="cursor-pointer hover:text-white" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>BACK TO TOP ↑</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer
+        onOpenRankings={() => setIsRankingsOpen(true)}
+        onOpenVIP={() => setIsVIPOpen(true)}
+        onOpenDuel={() => setIsSetupModalOpen(true)}
+      />
 
       {/* Game Matchmaking & Table Setup Modal */}
       <GameSetupModal

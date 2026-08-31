@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import gsap from 'gsap'
@@ -68,12 +68,36 @@ export default function GamePage() {
   const [bankroll, setBankroll] = useState(10000)
   const [isMuted, setIsMuted] = useState(false)
   const [tableTheme, setTableTheme] = useState('classic_pink')
+  const [isMobile, setIsMobile] = useState(false)
 
   // Modal Dialogs
   const [isDuelOpen, setIsDuelOpen] = useState(false)
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false)
   const [isRankingsOpen, setIsRankingsOpen] = useState(false)
   const [isVIPOpen, setIsVIPOpen] = useState(false)
+
+  // Mobile device detector
+  useEffect(() => {
+    const detectMobile = () => {
+      if (typeof window === 'undefined') return false
+      const width = window.innerWidth
+      const isTouch = 'ontouchstart' in window || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0)
+      const isMobileAgent = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      return width < 768 || (isTouch && width < 1024) || isMobileAgent
+    }
+
+    const handleCheck = () => {
+      setIsMobile(detectMobile())
+    }
+
+    handleCheck()
+    window.addEventListener('resize', handleCheck)
+    window.addEventListener('orientationchange', handleCheck)
+    return () => {
+      window.removeEventListener('resize', handleCheck)
+      window.removeEventListener('orientationchange', handleCheck)
+    }
+  }, [])
 
   // Load URL slug, query URI params, and bankroll on mount
   useEffect(() => {
@@ -259,7 +283,7 @@ export default function GamePage() {
   }, [handleTossChip])
 
   // Navigation Items (with Leaderboard replacing 3D Duel)
-  const bubbleMenuItems = [
+  const bubbleMenuItems = useMemo(() => [
     {
       label: 'home',
       ariaLabel: 'Back to Home Showcase',
@@ -306,7 +330,7 @@ export default function GamePage() {
         window.location.href = '/#how-to-play'
       }
     }
-  ]
+  ], [handleLeaveGame])
 
   return (
     <main className="w-full relative h-screen transition-colors duration-700 text-true-black overflow-hidden bg-transparent">
@@ -393,15 +417,6 @@ export default function GamePage() {
               <span>{isMuted ? 'MUTED' : 'SFX: ON'}</span>
             </button>
 
-            {/* Leaderboard Link Button - shown on sm+ */}
-            <Link
-              href="/leaderboard"
-              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] shrink-0"
-              title="Open Leaderboard"
-            >
-              <span>RANKS</span>
-            </Link>
-
             {/* Fullscreen Button - shown on xl+ */}
             <button
               onClick={handleToggleFullscreen}
@@ -459,7 +474,7 @@ export default function GamePage() {
               theme="macau"
               tossSignal={tossSignal}
               isScrolled={false}
-              onTelemetry={setTelemetry}
+              isMobile={isMobile}
             />
           )}
         </div>

@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Reusable SVG Pixel Matrix Renderer (Crisp, true 8-bit integer pixel art)
-function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '' }) {
+function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '', style = {} }) {
   if (!matrix || matrix.length === 0) return null
   const height = matrix.length
   const width = matrix[0].length
@@ -19,8 +19,8 @@ function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '' }
       width={width * size}
       height={height * size}
       viewBox={`0 0 ${width} ${height}`}
-      className={`inline-block select-none ${className}`}
-      style={{ imageRendering: 'pixelated', shapeRendering: 'crispEdges' }}
+      className={`inline-block select-none max-w-full max-h-full ${className}`}
+      style={{ imageRendering: 'pixelated', shapeRendering: 'crispEdges', ...style }}
     >
       {matrix.map((row, r) =>
         row.map((val, c) => {
@@ -789,36 +789,36 @@ function PixelCardFront({ item }) {
 
   return (
     <div
-      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-xl ${item.frontBg} border-[2px] ${item.frontBorder} p-3 flex flex-col justify-between overflow-hidden select-none`}
+      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] rounded-xl ${item.frontBg} border-[2px] ${item.frontBorder} p-3 sm:p-4 flex flex-col justify-between overflow-hidden select-none`}
     >
       {/* Subtle CRT / Hologram Grid Pattern */}
       <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:6px_6px]" />
 
       {/* Top-Left Index (Rank + Pixel Suit) */}
       <div className="flex flex-col items-center leading-none z-10 self-start">
-        <span className={`font-pixel text-lg sm:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
+        <span className={`font-pixel text-base sm:text-lg md:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
           {item.cardRank}
         </span>
-        <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.5} defaultColor={suitColor} />
+        <div className="mt-0.5 sm:mt-1">
+          <PixelArt matrix={suitMat} size={1.8} defaultColor={suitColor} />
         </div>
       </div>
 
-      {/* Central Pixel Art Motif (Clean, no text badge below logo) */}
+      {/* Central Pixel Art Motif in Square Emblem Box (Matching Desktop Design) */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="p-3 rounded-xl border-[3px] border-true-black bg-white shadow-[4px_4px_0px_#050505] flex items-center justify-center">
-          <PixelArt matrix={motif} size={7.5} defaultColor={item.accentColor} />
+        <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-xl sm:rounded-2xl border-[2.5px] sm:border-[3px] border-true-black bg-white shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] flex items-center justify-center p-2 sm:p-2.5">
+          <PixelArt matrix={motif} size={4.2} defaultColor={item.accentColor} className="w-full h-full object-contain" />
         </div>
       </div>
 
       {/* Bottom-Right Inverted Index */}
-      <div className="flex flex-col items-center leading-none self-end rotate-180 z-10">
-        <span className={`font-pixel text-lg sm:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff]`}>
+      <div className="flex flex-col items-center leading-none self-end z-10 select-none pb-0.5">
+        <div className="rotate-180 mb-0.5 sm:mb-1">
+          <PixelArt matrix={suitMat} size={1.8} defaultColor={suitColor} />
+        </div>
+        <span className={`rotate-180 font-pixel text-base sm:text-lg md:text-xl font-black ${item.rankColor} drop-shadow-[1px_1px_0px_#fff] leading-none inline-block`}>
           {item.cardRank}
         </span>
-        <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.5} defaultColor={suitColor} />
-        </div>
       </div>
     </div>
   )
@@ -836,7 +836,7 @@ function PixelCardBack({ item }) {
       <div className="w-full h-full flex items-center justify-center p-1">
         <PixelArt
           matrix={graffitiMat}
-          size={9}
+          size={8}
           defaultColor={item.accentColor}
           className="w-full h-full object-contain"
         />
@@ -988,7 +988,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
       ref={cardFrameRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`w-[85vw] sm:w-[520px] md:w-[580px] lg:w-[640px] h-[520px] sm:h-[580px] md:h-[620px] shrink-0 relative flex flex-col justify-between p-6 sm:p-8 rounded-[32px] border-[4px] border-true-black shadow-[10px_10px_0px_#050505] overflow-hidden bg-gradient-to-br ${item.bgGradient} ${item.rotation} transition-transform duration-300 hover:scale-[1.01]`}
+      className={`w-[85vw] sm:w-[500px] md:w-[580px] lg:w-[640px] h-[500px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-5 sm:p-8 rounded-[28px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] overflow-hidden bg-gradient-to-br ${item.bgGradient} md:${item.rotation} transition-transform duration-300 hover:scale-[1.01]`}
       style={{ perspective: 1200 }}
     >
       {/* Background Watermark Number */}
@@ -1071,12 +1071,12 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
             SoundEngine.playThemeCardHover(item.themeStyle || item.cardSkin)
             setIsFlipped(f => !f)
           }}
-          className="relative w-[210px] sm:w-[240px] md:w-[270px] h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
+          className="relative w-[190px] xs:w-[210px] sm:w-[240px] md:w-[270px] h-[270px] xs:h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
           style={{ perspective: 1200 }}
         >
           {/* Inner 3D Flipping Card Body */}
           <div
-            className={`w-full h-full relative rounded-2xl border-[4px] border-true-black shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${
+            className={`w-full h-full relative rounded-2xl border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${
               isFlipped ? '[transform:rotateY(180deg)]' : ''
             }`}
           >
@@ -1094,10 +1094,10 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
         {/* Foreground Floating Casino Chip */}
         <div
           ref={chipRef}
-          className={`absolute -bottom-3 -left-4 sm:-left-6 w-16 sm:w-20 h-16 sm:h-20 rounded-full border-[3px] border-true-black ${item.chipColor} flex flex-col items-center justify-center font-pixel text-[7px] sm:text-[8px] font-black shadow-[4px_4px_0px_#050505] z-20 pointer-events-none will-change-transform`}
+          className={`absolute -bottom-2 -left-2 xs:-bottom-3 xs:-left-4 sm:-left-6 w-12 h-12 xs:w-14 xs:h-14 sm:w-20 sm:h-20 rounded-full border-[2px] sm:border-[3px] border-true-black ${item.chipColor} flex flex-col items-center justify-center font-pixel text-[6px] xs:text-[7px] sm:text-[8px] font-black shadow-[2px_2px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] z-20 pointer-events-none will-change-transform`}
         >
           <span>{item.stats.chips.split(' ')[0]}</span>
-          <span className="text-[6px]">CHIP</span>
+          <span className="text-[5px] sm:text-[6px]">CHIP</span>
         </div>
 
         {/* Foreground Floating Token 2 */}
@@ -1107,12 +1107,12 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
       </div>
 
       {/* Frame Bottom Bar: Stats and Action Buttons */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-2 border-t-[3px] border-black/20">
-        <div className="flex items-center gap-2 text-white">
-          <span className="font-pixel text-[8px] sm:text-[9px] bg-black/40 border border-white/20 px-2 py-1 rounded">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-2 border-t-[2px] sm:border-t-[3px] border-black/20">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-white">
+          <span className="font-pixel text-[7.5px] sm:text-[9px] bg-black/40 border border-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
             {item.stats.rarity}
           </span>
-          <span className="font-pixel text-[8px] sm:text-[9px] bg-black/40 border border-white/20 px-2 py-1 rounded hidden sm:inline">
+          <span className="font-pixel text-[7.5px] sm:text-[9px] bg-black/40 border border-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hidden xs:inline">
             {item.stats.finish}
           </span>
         </div>
@@ -1121,7 +1121,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
           onClick={() => {
             if (onSelectDeck) onSelectDeck(item.cardSkin)
           }}
-          className={`brutal-btn px-4 py-1.5 font-display text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
+          className={`brutal-btn px-3 sm:px-4 py-1 sm:py-1.5 font-display text-[10.5px] sm:text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
             isEquipped
               ? 'bg-[#00FFA3] text-true-black shadow-[2px_2px_0px_#000000] scale-105'
               : 'bg-white hover:bg-accent-yellow text-true-black'
@@ -1169,7 +1169,10 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
   }
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
+    const mm = gsap.matchMedia()
+
+    // Desktop ONLY (>= 768px): Pinned GSAP horizontal scrollytelling
+    mm.add('(min-width: 768px)', () => {
       const track = trackRef.current
       const container = containerRef.current
       const pinWrapper = pinWrapperRef.current
@@ -1193,9 +1196,9 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           anticipatePin: 1
         }
       })
-    }, containerRef)
+    })
 
-    return () => ctx.revert()
+    return () => mm.revert()
   }, [])
 
   return (
@@ -1215,17 +1218,17 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
 
       <section
         ref={pinWrapperRef}
-        className="relative w-full h-screen overflow-hidden select-none z-20 bg-transparent flex items-center"
+        className="relative w-full py-10 md:py-0 md:h-screen overflow-hidden select-none z-20 bg-transparent flex flex-col justify-center"
       >
-        {/* Track */}
+        {/* Track (Swipeable Carousel on Mobile, GSAP Transformed on Desktop) */}
         <div
           ref={trackRef}
-          className="flex items-center h-full w-max px-8 md:px-20 gap-10 md:gap-16 will-change-transform"
+          className="flex items-stretch md:items-center h-full w-full md:w-max overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none px-4 sm:px-8 md:px-20 gap-4 sm:gap-8 md:gap-16 custom-scrollbar touch-pan-x pb-4 md:pb-0 will-change-transform"
         >
           {/* SLIDE 1: Hero Typography Headline */}
-          <div className="w-[88vw] sm:w-[620px] lg:w-[680px] shrink-0 flex flex-col justify-center pr-4">
+          <div className="w-[88vw] sm:w-[500px] md:w-[620px] lg:w-[680px] snap-center shrink-0 flex flex-col justify-center pr-2 sm:pr-4">
             {/* Top Pill Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm w-max mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-accent-cyan border-[3px] border-true-black brutal-shadow-sm w-max mb-4 sm:mb-6">
               <span className="font-pixel text-[10px] sm:text-xs font-black uppercase text-true-black">
                 POKERHUB VAULT
               </span>
@@ -1233,45 +1236,46 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
 
             {/* Main Huge Punchy Title */}
             <div className="font-display tracking-tight text-true-black leading-[0.95]">
-              <span className="block text-4xl sm:text-6xl md:text-7xl font-black drop-shadow-[4px_4px_0px_#ffa6c9]">
+              <span className="block text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[3px_3px_0px_#ffa6c9] sm:drop-shadow-[4px_4px_0px_#ffa6c9]">
                 WE HAVE 6
               </span>
 
               {/* FREAKING Boxed Highlight Badge */}
               <div className="my-2 sm:my-3 inline-block transform -rotate-2 hover:rotate-0 transition-transform">
-                <div className="bg-accent-yellow border-[4px] border-true-black px-4 sm:px-6 py-1.5 sm:py-2 brutal-shadow">
-                  <span className="font-display text-4xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight">
+                <div className="bg-accent-yellow border-[3px] sm:border-[4px] border-true-black px-3.5 sm:px-6 py-1 sm:py-2 brutal-shadow">
+                  <span className="font-display text-3xl sm:text-6xl md:text-7xl font-black text-true-black tracking-tight">
                     FREAKING
                   </span>
                 </div>
               </div>
 
-              <span className="block text-4xl sm:text-6xl md:text-7xl font-black drop-shadow-[4px_4px_0px_#a6d8ff]">
+              <span className="block text-3xl sm:text-6xl md:text-7xl font-black drop-shadow-[3px_3px_0px_#a6d8ff] sm:drop-shadow-[4px_4px_0px_#a6d8ff]">
                 ELITE DECKS
               </span>
             </div>
 
             {/* Subtitle description */}
-            <p className="font-pixel text-xs sm:text-sm text-gray-700 mt-6 leading-relaxed max-w-lg">
+            <p className="font-pixel text-[11px] sm:text-sm text-gray-700 mt-4 sm:mt-6 leading-relaxed max-w-lg">
               (COLLECTIBLE HIGH-ROLLER ARCHIVES, HOLOGRAPHIC FOILS &amp; PROCEDURAL 3D FINISHES)
             </p>
 
-            {/* Action Button & Scroll Indicator */}
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            {/* Action Button & Scroll/Swipe Indicator */}
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 onClick={() => {
                   SoundEngine.playClick()
                   const skin = equippedSkin || 'obsidian'
                   window.location.href = `/game?skin=${skin}`
                 }}
-                className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-6 py-3 font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
+                className="brutal-btn bg-ui-pink hover:bg-[#ff8cb8] text-true-black px-5 sm:px-6 py-2.5 sm:py-3 font-display text-xs sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center gap-2"
               >
                 <span>PLAY IN 3D ARENA →</span>
               </button>
 
-              <div className="brutal-window px-4 py-2.5 bg-white flex items-center">
+              <div className="brutal-window px-3 sm:px-4 py-2 sm:py-2.5 bg-white flex items-center gap-1.5 shadow-[2px_2px_0px_#000]">
                 <span className="font-pixel text-[9px] sm:text-[10px] font-bold text-true-black">
-                  SCROLL RIGHT
+                  <span className="md:hidden">SWIPE RIGHT ➔</span>
+                  <span className="hidden md:inline">SCROLL RIGHT ➔</span>
                 </span>
               </div>
             </div>
@@ -1288,31 +1292,31 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
           ))}
 
           {/* SLIDE 8: Outro Call-To-Action Finale Frame */}
-          <div className="w-[85vw] sm:w-[480px] h-[520px] sm:h-[580px] md:h-[620px] shrink-0 relative flex flex-col justify-between p-8 rounded-[32px] border-[4px] border-true-black shadow-[10px_10px_0px_#050505] bg-gradient-to-br from-[#ffa6c9] via-[#ffbed3] to-[#a6d8ff] -rotate-[2deg]">
+          <div className="w-[85vw] sm:w-[480px] h-[500px] sm:h-[580px] md:h-[620px] snap-center shrink-0 relative flex flex-col justify-between p-6 sm:p-8 rounded-[28px] sm:rounded-[32px] border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[10px_10px_0px_#050505] bg-gradient-to-br from-[#ffa6c9] via-[#ffbed3] to-[#a6d8ff] -rotate-1 md:-rotate-[2deg]">
             <div className="flex items-center justify-between">
-              <span className="font-pixel text-[10px] font-black uppercase px-2 py-1 bg-white border-[2px] border-true-black brutal-shadow-sm text-true-black">
+              <span className="font-pixel text-[9px] sm:text-[10px] font-black uppercase px-2 py-1 bg-white border-[2px] border-true-black brutal-shadow-sm text-true-black">
                 GAME READY
               </span>
-              <span className="font-mono-nb font-black text-sm bg-black text-white px-2 py-1 border border-black shadow-[2px_2px_0px_#fff]">3D ARENA</span>
+              <span className="font-mono-nb font-black text-xs sm:text-sm bg-black text-white px-2 py-1 border border-black shadow-[2px_2px_0px_#fff]">3D ARENA</span>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="font-display text-4xl sm:text-5xl font-black text-true-black leading-tight">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="font-display text-3xl sm:text-5xl font-black text-true-black leading-tight">
                 TEST YOUR HAND IN 3D
               </h3>
-              <p className="font-pixel text-xs text-true-black/90 leading-relaxed">
+              <p className="font-pixel text-[11px] sm:text-xs text-true-black/90 leading-relaxed">
                 Step into the high-roller table. Challenge dealer AI, double down on your bankroll, and climb the royal flush rankings.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               <button
                 onClick={() => {
                   SoundEngine.playCardSwoosh()
                   const skin = equippedSkin || 'obsidian'
                   window.location.href = `/game?skin=${skin}`
                 }}
-                className="brutal-btn w-full py-4 bg-accent-yellow text-true-black font-display text-base font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                className="brutal-btn w-full py-3 sm:py-4 bg-accent-yellow text-true-black font-display text-sm sm:text-base font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>ENTER 3D ARENA →</span>
               </button>
@@ -1322,7 +1326,7 @@ export default function HorizontalShowcase({ onSelectDeck, onOpenDuel, container
                   SoundEngine.playClick()
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                 }}
-                className="brutal-btn w-full py-2.5 bg-white text-true-black font-pixel text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                className="brutal-btn w-full py-2 sm:py-2.5 bg-white text-true-black font-pixel text-[9px] sm:text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <span>▲</span>
                 <span>BACK TO TOP</span>

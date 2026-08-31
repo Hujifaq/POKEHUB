@@ -584,15 +584,15 @@ function BrutalistCard({
   const sizeClasses = small
     ? 'w-7 h-10 xs:w-8 xs:h-12 sm:w-10 sm:h-15 md:w-12 md:h-18'
     : large
-      ? 'w-13 h-19 xs:w-16 xs:h-23 sm:w-20 sm:h-29 md:w-26 md:h-38'
-      : 'w-9 h-13 xs:w-11 xs:h-16 sm:w-14 sm:h-21 md:w-19 md:h-28'
+      ? 'w-14 h-21 xs:w-17 xs:h-25 sm:w-21 sm:h-31 md:w-26 md:h-38'
+      : 'w-11 h-17 xs:w-13 xs:h-20 sm:w-15 sm:h-23 md:w-19 md:h-29'
 
   const hardShadowStyle = {
     boxShadow: isWinner
       ? `0 0 0 3.5px #FFE500, 0 0 18px rgba(255, 229, 0, 0.85), 4.5px 4.5px 0px #0D0D0D`
       : highlighted
         ? `0 0 0 3px #00F5FF, 0 0 14px rgba(0, 245, 255, 0.75), 4px 4px 0px #0D0D0D`
-        : `2.5px 2.5px 0px #0D0D0D`
+        : `2px 2px 0px #0D0D0D`
   }
 
   return (
@@ -621,8 +621,8 @@ function BrutalistCard({
             className={`font-pixel font-black flex items-center gap-0.5 rounded-full border-[1.5px] border-[#0D0D0D] shadow-[1.5px_1.5px_0px_#0D0D0D] ${small
               ? 'text-[6px] px-1 py-0.2'
               : large
-                ? 'text-[9px] sm:text-[10px] px-2 py-0.5'
-                : 'text-[7.5px] sm:text-[8.5px] px-1.5 py-0.5'
+                ? 'text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-0.5'
+                : 'text-[7px] sm:text-[8.5px] px-1 sm:px-1.5 py-0.5'
               } ${isWinner
                 ? 'bg-[#FFE500] text-[#0D0D0D] ring-2 ring-[#0D0D0D]'
                 : 'bg-[#00F5FF] text-[#0D0D0D]'
@@ -644,7 +644,7 @@ function BrutalistCard({
             <div className="w-full h-full rounded-sm border border-[#0D0D0D]/40 bg-[#E58383] p-0.5 flex items-center justify-center overflow-hidden relative">
               <PixelArt
                 matrix={PIXEL_GRAFFITI.default}
-                size={large ? 3.2 : small ? 1.3 : 2.0}
+                size={large ? 2.2 : small ? 1.0 : 1.6}
                 defaultColor="#B84A4A"
                 className="w-full h-full object-contain"
               />
@@ -653,12 +653,12 @@ function BrutalistCard({
         ) : (
           // Custom Equipped Deck Back (Obsidian, Gold, Cyber, Emerald, Sakura, Retro)
           <div
-            className={`${sizeClasses} rounded-xl border-[3px] border-[#0D0D0D] bg-[#07080d] flex items-center justify-center p-1 relative select-none overflow-hidden z-10`}
+            className={`${sizeClasses} rounded-lg sm:rounded-xl border-[2px] sm:border-[3px] border-[#0D0D0D] bg-[#07080d] flex items-center justify-center p-0.5 sm:p-1 relative select-none overflow-hidden z-10`}
             style={hardShadowStyle}
           >
             <PixelArt
               matrix={graffitiMat}
-              size={large ? 3.6 : small ? 1.6 : 2.7}
+              size={large ? 2.4 : small ? 1.1 : 1.8}
               defaultColor={skinTheme.accentColor}
               className="w-full h-full object-contain"
             />
@@ -667,46 +667,46 @@ function BrutalistCard({
       ) : (
         // EXACT FRONT FACE: Porcelain Creme #FAF7F2, 8-Bit Pixel Typography, Corner Suits & Centerpiece Emblem
         <div
-          className={`${sizeClasses} rounded-xl border-[3px] ${isWinner
+          className={`${sizeClasses} rounded-lg sm:rounded-xl border-[2px] sm:border-[3px] ${isWinner
             ? 'border-[#FFE500] ring-2 ring-[#0D0D0D]'
             : highlighted
               ? 'border-[#00F5FF] ring-2 ring-[#0D0D0D]'
               : 'border-[#0D0D0D]'
-            } bg-[#FAF7F2] flex flex-col justify-between p-1.5 sm:p-2 relative select-none cursor-pointer z-10 overflow-hidden`}
+            } bg-[#FAF7F2] flex flex-col justify-between p-1 xs:p-1.5 sm:p-2 relative select-none cursor-pointer z-10 overflow-hidden`}
           style={hardShadowStyle}
         >
           {/* Subtle CRT / Hologram Grid Pattern */}
           <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:6px_6px]" />
 
           {/* Top Corner Index: 8-Bit Pixel Rank & Pixel Suit */}
-          <div className="flex justify-between items-start leading-none relative z-10">
+          <div className="flex justify-between items-start leading-none relative z-10 select-none">
             <div className="flex flex-col items-center">
               <span
-                className="font-pixel text-xs sm:text-sm md:text-base font-black leading-none drop-shadow-[1px_1px_0px_#fff]"
+                className={`font-pixel ${small ? 'text-[7.5px] xs:text-[8px]' : large ? 'text-[10px] xs:text-xs sm:text-sm md:text-base' : 'text-[8.5px] xs:text-[9.5px] sm:text-xs md:text-sm'} font-black leading-none drop-shadow-[1px_1px_0px_#fff] inline-block`}
                 style={{ color: card.color }}
               >
                 {card.rank}
               </span>
-              <div className="mt-1">
+              <div className="mt-0.5">
                 <PixelArt
                   matrix={suitPix}
-                  size={small ? 1.1 : large ? 1.6 : 1.4}
+                  size={small ? 0.7 : large ? 1.1 : 0.8}
                   defaultColor={card.color}
                 />
               </div>
             </div>
-            <span className="text-xs sm:text-sm font-black" style={{ color: card.color }}>
+            <span className={`${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: card.color }}>
               {card.symbol}
             </span>
           </div>
 
           {/* Centerpiece 8-Bit Artwork Motif in Iconic Neo-Brutalist Emblem Box */}
-          <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-            <div className={`p-1 sm:p-1.5 md:p-2 rounded-xl border-[2px] sm:border-[2.5px] ${isWinner ? 'border-[#0D0D0D] bg-[#FFE500]/25' : highlighted ? 'border-[#0D0D0D] bg-[#00F5FF]/20' : 'border-[#0D0D0D] bg-white'
-              } shadow-[2px_2px_0px_#0D0D0D] flex items-center justify-center`}>
+          <div className="relative z-10 flex flex-col items-center justify-center my-auto select-none">
+            <div className={`p-0.5 xs:p-1 sm:p-1.5 rounded-md xs:rounded-lg sm:rounded-xl border-[1.5px] sm:border-[2.5px] ${isWinner ? 'border-[#0D0D0D] bg-[#FFE500]/25' : highlighted ? 'border-[#0D0D0D] bg-[#00F5FF]/20' : 'border-[#0D0D0D] bg-white'
+              } shadow-[1px_1px_0px_#0D0D0D] sm:shadow-[2px_2px_0px_#0D0D0D] flex items-center justify-center`}>
               <PixelArt
                 matrix={frontMat}
-                size={large ? 3.4 : small ? 1.5 : 2.4}
+                size={large ? 1.6 : small ? 0.75 : 0.95}
                 defaultColor={isWinner ? '#FFE500' : highlighted ? '#00F5FF' : skinTheme.accentColor}
                 className="object-contain"
               />
@@ -714,25 +714,25 @@ function BrutalistCard({
           </div>
 
           {/* Bottom Inverted Corner Index */}
-          <div className="flex justify-between items-end leading-none rotate-180 relative z-10">
+          <div className="flex justify-between items-end leading-none relative z-10 select-none pb-0.5">
+            <span className={`rotate-180 ${small ? 'text-[7.5px]' : large ? 'text-[9px] xs:text-[10px] sm:text-xs' : 'text-[8px] xs:text-[9px] sm:text-xs'} font-black inline-block`} style={{ color: card.color }}>
+              {card.symbol}
+            </span>
             <div className="flex flex-col items-center">
+              <div className="rotate-180 mb-0.5">
+                <PixelArt
+                  matrix={suitPix}
+                  size={small ? 0.7 : large ? 1.1 : 0.8}
+                  defaultColor={card.color}
+                />
+              </div>
               <span
-                className="font-pixel text-xs sm:text-sm md:text-base font-black leading-none drop-shadow-[1px_1px_0px_#fff]"
+                className={`rotate-180 font-pixel ${small ? 'text-[7.5px] xs:text-[8px]' : large ? 'text-[10px] xs:text-xs sm:text-sm md:text-base' : 'text-[8.5px] xs:text-[9.5px] sm:text-xs md:text-sm'} font-black leading-none drop-shadow-[1px_1px_0px_#fff] inline-block`}
                 style={{ color: card.color }}
               >
                 {card.rank}
               </span>
-              <div className="mt-1">
-                <PixelArt
-                  matrix={suitPix}
-                  size={small ? 1.1 : large ? 1.6 : 1.4}
-                  defaultColor={card.color}
-                />
-              </div>
             </div>
-            <span className="text-xs sm:text-sm font-black" style={{ color: card.color }}>
-              {card.symbol}
-            </span>
           </div>
         </div>
       )}
@@ -1150,7 +1150,7 @@ export default function PokerDuelGame({
     setStage('showdown')
     stageRef.current = 'showdown'
     setCurrentTurnActor('SHOWDOWN')
-    setActiveTurnName('SHOWDOWN — REVEALING HANDS')
+    setActiveTurnName('SHOWDOWN — REVEALING ALL HANDS...')
     setShowWinnerOverlay(false)
     SoundEngine.playCardFlip()
 
@@ -1164,6 +1164,7 @@ export default function PokerDuelGame({
     setGameResult(isSplit ? 'split' : isHeroWinner ? 'win' : hero.folded ? 'bot_win' : 'lose')
     setShowdownPotsSummary(state.showdownPotsSummary || [])
 
+    // 3.2-second delay so user can clearly see all bot revealed cards before winner announcement
     setTimeout(() => {
       if (isHeroWinner) {
         SoundEngine.playJackpot()
@@ -1188,90 +1189,13 @@ export default function PokerDuelGame({
           setAutoNextSeconds(remaining)
         }
       }, 1000)
-    }, 2400)
+    }, 3200)
   }, [])
 
-  // Universal Turn Runner (Manages turn sequence between Hero & Bots)
-  const runTurnLoop = useCallback((state) => {
-    if (!isOpen) return
+  // Ref to always hold the latest turn loop runner
+  const runTurnLoopRef = useRef(null)
 
-    // 1. If hand resolved or reached showdown -> trigger reveal
-    if (state.phase === GamePhase.HAND_RESOLVED || state.phase === GamePhase.SHOWDOWN) {
-      handleShowdownConclusion(state)
-      return
-    }
-
-    const turnIdx = state.currentTurnIndex
-
-    // 2. If no actionable player left -> auto runout
-    if (turnIdx < 0) {
-      const survivors = state.players.filter(p => p.isSeated && !p.folded)
-      if (survivors.length <= 1) {
-        handleShowdownConclusion(state)
-        return
-      }
-      setTimeout(() => {
-        if (!isOpen) return
-        const nextState = engineExecuteAction(state, state.currentTurnIndex, PlayerActionType.CHECK)
-        engineStateRef.current = nextState
-        syncEngineToReact(nextState)
-        runTurnLoop(nextState)
-      }, 800)
-      return
-    }
-
-    // 3. Hero's turn (Seat Index 0)
-    if (turnIdx === 0) {
-      const hero = state.players[0]
-      if (hero.folded || hero.isAllIn || hero.bankroll <= 0) {
-        const nextState = engineExecuteAction(state, 0, PlayerActionType.CHECK)
-        engineStateRef.current = nextState
-        syncEngineToReact(nextState)
-        runTurnLoop(nextState)
-        return
-      }
-
-      setCurrentTurnActor('PLAYER')
-      setActiveTurnName('YOUR MOVE')
-      setIsProcessingBot(false)
-
-      // Start 10-second Shot Clock for Hero
-      if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
-      setTurnTimeRemaining(TURN_TIME_LIMIT)
-      const startTime = Date.now()
-      const totalDuration = TURN_TIME_LIMIT * 1000
-
-      turnTimerIntervalRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime
-        const remainingMs = Math.max(0, totalDuration - elapsed)
-        const remainingSec = Math.max(0, remainingMs / 1000)
-        setTurnTimeRemaining(remainingSec)
-
-        if (remainingSec <= 0) {
-          clearInterval(turnTimerIntervalRef.current)
-          turnTimerIntervalRef.current = null
-          const callNeeded = Math.max(0, state.currentRoundHighBet - (hero.roundBet || 0))
-          if (callNeeded === 0) {
-            handlePlayerCheck()
-          } else {
-            handlePlayerFold()
-          }
-        }
-      }, 100)
-      return
-    }
-
-    // 4. Bot's turn (Seat Index 1 to 5)
-    const botIdx = turnIdx - 1
-    const bot = state.players[turnIdx]
-    setCurrentTurnActor(bot.id)
-    setActiveTurnName(`${bot.name}'S TURN`)
-    setIsProcessingBot(true)
-
-    executeBotTurn(turnIdx, state)
-  }, [isOpen, handleShowdownConclusion, syncEngineToReact])
-
-  // Execute Bot AI Turn with Realistic 2-8s Timing & Smart Decisioning
+  // Execute Bot AI Turn with Snappy, Realistic Timing & Smart Decisioning
   const executeBotTurn = useCallback((seatIndex, state) => {
     if (botThinkIntervalRef.current) clearInterval(botThinkIntervalRef.current)
     if (botThinkTimeoutRef.current) clearTimeout(botThinkTimeoutRef.current)
@@ -1281,17 +1205,17 @@ export default function PokerDuelGame({
       const nextState = engineExecuteAction(state, seatIndex, PlayerActionType.CHECK)
       engineStateRef.current = nextState
       syncEngineToReact(nextState)
-      runTurnLoop(nextState)
+      runTurnLoopRef.current?.(nextState)
       return
     }
 
     const callNeeded = Math.max(0, state.currentRoundHighBet - (bot.roundBet || 0))
     const isFacingPressure = callNeeded > 1000
 
-    // Randomized think duration (2.0s to 7.0s)
+    // Snappy, realistic think duration (0.5s to 1.5s)
     const thinkDuration = isFacingPressure
-      ? Math.floor(Math.random() * 4000) + 3000
-      : Math.floor(Math.random() * 3200) + 2000
+      ? Math.floor(Math.random() * 800) + 700
+      : Math.floor(Math.random() * 600) + 500
 
     const startTime = Date.now()
     const BOT_ACTION_TIME_LIMIT = 10
@@ -1322,7 +1246,7 @@ export default function PokerDuelGame({
 
       // Evaluate Hand Strength
       const allCards = [...(bot.cards || []), ...(state.communityCards || [])]
-      const evalResult = evaluate7CardHand(allCards)
+      const evalResult = evaluateHand(allCards)
       const rank = evalResult.rank || 0
 
       let actionType = PlayerActionType.CHECK
@@ -1387,10 +1311,102 @@ export default function PokerDuelGame({
       syncEngineToReact(nextState)
 
       setTimeout(() => {
-        runTurnLoop(nextState)
-      }, 450)
+        runTurnLoopRef.current?.(nextState)
+      }, 350)
     }, thinkDuration)
-  }, [syncEngineToReact, runTurnLoop, triggerChipFlight])
+  }, [syncEngineToReact, triggerChipFlight])
+
+  // Universal Turn Runner (Manages turn sequence between Hero & Bots)
+  const runTurnLoop = useCallback((state) => {
+    if (!isOpen) return
+
+    // 1. If hand resolved or reached showdown -> trigger reveal
+    if (state.phase === GamePhase.HAND_RESOLVED || state.phase === GamePhase.SHOWDOWN) {
+      handleShowdownConclusion(state)
+      return
+    }
+
+    const turnIdx = state.currentTurnIndex
+
+    // 2. If no actionable player left -> auto runout
+    if (turnIdx < 0) {
+      const survivors = state.players.filter(p => p.isSeated && !p.folded)
+      if (survivors.length <= 1) {
+        handleShowdownConclusion(state)
+        return
+      }
+      setTimeout(() => {
+        if (!isOpen) return
+        const nextState = engineExecuteAction(state, 0, PlayerActionType.CHECK)
+        engineStateRef.current = nextState
+        syncEngineToReact(nextState)
+        runTurnLoopRef.current?.(nextState)
+      }, 600)
+      return
+    }
+
+    // 3. Hero's turn (Seat Index 0)
+    if (turnIdx === 0) {
+      const hero = state.players[0]
+      if (hero.folded || hero.isAllIn || hero.bankroll <= 0) {
+        const nextState = engineExecuteAction(state, 0, PlayerActionType.CHECK)
+        engineStateRef.current = nextState
+        syncEngineToReact(nextState)
+        runTurnLoopRef.current?.(nextState)
+        return
+      }
+
+      setCurrentTurnActor('PLAYER')
+      setActiveTurnName('YOUR MOVE')
+      setIsProcessingBot(false)
+
+      // Start 10-second Shot Clock for Hero
+      if (turnTimerIntervalRef.current) clearInterval(turnTimerIntervalRef.current)
+      setTurnTimeRemaining(TURN_TIME_LIMIT)
+      const startTime = Date.now()
+      const totalDuration = TURN_TIME_LIMIT * 1000
+
+      turnTimerIntervalRef.current = setInterval(() => {
+        const elapsed = Date.now() - startTime
+        const remainingMs = Math.max(0, totalDuration - elapsed)
+        const remainingSec = Math.max(0, remainingMs / 1000)
+        setTurnTimeRemaining(remainingSec)
+
+        if (remainingSec <= 0) {
+          clearInterval(turnTimerIntervalRef.current)
+          turnTimerIntervalRef.current = null
+          const callNeeded = Math.max(0, state.currentRoundHighBet - (hero.roundBet || 0))
+          if (callNeeded === 0) {
+            handlePlayerCheck()
+          } else {
+            handlePlayerFold()
+          }
+        }
+      }, 100)
+      return
+    }
+
+    // 4. Bot's turn (Seat Index 1 to 5)
+    const botIdx = turnIdx - 1
+    const bot = state.players[turnIdx]
+    if (!bot) {
+      const nextTurn = (turnIdx + 1) % state.players.length
+      const fallbackState = { ...state, currentTurnIndex: nextTurn }
+      runTurnLoopRef.current?.(fallbackState)
+      return
+    }
+
+    setCurrentTurnActor(bot.id)
+    setActiveTurnName(`${bot.name}'S TURN`)
+    setIsProcessingBot(true)
+
+    executeBotTurn(turnIdx, state)
+  }, [isOpen, handleShowdownConclusion, syncEngineToReact, executeBotTurn])
+
+  // Keep ref up to date
+  useEffect(() => {
+    runTurnLoopRef.current = runTurnLoop
+  }, [runTurnLoop])
 
   // Start a new standard Texas Hold'em hand
   const startNewHand = useCallback(() => {
@@ -1817,7 +1833,7 @@ export default function PokerDuelGame({
 
           {/* Bot 2 Hole Cards or Busted Indicator */}
           {!isBusted ? (
-            <div className="flex -space-x-3 xs:-space-x-4 sm:-space-x-5 relative">
+            <div className={`relative inline-flex items-center justify-center -space-x-3 xs:-space-x-4 sm:-space-x-5 ${bot.folded ? 'opacity-40 grayscale' : ''}`}>
               {(() => {
                 const isBotShowdown = stage === 'showdown' && !bot.folded
                 const botEval = isBotShowdown ? evaluateHand([...bot.cards, ...communityCards]) : null
@@ -1857,9 +1873,20 @@ export default function PokerDuelGame({
                 )
               })()}
               {bot.folded && (
-                <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/65 rounded-lg">
-                  <span className="font-display font-black text-[9px] sm:text-xs text-white bg-[#FF3333] px-1 sm:px-1.5 py-0.2 sm:py-0.5 border border-black rotate-12">
+                <div className="absolute -inset-1 sm:-inset-1.5 flex items-center justify-center z-30 bg-black/75 rounded-xl pointer-events-none">
+                  <span className="font-display font-black text-[9px] sm:text-xs text-white bg-[#FF3333] px-1.5 sm:px-2 py-0.5 border border-black rotate-12 shadow-[1.5px_1.5px_0px_#000]">
                     FOLD
+                  </span>
+                </div>
+              )}
+              {stage === 'showdown' && !bot.folded && bot.cards.length >= 2 && (
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none whitespace-nowrap">
+                  <span className={`font-pixel font-bold text-[6px] sm:text-[7.5px] px-1.5 py-0.2 rounded-md border border-black shadow-[1px_1px_0px_#000] ${
+                    showWinnerOverlay && (winnerName === bot.name || winnerName.includes(bot.name))
+                      ? 'bg-[#FFE500] text-[#0D0D0D] ring-1 ring-black'
+                      : 'bg-white text-gray-800'
+                  }`}>
+                    {evaluateHand([...bot.cards, ...communityCards])?.name || 'SHOWDOWN'}
                   </span>
                 </div>
               )}
@@ -1992,7 +2019,7 @@ export default function PokerDuelGame({
 
   return (
     <div
-      className="fixed inset-0 w-screen h-screen z-[1500] flex flex-col justify-between select-none overflow-hidden font-display transition-colors duration-300"
+      className="fixed inset-0 w-full h-full h-[100dvh] max-h-[100dvh] z-[1500] flex flex-col justify-between select-none overflow-hidden font-display transition-colors duration-300"
       style={{ backgroundColor: currentTheme.arenaBg, color: '#0D0D0D' }}
     >
 
@@ -2192,7 +2219,7 @@ export default function PokerDuelGame({
         {/* ------------------------------------------------------ */}
         {/* THE POKER TABLE STRUCTURE (EXPANDED OVAL FELT ARENA)   */}
         {/* ------------------------------------------------------ */}
-        <div className="relative w-full max-w-[1360px] h-[480px] xs:h-[530px] sm:h-[600px] md:h-[660px] lg:h-[700px] max-h-[74vh] sm:max-h-[80vh] flex items-center justify-center">
+        <div className="relative w-full max-w-[1360px] h-[480px] xs:h-[530px] sm:h-[600px] md:h-[660px] lg:h-[700px] max-h-[56vh] xs:max-h-[60vh] sm:max-h-[75vh] md:max-h-[80vh] flex items-center justify-center">
 
           {/* Outer Table Rim */}
           <div
@@ -2452,14 +2479,15 @@ export default function PokerDuelGame({
 
               {/* Player's 2 Large Hole Cards or SITTING OUT REBUY CARD */}
               {!isHeroSittingOut ? (
-                <div className={`flex -space-x-3 xs:-space-x-4 sm:-space-x-6 relative transition-all ${isPlayerFolded ? 'opacity-40 grayscale' : 'hover:space-x-1'}`}>
+                <div className={`relative inline-flex items-center justify-center -space-x-3 xs:-space-x-4 sm:-space-x-6 transition-all ${isPlayerFolded ? 'opacity-40 grayscale' : 'hover:space-x-1'}`}>
                   {playerCards[0] && (
                     <BrutalistCard
                       key={playerCards[0].id || 'player_card_0'}
                       card={playerCards[0]}
                       large
                       delay={0}
-                      animClass="animate-deal-player"
+                      hidden={isPlayerFolded}
+                      animClass={isPlayerFolded ? 'animate-card-reveal' : 'animate-deal-player'}
                       deckSkin={equippedDeck}
                       highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[0].id) || isPlayerAllIn)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[0].id)}
@@ -2472,7 +2500,8 @@ export default function PokerDuelGame({
                       card={playerCards[1]}
                       large
                       delay={140}
-                      animClass="animate-deal-player"
+                      hidden={isPlayerFolded}
+                      animClass={isPlayerFolded ? 'animate-card-reveal' : 'animate-deal-player'}
                       deckSkin={equippedDeck}
                       highlighted={!isPlayerFolded && (heroMatchedCardIds.has(playerCards[1].id) || isPlayerAllIn)}
                       isWinner={stage === 'showdown' && showWinnerOverlay && (gameResult === 'win' || gameResult === 'split') && heroMatchedCardIds.has(playerCards[1].id)}
@@ -2480,8 +2509,8 @@ export default function PokerDuelGame({
                     />
                   )}
                   {isPlayerFolded && (
-                    <div className="absolute inset-0 flex items-center justify-center z-30">
-                      <span className="font-display font-black text-[10px] sm:text-sm text-white bg-[#FF3333] px-2 sm:px-2.5 py-0.5 sm:py-1 border-[1.5px] sm:border-[2px] border-black rotate-12 shadow-[1.5px_1.5px_0px_#000]">
+                    <div className="absolute -inset-1 sm:-inset-1.5 flex items-center justify-center z-30 pointer-events-none bg-black/75 rounded-2xl">
+                      <span className="font-display font-black text-[10px] sm:text-sm text-white bg-[#FF3333] px-2.5 sm:px-3 py-0.5 sm:py-1 border-[1.5px] sm:border-[2px] border-black rotate-12 shadow-[2px_2px_0px_#000]">
                         FOLDED
                       </span>
                     </div>
@@ -2716,7 +2745,7 @@ export default function PokerDuelGame({
       {/* ======================================================== */}
       {/* 3. BOTTOM COMMAND & ACTION DOCK (3D CHIP TRAY & CONTROLS) */}
       {/* ======================================================== */}
-      <footer className="h-auto min-h-[58px] sm:h-22 py-1.5 sm:py-2 px-2 sm:px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-2.5 md:gap-3 z-30 relative bg-[#FFFFFF] border-t-[3px] sm:border-t-[4px] border-[#0D0D0D] shadow-[0px_-3px_0px_#0D0D0D] sm:shadow-[0px_-4px_0px_#0D0D0D]">
+      <footer className="h-auto shrink-0 pt-2 pb-6 sm:py-2.5 px-2 sm:px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2.5 md:gap-3 z-30 relative bg-[#FFFFFF] border-t-[3px] sm:border-t-[4px] border-[#0D0D0D] shadow-[0px_-3px_0px_#0D0D0D] sm:shadow-[0px_-4px_0px_#0D0D0D]">
 
         {/* Left: Interactive 3D Casino Chip Rack / Bet Builder */}
         <div className="flex items-center justify-center gap-1.5 sm:gap-3 flex-wrap sm:flex-nowrap">
@@ -2872,7 +2901,7 @@ export default function PokerDuelGame({
                 <button
                   disabled={!isMyTurn}
                   onClick={handlePlayerFold}
-                  className="brutal-btn px-2.5 xs:px-3.5 sm:px-6 py-1.5 sm:py-2.5 md:py-3 bg-white text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#FF70A6] transition-colors disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                  className="brutal-btn px-2.5 xs:px-3.5 sm:px-6 py-2 sm:py-2.5 md:py-3 bg-white text-[#0D0D0D] font-display text-[10.5px] xs:text-xs sm:text-sm font-black uppercase hover:bg-[#FF70A6] transition-colors disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
                   FOLD
                 </button>
@@ -2882,7 +2911,7 @@ export default function PokerDuelGame({
                   <button
                     disabled={!isMyTurn}
                     onClick={handlePlayerCheck}
-                    className="brutal-btn px-3 xs:px-4 sm:px-8 py-1.5 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                    className="brutal-btn px-3 xs:px-4 sm:px-8 py-2 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10.5px] xs:text-xs sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   >
                     CHECK
                   </button>
@@ -2890,7 +2919,7 @@ export default function PokerDuelGame({
                   <button
                     disabled={!isMyTurn}
                     onClick={handlePlayerCall}
-                    className="brutal-btn px-3 xs:px-4 sm:px-8 py-1.5 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                    className="brutal-btn px-3 xs:px-4 sm:px-8 py-2 sm:py-2.5 md:py-3 bg-[#00F5FF] text-[#0D0D0D] font-display text-[10.5px] xs:text-xs sm:text-sm font-black uppercase hover:bg-[#00d8e6] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                   >
                     CALL ${playerCallAmount.toLocaleString()}
                   </button>
@@ -2900,7 +2929,7 @@ export default function PokerDuelGame({
                 <button
                   disabled={!isMyTurn}
                   onClick={() => handlePlayerRaise(raiseAmount)}
-                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-1.5 sm:py-2.5 md:py-3 bg-[#FFE500] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#ebd300] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-2 sm:py-2.5 md:py-3 bg-[#FFE500] text-[#0D0D0D] font-display text-[10.5px] xs:text-xs sm:text-sm font-black uppercase hover:bg-[#ebd300] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
                   +${raiseAmount.toLocaleString()}
                 </button>
@@ -2909,7 +2938,7 @@ export default function PokerDuelGame({
                 <button
                   disabled={!isMyTurn}
                   onClick={handlePlayerAllIn}
-                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-1.5 sm:py-2.5 md:py-3 bg-[#FF70A6] text-[#0D0D0D] font-display text-[10px] xs:text-[11px] sm:text-sm font-black uppercase hover:bg-[#ff5292] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
+                  className="brutal-btn px-3 xs:px-4 sm:px-7 py-2 sm:py-2.5 md:py-3 bg-[#FF70A6] text-[#0D0D0D] font-display text-[10.5px] xs:text-xs sm:text-sm font-black uppercase hover:bg-[#ff5292] disabled:opacity-40 cursor-pointer shadow-[2px_2px_0px_#0D0D0D] sm:shadow-[3px_3px_0px_#0D0D0D] border-[2px] sm:border-[2.5px] border-[#0D0D0D]"
                 >
                   ALL-IN
                 </button>

@@ -6,6 +6,7 @@ import BubbleMenu from '../components/BubbleMenu'
 import Preloader from '../components/Preloader'
 import HandRankingsModal from '../components/HandRankingsModal'
 import VIPClubModal from '../components/VIPClubModal'
+import Footer from '../components/Footer'
 import { SoundEngine } from '../components/SoundEngine'
 import { generateGameUrl } from '../utils/gameUrl'
 import { PixelAvatar } from '../components/PixelAvatars'
@@ -407,6 +408,12 @@ export default function LeaderboardPage() {
         </div>
 
       </div>
+
+      <Footer
+        className="mt-16"
+        onOpenRankings={() => setIsRankingsOpen(true)}
+        onOpenVIP={() => setIsVIPOpen(true)}
+      />
 
       {/* Poker Hand Rankings Official Guide */}
       <HandRankingsModal
