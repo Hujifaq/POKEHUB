@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 // Reusable SVG Pixel Matrix Renderer (Crisp, true 8-bit integer pixel art)
-function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '' }) {
+function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '', style = {} }) {
   if (!matrix || matrix.length === 0) return null
   const height = matrix.length
   const width = matrix[0].length
@@ -19,8 +19,8 @@ function PixelArt({ matrix, size = 4, defaultColor = '#050505', className = '' }
       width={width * size}
       height={height * size}
       viewBox={`0 0 ${width} ${height}`}
-      className={`inline-block select-none ${className}`}
-      style={{ imageRendering: 'pixelated', shapeRendering: 'crispEdges' }}
+      className={`inline-block select-none max-w-full max-h-full ${className}`}
+      style={{ imageRendering: 'pixelated', shapeRendering: 'crispEdges', ...style }}
     >
       {matrix.map((row, r) =>
         row.map((val, c) => {
@@ -800,15 +800,14 @@ function PixelCardFront({ item }) {
           {item.cardRank}
         </span>
         <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.5} defaultColor={suitColor} />
+          <PixelArt matrix={suitMat} size={2.2} defaultColor={suitColor} />
         </div>
       </div>
 
-      {/* Central Pixel Art Motif (Clean, no text badge below logo) */}
+      {/* Central Pixel Art Motif in Square Emblem Box (Matching Desktop Design) */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl border-[2.5px] sm:border-[3px] border-true-black bg-white shadow-[3px_3px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] flex items-center justify-center">
-          <PixelArt matrix={motif} size={5.5} defaultColor={item.accentColor} className="sm:hidden" />
-          <PixelArt matrix={motif} size={7.5} defaultColor={item.accentColor} className="hidden sm:inline-block" />
+        <div className="w-22 h-22 sm:w-26 sm:h-26 md:w-30 md:h-30 rounded-xl sm:rounded-2xl border-[3px] border-true-black bg-white shadow-[4px_4px_0px_#050505] flex items-center justify-center p-2 sm:p-2.5">
+          <PixelArt matrix={motif} size={5} defaultColor={item.accentColor} className="w-full h-full object-contain" />
         </div>
       </div>
 
@@ -818,7 +817,7 @@ function PixelCardFront({ item }) {
           {item.cardRank}
         </span>
         <div className="mt-1">
-          <PixelArt matrix={suitMat} size={2.5} defaultColor={suitColor} />
+          <PixelArt matrix={suitMat} size={2.2} defaultColor={suitColor} />
         </div>
       </div>
     </div>
@@ -837,7 +836,7 @@ function PixelCardBack({ item }) {
       <div className="w-full h-full flex items-center justify-center p-1">
         <PixelArt
           matrix={graffitiMat}
-          size={9}
+          size={8}
           defaultColor={item.accentColor}
           className="w-full h-full object-contain"
         />
@@ -1072,12 +1071,12 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
             SoundEngine.playThemeCardHover(item.themeStyle || item.cardSkin)
             setIsFlipped(f => !f)
           }}
-          className="relative w-[210px] sm:w-[240px] md:w-[270px] h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
+          className="relative w-[190px] xs:w-[210px] sm:w-[240px] md:w-[270px] h-[270px] xs:h-[300px] sm:h-[340px] md:h-[380px] cursor-pointer will-change-transform select-none flex items-center justify-center"
           style={{ perspective: 1200 }}
         >
           {/* Inner 3D Flipping Card Body */}
           <div
-            className={`w-full h-full relative rounded-2xl border-[4px] border-true-black shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${
+            className={`w-full h-full relative rounded-2xl border-[3px] sm:border-[4px] border-true-black shadow-[6px_6px_0px_#050505] sm:shadow-[8px_8px_0px_#050505] transition-transform duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] [transform-style:preserve-3d] ${
               isFlipped ? '[transform:rotateY(180deg)]' : ''
             }`}
           >
@@ -1095,10 +1094,10 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
         {/* Foreground Floating Casino Chip */}
         <div
           ref={chipRef}
-          className={`absolute -bottom-3 -left-4 sm:-left-6 w-16 sm:w-20 h-16 sm:h-20 rounded-full border-[3px] border-true-black ${item.chipColor} flex flex-col items-center justify-center font-pixel text-[7px] sm:text-[8px] font-black shadow-[4px_4px_0px_#050505] z-20 pointer-events-none will-change-transform`}
+          className={`absolute -bottom-2 -left-2 xs:-bottom-3 xs:-left-4 sm:-left-6 w-12 h-12 xs:w-14 xs:h-14 sm:w-20 sm:h-20 rounded-full border-[2px] sm:border-[3px] border-true-black ${item.chipColor} flex flex-col items-center justify-center font-pixel text-[6px] xs:text-[7px] sm:text-[8px] font-black shadow-[2px_2px_0px_#050505] sm:shadow-[4px_4px_0px_#050505] z-20 pointer-events-none will-change-transform`}
         >
           <span>{item.stats.chips.split(' ')[0]}</span>
-          <span className="text-[6px]">CHIP</span>
+          <span className="text-[5px] sm:text-[6px]">CHIP</span>
         </div>
 
         {/* Foreground Floating Token 2 */}
@@ -1108,12 +1107,12 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
       </div>
 
       {/* Frame Bottom Bar: Stats and Action Buttons */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-2 border-t-[3px] border-black/20">
-        <div className="flex items-center gap-2 text-white">
-          <span className="font-pixel text-[8px] sm:text-[9px] bg-black/40 border border-white/20 px-2 py-1 rounded">
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-2 border-t-[2px] sm:border-t-[3px] border-black/20">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-white">
+          <span className="font-pixel text-[7.5px] sm:text-[9px] bg-black/40 border border-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
             {item.stats.rarity}
           </span>
-          <span className="font-pixel text-[8px] sm:text-[9px] bg-black/40 border border-white/20 px-2 py-1 rounded hidden sm:inline">
+          <span className="font-pixel text-[7.5px] sm:text-[9px] bg-black/40 border border-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded hidden xs:inline">
             {item.stats.finish}
           </span>
         </div>
@@ -1122,7 +1121,7 @@ function InteractiveShowcaseCard({ item, onSelectDeck, isEquipped }) {
           onClick={() => {
             if (onSelectDeck) onSelectDeck(item.cardSkin)
           }}
-          className={`brutal-btn px-4 py-1.5 font-display text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
+          className={`brutal-btn px-3 sm:px-4 py-1 sm:py-1.5 font-display text-[10.5px] sm:text-xs font-black uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ml-auto transition-all ${
             isEquipped
               ? 'bg-[#00FFA3] text-true-black shadow-[2px_2px_0px_#000000] scale-105'
               : 'bg-white hover:bg-accent-yellow text-true-black'
