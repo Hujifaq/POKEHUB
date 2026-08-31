@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import Floating3DLogo from './Floating3DLogo'
 import { SoundEngine } from './SoundEngine'
 import HandRankingsModal from './HandRankingsModal'
 
@@ -118,29 +117,25 @@ export default function Footer({
           
           {/* COLUMN 1: Brand, Tagline & Socials */}
           <div className="flex flex-col gap-3.5">
-            <div className="flex items-center gap-3.5">
-              <Floating3DLogo
-                onClick={() => {
-                  SoundEngine.playClick()
-                  scrollToTop()
-                }}
-              />
-              <div
-                className="inline-flex items-center group cursor-pointer select-none transition-transform duration-200 hover:scale-[1.03] active:scale-95"
-                onClick={() => SoundEngine.playClick()}
-              >
-                <span className="font-display text-3xl sm:text-4xl font-black tracking-tight uppercase transition-all duration-300">
-                  <span className="text-[#FF70A6] drop-shadow-[3px_3px_0px_#000000] group-hover:drop-shadow-[0_0_16px_rgba(255,112,166,0.8)] transition-all">
-                    POKER
-                  </span>
-                  <span className="text-accent-yellow drop-shadow-[3px_3px_0px_#000000] group-hover:drop-shadow-[0_0_16px_rgba(255,251,0,0.9)] transition-all">
-                    HUB
-                  </span>
+            <div
+              className="inline-flex items-center group cursor-pointer select-none transition-transform duration-200 hover:scale-[1.02] active:scale-95 w-fit"
+              onClick={() => {
+                SoundEngine.playClick()
+                scrollToTop()
+              }}
+              title="Click to scroll to top"
+            >
+              <span className="font-display text-4xl sm:text-5xl md:text-6xl font-black tracking-tight uppercase transition-all duration-300">
+                <span className="text-[#FF70A6] drop-shadow-[3.5px_3.5px_0px_#000000] sm:drop-shadow-[5px_5px_0px_#000000] group-hover:drop-shadow-[0_0_20px_rgba(255,112,166,0.8)] transition-all">
+                  POKER
                 </span>
-              </div>
+                <span className="text-accent-yellow drop-shadow-[3.5px_3.5px_0px_#000000] sm:drop-shadow-[5px_5px_0px_#000000] group-hover:drop-shadow-[0_0_20px_rgba(255,251,0,0.9)] transition-all">
+                  HUB
+                </span>
+              </span>
             </div>
 
-            <p className="font-mono-nb text-xs text-gray-400 max-w-md leading-relaxed">
+            <p className="font-mono-nb text-xs sm:text-sm text-gray-400 max-w-md leading-relaxed">
               Next-Gen Neo-Brutalist 3D Texas Hold'em Arena with procedural card physics, custom shaders, and intelligent AI opponents.
             </p>
 
