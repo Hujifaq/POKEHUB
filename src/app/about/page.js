@@ -5,6 +5,7 @@ import Link from 'next/link'
 import BubbleMenu from '../components/BubbleMenu'
 import Preloader from '../components/Preloader'
 import { PixelAvatar } from '../components/PixelAvatars'
+import Footer from '../components/Footer'
 import { SoundEngine } from '../components/SoundEngine'
 
 const TEAM_MEMBERS = [
@@ -348,15 +349,7 @@ export default function AboutPage() {
       {/* ======================================================== */}
       {/* FOOTER                                                   */}
       {/* ======================================================== */}
-      <footer className="max-w-6xl mx-auto mt-14 pt-8 border-t-[3px] border-[#0D0D0D] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left font-mono-nb text-xs font-bold text-gray-600">
-        <div>
-          © 2026 POKEHUB • CRAFTED BY ANDA, HUT, GRAM & P (KMUTT)
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/" className="hover:text-black">HOME</Link>
-          <Link href="/game" className="hover:text-black">3D ARENA</Link>
-        </div>
-      </footer>
+      <Footer className="mt-20" />
 
     </main>
   )
