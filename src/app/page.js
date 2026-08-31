@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -145,8 +145,6 @@ export default function Home() {
 
       if (e.key === 'g' || e.key === 'G') {
         window.location.href = generateGameUrl()
-      } else if (e.key === 'l' || e.key === 'L') {
-        window.location.href = '/leaderboard'
       }
     }
 
@@ -180,7 +178,7 @@ export default function Home() {
   }, [scrollToHowToPlay, scrollToDeckSkins])
 
   // Hamburger Menu Items: Home, 3D Arena, Deck Skin, Rankings, How to Play
-  const bubbleMenuItems = [
+  const bubbleMenuItems = useMemo(() => [
     {
       label: 'home',
       ariaLabel: 'POKERHUB Home',
@@ -226,7 +224,7 @@ export default function Home() {
         scrollToHowToPlay()
       }
     }
-  ]
+  ], [scrollToHowToPlay, scrollToDeckSkins])
 
   return (
     <main className="w-full relative min-h-screen transition-colors duration-700 text-true-black overflow-x-hidden bg-transparent">
@@ -415,12 +413,6 @@ export default function Home() {
               >
                 PLAY 3D ARENA →
               </Link>
-              <Link
-                href="/leaderboard"
-                className="brutal-btn px-5 py-3 bg-ui-pink text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-[#ff8cb8]"
-              >
-                LEADERBOARD
-              </Link>
               <button
                 onClick={() => setIsRankingsOpen(true)}
                 className="brutal-btn px-4 py-3 bg-white text-true-black font-display text-xs md:text-sm font-black uppercase hover:bg-accent-yellow"
@@ -432,10 +424,9 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left font-mono-nb text-xs text-gray-500">
             <div>
-              © 2026 POKERHUB ARCHIVES. ALL RIGHTS RESERVED.
+              © 2026 POKEHUB ARCHIVES. ALL RIGHTS RESERVED.
             </div>
             <div className="flex items-center gap-6 text-gray-400">
-              <Link href="/leaderboard" className="hover:text-white">LEADERBOARD</Link>
               <span className="cursor-pointer hover:text-white" onClick={() => setIsVIPOpen(true)}>VIP CLUB</span>
               <span className="cursor-pointer hover:text-white" onClick={() => setIsRankingsOpen(true)}>RULES</span>
               <span className="cursor-pointer hover:text-white" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>BACK TO TOP ↑</span>

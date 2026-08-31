@@ -123,6 +123,17 @@ function createCardFrontTexture(rank = 'A', suit = 'hearts', skin = 'obsidian') 
   const rankColor = isRed ? '#ef4444' : '#050505'
   const accentColor = skinTheme.accentColor || '#b388ff'
 
+  const cornerR = 28
+
+  ctx.save()
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(0, 0, W, H, cornerR)
+  } else {
+    ctx.rect(0, 0, W, H)
+  }
+  ctx.clip()
+
   // 1. Warm Creamy Porcelain Base (#FAF7F2)
   ctx.fillStyle = '#FAF7F2'
   ctx.fillRect(0, 0, W, H)
@@ -134,11 +145,6 @@ function createCardFrontTexture(rank = 'A', suit = 'hearts', skin = 'obsidian') 
       ctx.fillRect(x, y, 4, 4)
     }
   }
-
-  // 3. Thick Neo-Brutalist Outer Border (14px)
-  ctx.strokeStyle = '#050505'
-  ctx.lineWidth = 14
-  ctx.strokeRect(7, 7, W - 14, H - 14)
 
   // 4. Stepped Corner Accent Notches
   ctx.fillStyle = accentColor
@@ -198,6 +204,19 @@ function createCardFrontTexture(rank = 'A', suit = 'hearts', skin = 'obsidian') 
     drawPixelMatrix(ctx, matX, matY, pSize, motif, accentColor)
   }
 
+  ctx.restore()
+
+  // 3. Thick Neo-Brutalist Outer Rounded Border (14px)
+  ctx.strokeStyle = '#050505'
+  ctx.lineWidth = 14
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(7, 7, W - 14, H - 14, cornerR - 4)
+  } else {
+    ctx.strokeRect(7, 7, W - 14, H - 14)
+  }
+  ctx.stroke()
+
   const texture = new THREE.CanvasTexture(canvas)
   texture.magFilter = THREE.NearestFilter
   texture.minFilter = THREE.NearestFilter
@@ -217,6 +236,16 @@ function createCardBackTexture(skin = 'obsidian') {
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
   ctx.imageSmoothingEnabled = false
+  const cornerR = 28
+
+  ctx.save()
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(0, 0, W, H, cornerR)
+  } else {
+    ctx.rect(0, 0, W, H)
+  }
+  ctx.clip()
 
   const isDefault = skin === 'classic' || skin === 'default'
   const skinTheme = isDefault
@@ -235,15 +264,29 @@ function createCardBackTexture(skin = 'obsidian') {
     ctx.fillStyle = '#FFF8EE'
     ctx.fillRect(0, 0, W, H)
 
-    ctx.strokeStyle = '#050505'
-    ctx.lineWidth = 14
-    ctx.strokeRect(7, 7, W - 14, H - 14)
-
+    // 3. Inner Coral/Rose Rectangular Field (#E58383) with rounded corners
     ctx.fillStyle = '#E58383'
-    ctx.fillRect(24, 24, W - 48, H - 48)
+    ctx.beginPath()
+    if (ctx.roundRect) {
+      ctx.roundRect(24, 24, W - 48, H - 48, 16)
+    } else {
+      ctx.rect(24, 24, W - 48, H - 48)
+    }
+    ctx.fill()
     ctx.strokeStyle = '#050505'
     ctx.lineWidth = 8
-    ctx.strokeRect(24, 24, W - 48, H - 48)
+    ctx.stroke()
+
+    // Stepped Corner Accents
+    ctx.fillStyle = '#B84A4A'
+    ctx.fillRect(24, 24, 28, 8)
+    ctx.fillRect(24, 24, 8, 28)
+    ctx.fillRect(W - 52, 24, 28, 8)
+    ctx.fillRect(W - 32, 24, 8, 28)
+    ctx.fillRect(24, H - 32, 28, 8)
+    ctx.fillRect(24, H - 52, 8, 28)
+    ctx.fillRect(W - 52, H - 32, 28, 8)
+    ctx.fillRect(W - 32, H - 52, 8, 28)
 
     if (PIXEL_GRAFFITI.default) {
       const pSize = 17
@@ -258,14 +301,15 @@ function createCardBackTexture(skin = 'obsidian') {
     ctx.fillStyle = '#07080d'
     ctx.fillRect(0, 0, W, H)
 
-    // Outer and Inner Brutalist Frames
-    ctx.strokeStyle = '#050505'
-    ctx.lineWidth = 14
-    ctx.strokeRect(7, 7, W - 14, H - 14)
-
     ctx.strokeStyle = accentColor
     ctx.lineWidth = 6
-    ctx.strokeRect(24, 24, W - 48, H - 48)
+    ctx.beginPath()
+    if (ctx.roundRect) {
+      ctx.roundRect(24, 24, W - 48, H - 48, 16)
+    } else {
+      ctx.strokeRect(24, 24, W - 48, H - 48)
+    }
+    ctx.stroke()
 
     // Stepped Corner Accent Notches
     ctx.fillStyle = accentColor
@@ -288,6 +332,19 @@ function createCardBackTexture(skin = 'obsidian') {
       drawPixelMatrix(ctx, matX, matY, pSize, graffitiMat, accentColor)
     }
   }
+
+  ctx.restore()
+
+  // 2. Thick Outer Brutalist Rounded Border
+  ctx.strokeStyle = '#050505'
+  ctx.lineWidth = 14
+  ctx.beginPath()
+  if (ctx.roundRect) {
+    ctx.roundRect(7, 7, W - 14, H - 14, cornerR - 4)
+  } else {
+    ctx.strokeRect(7, 7, W - 14, H - 14)
+  }
+  ctx.stroke()
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.magFilter = THREE.NearestFilter

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import BubbleMenu from '../components/BubbleMenu'
 import Preloader from '../components/Preloader'
@@ -83,7 +83,7 @@ export default function AboutPage() {
     if (!next) SoundEngine.playClick()
   }
 
-  const bubbleMenuItems = [
+  const bubbleMenuItems = useMemo(() => [
     {
       label: 'home',
       ariaLabel: 'Back to Home Showcase',
@@ -129,7 +129,7 @@ export default function AboutPage() {
         window.location.href = '/#how-to-play'
       }
     }
-  ]
+  ], [])
 
   return (
     <main className="w-full relative min-h-screen text-true-black overflow-x-hidden bg-[#F6F5FA] font-display pt-24 pb-20 px-4 sm:px-8">
@@ -355,7 +355,6 @@ export default function AboutPage() {
         <div className="flex items-center gap-4">
           <Link href="/" className="hover:text-black">HOME</Link>
           <Link href="/game" className="hover:text-black">3D ARENA</Link>
-          <Link href="/leaderboard" className="hover:text-black">LEADERBOARD</Link>
         </div>
       </footer>
 

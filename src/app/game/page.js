@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import gsap from 'gsap'
@@ -259,7 +259,7 @@ export default function GamePage() {
   }, [handleTossChip])
 
   // Navigation Items (with Leaderboard replacing 3D Duel)
-  const bubbleMenuItems = [
+  const bubbleMenuItems = useMemo(() => [
     {
       label: 'home',
       ariaLabel: 'Back to Home Showcase',
@@ -306,7 +306,7 @@ export default function GamePage() {
         window.location.href = '/#how-to-play'
       }
     }
-  ]
+  ], [handleLeaveGame])
 
   return (
     <main className="w-full relative h-screen transition-colors duration-700 text-true-black overflow-hidden bg-transparent">
@@ -393,15 +393,6 @@ export default function GamePage() {
               <span>{isMuted ? 'MUTED' : 'SFX: ON'}</span>
             </button>
 
-            {/* Leaderboard Link Button - shown on sm+ */}
-            <Link
-              href="/leaderboard"
-              className="brutal-btn bg-ui-pink text-true-black hidden sm:flex items-center gap-1 px-3 sm:px-3.5 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-black uppercase hover:bg-[#ff8cb8] shadow-[2px_2px_0px_#000000] shrink-0"
-              title="Open Leaderboard"
-            >
-              <span>RANKS</span>
-            </Link>
-
             {/* Fullscreen Button - shown on xl+ */}
             <button
               onClick={handleToggleFullscreen}
@@ -459,7 +450,6 @@ export default function GamePage() {
               theme="macau"
               tossSignal={tossSignal}
               isScrolled={false}
-              onTelemetry={setTelemetry}
             />
           )}
         </div>
